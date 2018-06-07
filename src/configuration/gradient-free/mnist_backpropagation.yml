@@ -1,0 +1,12 @@
+trainer:
+  name: backprop
+  n_iterations: 50
+dataloader:
+  dataset_name: mnist
+  use_batch: true
+  batch_size: 100
+  n_batches: 0
+network:
+  name: four_layer_perceptron
+  loss: bceloss
+general: !include general.yml

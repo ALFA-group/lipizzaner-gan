@@ -1,0 +1,19 @@
+trainer:
+  name: parallel_ea
+  n_iterations: 1000
+  params:
+    sigma: 0.05
+    alpha: 0.001
+    population_size: 40
+    tournament_size: 2
+    mutation_probability: 0.9
+    n_replacements: 5
+dataloader:
+  dataset_name: gaussian
+  use_batch: true
+  batch_size: 100
+  n_batches: 10
+network:
+  name: four_layer_perceptron
+  loss: bceloss
+general: !include general.yml

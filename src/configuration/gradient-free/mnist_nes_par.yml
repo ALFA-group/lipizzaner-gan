@@ -1,0 +1,16 @@
+trainer:
+  name: parallel_nes
+  n_iterations: 100
+  params:
+    sigma: 0.05
+    alpha: 0.001
+    population_size: 20
+dataloader:
+  dataset_name: mnist
+  use_batch: true
+  batch_size: 500
+  n_batches: 10
+network:
+  name: four_layer_perceptron
+  loss: bceloss
+general: !include general.yml

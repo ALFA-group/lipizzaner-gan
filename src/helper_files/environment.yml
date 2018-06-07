@@ -1,0 +1,19 @@
+name: lipizzaner
+channels:
+  - pytorch
+dependencies:
+  - python=3.6
+  - numpy
+  - scipy
+  - pytorch=0.3.1
+  - torchvision
+  - pyyaml
+  - matplotlib
+  - scipy
+  - pip:
+    - zignor
+    - losswise
+    - Flask
+    - netifaces
+    - netaddr
+    - pymongo

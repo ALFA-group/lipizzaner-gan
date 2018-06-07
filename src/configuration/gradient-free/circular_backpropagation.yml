@@ -1,0 +1,12 @@
+trainer:
+  name: backprop
+  n_iterations: 10000
+dataloader:
+  dataset_name: circular
+  use_batch: true
+  batch_size: 100
+  n_batches: 0
+network:
+  name: circular_problem_perceptron
+  loss: bceloss
+general: !include general.yml

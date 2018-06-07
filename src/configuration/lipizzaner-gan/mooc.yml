@@ -1,0 +1,31 @@
+trainer:
+  name: lipizzaner_gan
+  n_iterations: 50
+  params:
+    population_size: 1
+    tournament_size: 1
+    n_replacements: 1
+    default_adam_learning_rate: 0.0003
+    select_from_neighborhood: False
+    # Hyperparameter mutation
+    alpha: 0.00005
+    mutation_probability: 0.5
+    score:
+      enabled: False
+      type: constant
+dataloader:
+  dataset_name: mooc
+  use_batch: true
+  batch_size: 100
+  n_batches: 10
+  sample_count: 100
+network:
+  name: mooc_net
+  loss: bceloss
+master:
+  calculate_score: False
+  calculate_inception: False
+  inception_size: 50000
+  cuda: False
+  score_sample_size: 1
+general: !include ../general.yml

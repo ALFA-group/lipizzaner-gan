@@ -1,0 +1,19 @@
+trainer:
+  name: alternating_ea
+  n_iterations: 3000
+  params:
+    sigma: 1
+    alpha: 0.002
+    population_size: 30
+    tournament_size: 4
+    mutation_probability: 0.5
+    n_replacements: 10
+dataloader:
+  dataset_name: circular
+  use_batch: true
+  batch_size: 100
+  n_batches: 10
+network:
+  name: circular_problem_perceptron
+  loss: bceloss
+general: !include general.yml

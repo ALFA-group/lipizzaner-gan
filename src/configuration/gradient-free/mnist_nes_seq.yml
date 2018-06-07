@@ -1,0 +1,16 @@
+trainer:
+  name: sequential_nes
+  n_iterations: 5000
+  params:
+    sigma: 0.05
+    alpha: 0.0005
+    population_size: 100
+dataloader:
+  dataset_name: mnist
+  use_batch: True
+  batch_size: 100
+  n_batches: 10
+network:
+  name: four_layer_perceptron
+  loss: bceloss
+general: !include general.yml

@@ -1,0 +1,27 @@
+trainer:
+  name: lipizzaner_gan
+  n_iterations: 500
+  params:
+    population_size: 1
+    tournament_size: 1
+    n_replacements: 1
+    default_adam_learning_rate: 0.0003
+    # Hyperparameter mutation
+    alpha: 0.00005
+    mutation_probability: 0.5
+    mixture:
+      enabled: False
+dataloader:
+  dataset_name: circular
+  use_batch: true
+  batch_size: 100
+  n_batches: 100
+  sample_count: 100
+network:
+  name: circular_problem_perceptron
+  loss: bceloss
+master:
+  calculate_score: False
+  score_sample_size: 50000
+  cuda: True
+general: !include ../general.yml

@@ -1,0 +1,8 @@
+.img-thumbnail {
+  cursor: pointer;
+}
+
+.img-container {
+  display:inline-block;
+  max-width: 19.9%
+}
