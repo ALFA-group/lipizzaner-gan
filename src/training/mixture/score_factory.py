@@ -19,7 +19,7 @@ class ScoreCalculatorFactory:
         if 'score' not in settings:
             return None
 
-        score_type = settings['mixture'].get('type', None)
+        score_type = settings['score'].get('type', None)
         dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
         # Downloads dataset if its not yet available
         dataloader.load()
