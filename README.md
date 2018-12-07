@@ -2,10 +2,10 @@
 Lipizzaner is a framework to train generative adversarial networks with gradient-based optimizers like Adam in a coevolutionary setup. It hence combines the advantages of both to achieve fast and stable results, as described in our papers:
 
 - Abdullah Al-Dujaili, Tom Schmiedlechner, Erik Hemberg, Una-May O'Reilly, “Towards distributed coevolutionary GANs,” AAAI 2018 Fall Symposium, 2018. 
--The source coude of the experiments performed in this paper can be seen in the following path  `./theoretical_experiments/`
+  - The source coude of the experiments performed in this paper can be seen in the following path  `./theoretical_experiments/`
 
 - Tom Schmiedlechner, Ignavier Ng Zhi Yong, Abdullah Al-Dujaili, Erik Hemberg, Una-May O'Reilly, “Lipizzaner: A System That Scales Robust Generative Adversarial Network Training,” NeurIPS 2018 Workshop on System for Machine Learning, 2018.
--The configuration files to run the experiments performed in this paper can be found in the following path  `./src/configuration/neurips2018/`
+  - The configuration files to run the experiments performed in this paper can be found in the following path  `./src/configuration/neurips2018/`
 
 ### Dev environment setup
 
