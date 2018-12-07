@@ -1,4 +1,5 @@
 import random
+from itertools import tee
 
 import numpy as np
 import torch
@@ -23,23 +24,34 @@ class LipizzanerWGANTrainer(LipizzanerGANTrainer):
     real_labels = torch.FloatTensor([1]).cuda() if is_cuda_enabled() else torch.FloatTensor([1])
     fake_labels = real_labels * -1
 
-    def update_genomes(self, population_attacker, population_defender, input_var, loaded, data_iterator, defender_weights):
+    def update_genomes(self, population_attacker, population_defender, input_var, loaded, data_iterator):
         if population_attacker.population_type == TYPE_DISCRIMINATOR:
             return self._update_discriminators(population_attacker, population_defender, input_var, loaded,
-                                               data_iterator, defender_weights)
+                                        data_iterator)
         elif population_attacker.population_type == TYPE_GENERATOR:
-            return self._update_generators(population_attacker, population_defender, input_var, defender_weights)
+            return self._update_generators(population_attacker, population_defender, input_var)
         else:
             raise Exception('Population type not explicitely set.')
 
-    def _update_discriminators(self, population_attacker, population_defender, input_var, loaded, data_iterator, defender_weights):
+    def _update_discriminators(self, population_attacker, population_defender, input_var, loaded, data_iterator):
 
         batch_size = input_var.size(0)
+        # Randomly pick one only, referred from asynchronous_ea_trainer
+        generator = random.choice(population_defender.individuals)
 
-        for discriminator in population_attacker.individuals:
-            weights = [self.get_weight(defender, defender_weights) for defender in population_defender.individuals]
-            weights /= np.sum(weights)
-            generator = np.random.choice(population_defender.individuals, p=weights)
+        for i, discriminator in enumerate(population_attacker.individuals):
+            if i < len(population_attacker.individuals) - 1:
+                # https://stackoverflow.com/a/42132767
+                # Perform deep copy first instead of directly updating iterator passed in
+                data_iterator, curr_iterator = tee(data_iterator)
+            else:
+                # Directly update the iterator with the last individual only, so that
+                # every individual can learn from the full batch
+                curr_iterator = data_iterator
+
+            # Use temporary batch variable for each individual
+            # so that every individual can learn from the full batch
+            curr_batch_number = self.batch_number
             optimizer = self._get_optimizer(discriminator)
 
             # Train the discriminator Diters times
@@ -49,9 +61,9 @@ class LipizzanerWGANTrainer(LipizzanerGANTrainer):
                 discriminator_iterations = DISCRIMINATOR_STEPS
 
             j = 0
-            while j < discriminator_iterations and self.batch_number < len(loaded):
+            while j < discriminator_iterations and curr_batch_number < len(loaded):
                 if j > 0:
-                    input_var = to_pytorch_variable(self.dataloader.transpose_data(next(data_iterator)[0]))
+                    input_var = to_pytorch_variable(self.dataloader.transpose_data(next(curr_iterator)[0]))
                 j += 1
 
                 # Train with real data
@@ -72,20 +84,22 @@ class LipizzanerWGANTrainer(LipizzanerGANTrainer):
                 for p in discriminator.genome.net.parameters():
                     p.data.clamp_(CLAMP_LOWER, CLAMP_UPPER)
 
-                self.batch_number += 1
+                curr_batch_number += 1
 
             discriminator.optimizer_state = optimizer.state_dict()
+        # Update the final batch_number to class variable after all individuals are updated
+        self.batch_number = curr_batch_number
 
         return input_var
 
-    def _update_generators(self, population_attacker, population_defender, input_var, defender_weights):
+
+    def _update_generators(self, population_attacker, population_defender, input_var):
 
         batch_size = input_var.size(0)
+        # Randomly pick one only, referred from asynchronous_ea_trainer
+        discriminator = random.choice(population_defender.individuals)
 
         for generator in population_attacker.individuals:
-            weights = [self.get_weight(defender, defender_weights) for defender in population_defender.individuals]
-            weights /= np.sum(weights)
-            discriminator = np.random.choice(population_defender.individuals, p=weights)
             optimizer = self._get_optimizer(generator)
 
             # Avoid computation

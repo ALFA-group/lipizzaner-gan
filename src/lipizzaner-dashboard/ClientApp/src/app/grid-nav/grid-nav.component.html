@@ -125,7 +125,7 @@
       <h5>Experiment results</h5>
       <div *ngFor="let result of selectedExperimentResults" class="result-container mb-2">
         <p class="my-2"><strong>Neighborhood:</strong> {{result.mixtureCenter}}
-          <br><strong>Inception score:</strong> {{result.inceptionScore[0]}} &plusmn; {{result.inceptionScore[1]}}</p>
+          <br><strong> Score:</strong> {{result.inceptionScore[0]}} &plusmn; {{result.inceptionScore[1]}}</p>
         <div *ngFor="let image of result.images" class="img-container">
           <img [src]="image" (click)="openImage(image)" class="img-thumbnail">
         </div>

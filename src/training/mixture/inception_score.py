@@ -7,11 +7,16 @@ from torch.autograd import Variable
 from torch.nn import functional as F
 from torchvision.models.inception import inception_v3
 
+from helpers.configuration_container import ConfigurationContainer
 from training.mixture.score_calculator import ScoreCalculator
 
 
 class InceptionCalculator(ScoreCalculator):
-
+    """
+    Currently only support naive implementation of inception_score for MNIST dataset, which
+    simply duplicate the gray-scale data into three dimensions (RGB)
+    TODO: Modify to similar implementation of FID on MNIST dataset
+    """
     def __init__(self, cuda=False, batch_size=32, resize=True):
         """
         :param cuda: Whether or not to run on GPU. WARNING: Requires enormous amounts of memory.
@@ -30,9 +35,9 @@ class InceptionCalculator(ScoreCalculator):
         Calculate the inception score for the input image dataset
         :param exact: If set to true, the full dataset will be used (instead of only 3 splits).
         Results will be more accurate, but this takes more time.
-        :param imgs: Torch dataset of (3xHxW) numpy images normalized in the range [-1, 1]
+        :param imgs: Torch dataset of numpy images normalized in the range [-1, 1] (Could be both grey or RGB images)
         """
-
+        cc = ConfigurationContainer.instance()
         length = len(imgs)
         splits = 10 if exact else 3
 
@@ -54,10 +59,15 @@ class InceptionCalculator(ScoreCalculator):
 
         for i, batch in enumerate(dataloader, 0):
             batch = batch.type(self.dtype)
-            batchv = Variable(batch)
-            batch_size_i = batch.size()[0]
+            if cc.settings['dataloader']['dataset_name'] == 'mnist':
+                rgb_batch = self._convert_grey_to_square_rgb(batch)
+            else:
+                rgb_batch = batch
 
-            preds[i * self.batch_size:i * self.batch_size + batch_size_i] = get_pred(batchv)
+            rgb_batchv = Variable(rgb_batch)
+            batch_size_i = rgb_batch.size()[0]
+
+            preds[i * self.batch_size:i * self.batch_size + batch_size_i] = get_pred(rgb_batchv)
             if i % 100 == 0:
                 print('Batch {}/{}'.format(i, len(dataloader)))
 
@@ -74,6 +84,14 @@ class InceptionCalculator(ScoreCalculator):
             split_scores.append(np.exp(np.mean(scores)))
 
         return np.mean(split_scores), np.std(split_scores)
+
+    def _convert_grey_to_square_rgb(self, grey_img):
+        # grey_img here is of shape(batch_size, 784)
+        cc = ConfigurationContainer.instance()
+        # This function is only available for mnist dataset
+        assert cc.settings['dataloader']['dataset_name'] == 'mnist'
+        # Pad the same data in all 3 dimensions
+        return grey_img.reshape(-1, 28, 28).unsqueeze(1).repeat(1, 3, 1, 1)
 
     @property
     def is_reversed(self):

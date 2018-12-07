@@ -118,6 +118,8 @@ class InceptionV3(nn.Module):
         List of torch.autograd.Variable, corresponding to the selected output 
         block, sorted ascending by index
         """
+        assert len(inp.shape) == 4 and inp.shape[1] == 3
+
         outp = []
         x = inp
 

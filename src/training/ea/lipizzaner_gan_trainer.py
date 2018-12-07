@@ -1,8 +1,9 @@
-import random
 from time import time
+from collections import OrderedDict
 
-import numpy as np
 import torch
+import random
+import numpy as np
 
 from distribution.concurrent_populations import ConcurrentPopulations
 from distribution.neighbourhood import Neighbourhood
@@ -18,17 +19,20 @@ from training.mixture.score_factory import ScoreCalculatorFactory
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
     """
     Distributed, asynchronous trainer for coevolutionary GANs. Uses the standard Goodfellow GAN approach.
+    (Without discriminator mixture)
     """
 
     def __init__(self, dataloader, network_factory, population_size=10, tournament_size=2, mutation_probability=0.9,
                  n_replacements=1, sigma=0.25, alpha=0.25, default_adam_learning_rate=0.001, calc_mixture=False,
                  mixture_sigma=0.01, score_sample_size=10000, discriminator_skip_each_nth_step=0,
-                 enable_selection=True):
+                 enable_selection=True, fitness_sample_size=10000, calculate_net_weights_dist=False,
+                 fitness_mode='worst'):
 
         super().__init__(dataloader, network_factory, population_size, tournament_size, mutation_probability,
                          n_replacements, sigma, alpha)
 
         self.batch_number = 0
+        self.cc = ConfigurationContainer.instance()
 
         self._default_adam_learning_rate = self.settings.get('default_adam_learning_rate', default_adam_learning_rate)
         self._discriminator_skip_each_nth_step = self.settings.get('discriminator_skip_each_nth_step',
@@ -50,7 +54,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self.concurrent_populations.discriminator = self.population_dis
         self.concurrent_populations.unlock()
 
-        experiment_id = ConfigurationContainer.instance().settings['general']['logging'].get('experiment_id', None)
+        experiment_id = self.cc.settings['general']['logging'].get('experiment_id', None)
         self.db_logger = DbLogger(current_experiment=experiment_id)
 
         if 'score' in self.settings and self.settings['score'].get('enabled', calc_mixture):
@@ -61,12 +65,25 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.score_calc = None
             self.score = 0
 
+        if 'fitness' in self.settings:
+            self.fitness_sample_size = self.settings['fitness'].get('fitness_sample_size', fitness_sample_size)
+            self.fitness_loaded = self.dataloader.load()
+            self.fitness_iterator = iter(self.fitness_loaded)    # Create iterator for fitness loader
+
+            # Determine how to aggregate fitness calculated among neighbourhood
+            self.fitness_mode = self.settings['fitness'].get('fitness_mode', fitness_mode)
+            if self.fitness_mode not in ['worse', 'best', 'average']:
+                raise NotImplementedError("Invalid argument for fitness_mode: {}".format(self.fitness_mode))
+        else:
+            # TODO: Add code for safe implementation & error handling
+            raise KeyError("Fitness section must be defined in configuration file")
+
     def train(self, n_iterations, stop_event=None):
 
         loaded = self.dataloader.load()
 
         for iteration in range(n_iterations):
-            self._logger.debug('Iteration {} started'.format(iteration))
+            self._logger.debug('Iteration {} started'.format(iteration + 1))
             start_time = time()
 
             all_generators = self.neighbourhood.all_generators
@@ -74,26 +91,52 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             local_generators = self.neighbourhood.local_generators
             local_discriminators = self.neighbourhood.local_discriminators
 
+            # Log the name of individuals in entire neighborhood for every iteration
+            # (to help tracing because individuals from adjacent cells might be from different iterations)
+            self._logger.info('Generators in current neighborhood are {}'.format([
+                individual.name for individual in all_generators.individuals
+            ]))
+            self._logger.info('Discriminators in current neighborhood are {}'.format([
+                individual.name for individual in all_discriminators.individuals
+            ]))
+
+            self._logger.info('L2 distance between all generators weights: {}'.format(all_generators.net_weights_dist))
+            self._logger.info('L2 distance between all discriminators weights: {}'.format(all_discriminators.net_weights_dist))
+
             new_populations = {}
+
+            # Create random dataset to evaluate fitness in each iterations
+            fitness_samples = self.generate_random_fitness_samples(self.fitness_sample_size)
+            if self.cc.settings['dataloader']['dataset_name'] == 'celeba' \
+                or self.cc.settings['dataloader']['dataset_name'] == 'cifar':
+                fitness_samples = to_pytorch_variable(fitness_samples)
+            else:
+                fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
+
+            # Fitness evaluation
+            self._logger.debug('Evaluating fitness')
+            self.evaluate_fitness(all_generators, all_discriminators, fitness_samples, self.fitness_mode)
+            self.evaluate_fitness(all_discriminators, all_generators, fitness_samples, self.fitness_mode)
+            self._logger.debug('Finished evaluating fitness')
+
+            # Tournament selection
+            if self._enable_selection:
+                self._logger.debug('Started tournament selection')
+                new_populations[TYPE_GENERATOR] = self.tournament_selection(all_generators,
+                                                                            TYPE_GENERATOR,
+                                                                            is_logging=True)
+                new_populations[TYPE_DISCRIMINATOR] = self.tournament_selection(all_discriminators,
+                                                                                TYPE_DISCRIMINATOR,
+                                                                                is_logging=True)
+                self._logger.debug('Finished tournament selection')
 
             self.batch_number = 0
             data_iterator = iter(loaded)
             while self.batch_number < len(loaded):
+            # for i, (input_data, labels) in enumerate(loaded):
                 input_data = next(data_iterator)[0]
                 batch_size = input_data.size(0)
                 input_data = to_pytorch_variable(self.dataloader.transpose_data(input_data))
-
-                if iteration == 0 and self.batch_number == 0:
-                    self._logger.debug('Evaluating first fitness')
-                    self.evaluate_fitness(local_generators, all_discriminators, input_data)
-                    self._logger.debug('Finished evaluating first fitness')
-
-                if self.batch_number == 0 and self._enable_selection:
-                    self._logger.debug('Started tournamend selection')
-                    new_populations[TYPE_GENERATOR] = self.tournament_selection(all_generators, TYPE_GENERATOR)
-                    new_populations[TYPE_DISCRIMINATOR] = self.tournament_selection(all_discriminators,
-                                                                                    TYPE_DISCRIMINATOR)
-                    self._logger.debug('Finished tournamend selection')
 
                 # Quit if requested
                 if stop_event is not None and stop_event.is_set():
@@ -102,18 +145,16 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
                 attackers = new_populations[TYPE_GENERATOR] if self._enable_selection else local_generators
                 defenders = new_populations[TYPE_DISCRIMINATOR] if self._enable_selection else all_discriminators
-                input_data = self.step(local_generators, attackers, defenders, input_data, loaded, data_iterator,
-                                       self.neighbourhood.mixture_weights_discriminators)
+                input_data = self.step(local_generators, attackers, defenders, input_data, self.batch_number, loaded, data_iterator)
 
-                if self._discriminator_skip_each_nth_step == 0 or self.batch_number % (
-                        self._discriminator_skip_each_nth_step + 1) == 0:
+                if self._discriminator_skip_each_nth_step == 0 or self.batch_number % (self._discriminator_skip_each_nth_step + 1) == 0:
+                    self._logger.debug('Skipping discriminator step')
+
                     attackers = new_populations[TYPE_DISCRIMINATOR] if self._enable_selection else local_discriminators
                     defenders = new_populations[TYPE_GENERATOR] if self._enable_selection else all_generators
+                    input_data = self.step(local_discriminators, attackers, defenders, input_data, self.batch_number, loaded, data_iterator)
 
-                    input_data = self.step(local_discriminators, attackers, defenders, input_data, loaded,
-                                           data_iterator, self.neighbourhood.mixture_weights_generators)
-
-                self._logger.info('Batch {}/{} done'.format(self.batch_number, len(loaded)))
+                self._logger.info('Iteration {}, Batch {}/{}'.format(iteration + 1, self.batch_number, len(loaded)))
 
                 # If n_batches is set to 0, all batches will be used
                 if self.is_last_batch(self.batch_number):
@@ -121,31 +162,33 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
                 self.batch_number += 1
 
-            # Mutate mixture weights
-            weights_generators = self.neighbourhood.mixture_weights_generators
-            weights_discriminators = self.neighbourhood.mixture_weights_discriminators
-            generators = new_populations[TYPE_GENERATOR] if self._enable_selection else all_generators
-            discriminators = new_populations[TYPE_DISCRIMINATOR] if self._enable_selection else all_discriminators
-            self.mutate_mixture_weights(weights_generators, weights_discriminators, generators, discriminators,
-                                        input_data)
-            self.mutate_mixture_weights(weights_discriminators, weights_generators, discriminators, generators,
-                                        input_data)
-
+            # Perform selection first before mutation of mixture_weights
             # Replace the worst with the best new
             if self._enable_selection:
-                self.evaluate_fitness(new_populations[TYPE_GENERATOR], new_populations[TYPE_DISCRIMINATOR], input_data)
+                # Evaluate fitness of new_populations against neighborhood
+                self.evaluate_fitness(new_populations[TYPE_GENERATOR], all_discriminators, fitness_samples, self.fitness_mode)
+                self.evaluate_fitness(new_populations[TYPE_DISCRIMINATOR], all_generators, fitness_samples, self.fitness_mode)
                 self.concurrent_populations.lock()
-                local_generators.replacement(new_populations[TYPE_GENERATOR], self._n_replacements)
-                local_generators.sort_population()
-                local_discriminators.replacement(new_populations[TYPE_DISCRIMINATOR], self._n_replacements)
-                local_discriminators.sort_population()
+                local_generators.replacement(new_populations[TYPE_GENERATOR], self._n_replacements, is_logging=True)
+                local_generators.sort_population(is_logging=True)
+                local_discriminators.replacement(new_populations[TYPE_DISCRIMINATOR], self._n_replacements, is_logging=True)
+                local_discriminators.sort_population(is_logging=True)
                 self.concurrent_populations.unlock()
-            else:
-                self.evaluate_fitness(all_generators, all_discriminators, input_data)
 
-            if self.score_calc is not None:
-                self._logger.info('Calculating FID/inception score.')
-                self.calculate_score()
+                # Update individuals' iteration and id after replacement and logging to ease tracing
+                for i, individual in enumerate(local_generators.individuals):
+                    individual.id = '{}/G{}'.format(self.neighbourhood.cell_number, i)
+                    individual.iteration = iteration + 1
+                for i, individual in enumerate(local_discriminators.individuals):
+                    individual.id = '{}/D{}'.format(self.neighbourhood.cell_number, i)
+                    individual.iteration = iteration + 1
+            else:
+                # Re-evaluate fitness of local_generators and local_discriminators against neighborhood
+                self.evaluate_fitness(local_generators, all_discriminators, fitness_samples, self.fitness_mode)
+                self.evaluate_fitness(local_discriminators, all_generators, fitness_samples, self.fitness_mode)
+
+            # Mutate mixture weights after selection
+            self.mutate_mixture_weights_with_score(input_data)    # self.score is updated here
 
             stop_time = time()
 
@@ -154,7 +197,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                  lr_gen=self.concurrent_populations.generator.individuals[0].learning_rate,
                                  lr_dis=self.concurrent_populations.discriminator.individuals[0].learning_rate,
                                  score=self.score, mixture_gen=self.neighbourhood.mixture_weights_generators,
-                                 mixture_dis=self.neighbourhood.mixture_weights_discriminators)
+                                 mixture_dis=None)
 
             if self.db_logger.is_enabled:
                 self.db_logger.log_results(iteration, self.neighbourhood, self.concurrent_populations,
@@ -163,13 +206,13 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         return self.result()
 
-    def step(self, original, attacker, defender, input_data, loaded, data_iterator, defender_weights):
+    def step(self, original, attacker, defender, input_data, i, loaded, data_iterator):
         # Don't execute for remote populations - needed if generator and discriminator are on different node
-        if any(not ind.is_local for ind in original.individuals):
-            return
+#         if any(not ind.is_local for ind in original.individuals):
+#             return
 
         self.mutate_hyperparams(attacker)
-        return self.update_genomes(attacker, defender, input_data, loaded, data_iterator, defender_weights)
+        return self.update_genomes(attacker, defender, input_data, loaded, data_iterator)
 
     def is_last_batch(self, i):
         return self.dataloader.n_batches != 0 and self.dataloader.n_batches - 1 == i
@@ -187,14 +230,13 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         for i, individual in enumerate(population.individuals):
             individual.learning_rate = max(0, individual.learning_rate + deltas[i] * self._alpha)
 
-    def update_genomes(self, population_attacker, population_defender, input_var, loaded, data_iterator,
-                       defender_weights):
+    def update_genomes(self, population_attacker, population_defender, input_var, loaded, data_iterator):
+
+        # TODO Currently picking random opponent, introduce parameter for this
+        defender = random.choice(population_defender.individuals).genome
 
         for individual_attacker in population_attacker.individuals:
             attacker = individual_attacker.genome
-            weights = [self.get_weight(defender, defender_weights) for defender in population_defender.individuals]
-            weights /= np.sum(weights)
-            defender = np.random.choice(population_defender.individuals, p=weights).genome
             optimizer = torch.optim.Adam(attacker.net.parameters(),
                                          lr=individual_attacker.learning_rate,
                                          betas=(0.5, 0.999))
@@ -202,7 +244,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             # Restore previous state dict, if available
             if individual_attacker.optimizer_state is not None:
                 optimizer.load_state_dict(individual_attacker.optimizer_state)
-
             loss = attacker.compute_loss_against(defender, input_var)[0]
 
             attacker.net.zero_grad()
@@ -215,69 +256,119 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         return input_var
 
     @staticmethod
-    def evaluate_fitness(population_attacker, population_defender, input_var):
+    def evaluate_fitness(population_attacker, population_defender, input_var, fitness_mode):
+        # Single direction only: Evaluate fitness of attacker based on defender
+        # TODO: Simplify and refactor this function
+        def compare_fitness(curr_fitness, fitness, mode):
+            # The initial fitness value is -inf before evaluation started, so we
+            # directly adopt the curr_fitness when -inf is encountered
+            if mode == 'best':
+                if curr_fitness < fitness or fitness == float('-inf'):
+                    return curr_fitness
+            elif mode == 'worse':
+                if curr_fitness > fitness or fitness == float('-inf'):
+                    return curr_fitness
+            elif mode == 'average':
+                if fitness == float('-inf'):
+                    return curr_fitness
+                else:
+                    return fitness + curr_fitness
+
+            return fitness
 
         for individual_attacker in population_attacker.individuals:
+            individual_attacker.fitness = float('-inf')    # Reinitalize before evaluation started (Needed for average fitness)
             for individual_defender in population_defender.individuals:
 
-                if individual_attacker.is_local:
-                    fitness_attacker = float(individual_attacker.genome.compute_loss_against(
-                        individual_defender.genome, input_var)[0])
+                fitness_attacker = float(individual_attacker.genome.compute_loss_against(
+                    individual_defender.genome, input_var)[0])
 
-                    if fitness_attacker > individual_attacker.fitness:
-                        individual_attacker.fitness = fitness_attacker
+                individual_attacker.fitness = compare_fitness(fitness_attacker, individual_attacker.fitness, fitness_mode)
 
-                if individual_defender.is_local:
-                    fitness_defender = float(individual_defender.genome.compute_loss_against(
-                        individual_attacker.genome, input_var)[0])
+            if fitness_mode == 'average':
+                individual_attacker.fitness /= len(population_defender.individuals)
 
-                    if fitness_defender > individual_defender.fitness:
-                        individual_defender.fitness = fitness_defender
-
-    def mutate_mixture_weights(self, weights_attacker, weights_defender, population_attacker, population_defender,
-                               input_data):
-
+    def mutate_mixture_weights_with_score(self, input_data):
         # Not necessary for single-cell grids, as mixture must always be [1]
         if self.neighbourhood.grid_size == 1:
-            return
+            if self.score_calc is not None:
+                self._logger.info('Calculating FID/inception score.')
+                best_generators = self.neighbourhood.best_generators
 
-        # Mutate mixture weights
-        z = np.random.normal(loc=0, scale=self.mixture_sigma, size=len(weights_attacker))
-        transformed = np.asarray([value for _, value in weights_attacker.items()])
-        transformed += z
+                dataset = MixedGeneratorDataset(best_generators,
+                                                self.neighbourhood.mixture_weights_generators,
+                                                self.score_sample_size,
+                                                self.cc.settings['trainer']['mixture_generator_samples_mode'])
+                self.score = self.score_calc.calculate(dataset)[0]
+        else:
+            # Mutate mixture weights
+            z = np.random.normal(loc=0, scale=self.mixture_sigma, size=len(self.neighbourhood.mixture_weights_generators))
+            transformed = np.asarray([value for _, value in self.neighbourhood.mixture_weights_generators.items()])
+            transformed += z
+            # Don't allow negative values, normalize to sum of 1.0
+            transformed = np.clip(transformed, 0, None)
+            transformed /= np.sum(transformed)
 
-        new_mixture_weights = {}
-        for i, key in enumerate(weights_attacker):
-            new_mixture_weights[key] = transformed[i]
+            new_mixture_weights_generators = OrderedDict(zip(self.neighbourhood.mixture_weights_generators.keys(), transformed))
 
-        for attacker in population_attacker.individuals:
-            loss_prev = self.weights_loss(attacker, population_defender, weights_attacker, weights_defender, input_data)
-            loss_new = self.weights_loss(attacker, population_defender, new_mixture_weights, weights_defender,
-                                         input_data)
+            best_generators = self.neighbourhood.best_generators
+            dataset_before_mutation = MixedGeneratorDataset(best_generators,
+                                                            self.neighbourhood.mixture_weights_generators,
+                                                            self.score_sample_size,
+                                                            self.cc.settings['trainer']['mixture_generator_samples_mode'])
+            dataset_after_mutation = MixedGeneratorDataset(best_generators,
+                                                           new_mixture_weights_generators,
+                                                           self.score_sample_size,
+                                                           self.cc.settings['trainer']['mixture_generator_samples_mode'])
 
-            if loss_new < loss_prev:
-                weights_attacker[attacker.source] = self.get_weight(attacker, new_mixture_weights)
+            if self.score_calc is not None:
+                self._logger.info('Calculating FID/inception score.')
 
-        # Don't allow negative values, normalize to sum of 1.0
-        clipped = np.clip(list(weights_attacker.values()), 0, None)
-        clipped /= np.sum(clipped)
-        for i, key in enumerate(weights_attacker):
-            weights_attacker[key] = clipped[i]
+                score_before_mutation = self.score_calc.calculate(dataset_before_mutation)[0]
+                score_after_mutation = self.score_calc.calculate(dataset_after_mutation)[0]
 
-    def calculate_score(self):
-        best_generators = self.neighbourhood.best_generators
+                # For fid the lower the better, for inception_score, the higher the better
+                if (score_after_mutation < score_before_mutation and self.score_calc.is_reversed) \
+                     or (score_after_mutation > score_before_mutation and (not self.score_calc.is_reversed)):
+                    # Adopt the mutated mixture_weights only if the performance after mutation is better
+                    self.neighbourhood.mixture_weights_generators = new_mixture_weights_generators
+                    self.score = score_after_mutation
+                else:
+                    # Do not adopt the mutated mixture_weights here
+                    self.score = score_before_mutation
 
-        dataset = MixedGeneratorDataset(best_generators, self.neighbourhood.mixture_weights_generators,
-                                        self.score_sample_size)
-        self.score = self.score_calc.calculate(dataset)[0]
+    def generate_random_fitness_samples(self, fitness_sample_size):
+        """
+        Generate random samples for fitness evaluation according to fitness_sample_size
 
-    @staticmethod
-    def get_weight(individual, weights):
-        return [v for k, v in weights.items() if k == individual.source][0]
+        Abit of hack, use iterator of batch_size to sample data of fitness_sample_size
+        TODO Implement another iterator (and dataloader) of fitness_sample_size
+        """
+        def get_next_batch(iterator, loaded):
+            # Handle if the end of iterator is reached
+            try:
+                return next(iterator)[0], iterator
+            except StopIteration:
+                # Use a new iterator
+                iterator = iter(loaded)
+                return next(iterator)[0], iterator
 
-    @staticmethod
-    def weights_loss(attacker, population_defender, weights_attacker, weights_defender, input_data):
-        w_attacker = LipizzanerGANTrainer.get_weight(attacker, weights_attacker)
-        return sum([w_attacker * LipizzanerGANTrainer.get_weight(defender, weights_defender) *
-                    float(attacker.genome.compute_loss_against(defender.genome, input_data)[0]) for defender in
-                    population_defender.individuals])
+        sampled_data, self.fitness_iterator = get_next_batch(self.fitness_iterator, self.fitness_loaded)
+        batch_size = sampled_data.size(0)
+
+        if fitness_sample_size < batch_size:
+            return sampled_data[:fitness_sample_size]
+        else:
+            fitness_sample_size -= batch_size
+            while fitness_sample_size >= batch_size:
+                # Keep concatenate a full batch of data
+                curr_data, self.fitness_iterator = get_next_batch(self.fitness_iterator, self.fitness_loaded)
+                sampled_data =  torch.cat((sampled_data, curr_data), 0)
+                fitness_sample_size -= batch_size
+
+            if fitness_sample_size > 0:
+                # Concatenate partial batch of data
+                curr_data, self.fitness_iterator = get_next_batch(self.fitness_iterator, self.fitness_loaded)
+                sampled_data =  torch.cat((sampled_data, curr_data[:fitness_sample_size]), 0)
+
+            return sampled_data

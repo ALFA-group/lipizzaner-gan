@@ -62,7 +62,7 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
             params += torch.from_numpy(deltas[i]).float() * self._alpha
             individual.genome.parameters = params
 
-    def tournament_selection(self, population, population_type):
+    def tournament_selection(self, population, population_type, is_logging=False):
         assert 0 < self._tournament_size <= len(population.individuals), \
             "Invalid tournament size: {}".format(self._tournament_size)
 
@@ -87,6 +87,10 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
 
             # Append the best solution to the winners
             new_population.individuals.append(winner)
+
+        if is_logging:
+            new_individuals_names = [individual.name for individual in new_population.individuals]
+            self._logger.info('{} are selected from tournament selection'.format(new_individuals_names))
 
         return new_population
 

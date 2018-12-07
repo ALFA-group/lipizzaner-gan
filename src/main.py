@@ -17,7 +17,7 @@ from helpers.yaml_include_loader import YamlIncludeLoader
 from lipizzaner import Lipizzaner
 from lipizzaner_client import LipizzanerClient
 from lipizzaner_master import LipizzanerMaster, GENERATOR_PREFIX
-from training.mixture.inception_score import InceptionCalculator
+from training.mixture.score_factory import ScoreCalculatorFactory
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 
 _logger = logging.getLogger(__name__)
@@ -112,25 +112,26 @@ def initialize_settings(args):
     return cc
 
 
-def calc_inception_score(args, cc):
-    inception_cal = InceptionCalculator(cuda=True)
+def calc_score(args, cc):
+    score_calc = ScoreCalculatorFactory.create()
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
     network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
 
     generator = network_factory.create_generator()
-    generator.net.load_state_dict(torch.load(args.inception_file))
+    generator.net.load_state_dict(torch.load(args.generator_file))
     generator.net.eval()
     individual = Individual(genome=generator, fitness=0, source='local')
 
     dataset = MixedGeneratorDataset(Population(individuals=[individual], default_fitness=0),
                                     {'local': 1.0},
-                                    50000)
+                                    50000,
+                                    cc.settings['trainer']['mixture_generator_samples_mode'])
 
-    output_dir = os.path.join(cc.output_dir, 'inception_score')
+    output_dir = os.path.join(cc.output_dir, 'score')
     os.makedirs(output_dir, exist_ok=True)
     LipizzanerMaster().save_samples(dataset, output_dir, dataloader)
-    inc = inception_cal.calculate(dataset)
-    _logger.info('Generator loaded from \'{}\' yielded an inception score of {}'.format(args.inception_file, inc))
+    inc = score_calc.calculate(dataset)
+    _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.generator_file, inc))
 
 
 def generate_samples(args, cc):
@@ -152,7 +153,10 @@ def generate_samples(args, cc):
         generator.net.eval()
         population.individuals.append(Individual(genome=generator, fitness=0, source=source))
 
-    dataset = MixedGeneratorDataset(population, mixture_definition, sample_size * batch_size)
+    dataset = MixedGeneratorDataset(population,
+                                    mixture_definition,
+                                    sample_size * batch_size,
+                                    cc.settings['trainer']['mixture_generator_samples_mode'])
     os.makedirs(output_dir, exist_ok=True)
     LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
 
@@ -181,11 +185,10 @@ if __name__ == '__main__':
 
     elif args.task == 'score':
         cc = initialize_settings(args)
-        calc_inception_score(args, cc)
+        calc_score(args, cc)
 
     elif args.task == 'generate':
         cc = initialize_settings(args)
         generate_samples(args, cc)
     else:
         parser.print_help()
-

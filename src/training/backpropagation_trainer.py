@@ -78,13 +78,16 @@ class BackpropagationTrainer(NeuralNetworkTrainer):
                     'avg_step_size(g(x)) - Backprop': np.mean(step_sizes_gen),
                     'avg_step_size(d(x)) - Backprop': np.mean(step_sizes_dis)})
 
+            # Some datesets (e.g. ImageFolder) do not need shapes
+            shape = loaded.dataset.train_data.shape if hasattr(loaded.dataset, 'train_data') else None
+
             # Save real images once
             if epoch == 0:
-                self.dataloader.save_images(images, loaded.dataset.train_data.shape, 'real_images.png')
+                self.dataloader.save_images(images, shape, 'real_images.png')
 
             z = to_pytorch_variable(torch.randn(min(batch_size, 100), self.network_factory.gen_input_size))
             generated_output = generator.net(z)
-            self.dataloader.save_images(generated_output, loaded.dataset.train_data.shape, 'fake_images-%d.png' % (epoch + 1))
+            self.dataloader.save_images(generated_output, shape, 'fake_images-%d.png' % (epoch + 1))
             self._logger.info('Epoch [%d/%d], d_loss: %.4f, g_loss: %.4f'
                               % (epoch, n_iterations, d_loss.data[0], g_loss.data[0]))
 
@@ -100,3 +103,4 @@ class BackpropagationTrainer(NeuralNetworkTrainer):
             session.done()
 
         return (generator, g_loss), (discriminator, d_loss)
+

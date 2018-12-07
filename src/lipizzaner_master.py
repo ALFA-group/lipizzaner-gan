@@ -16,6 +16,7 @@ from helpers.db_logger import DbLogger
 from helpers.heartbeat import Heartbeat
 from helpers.math_helpers import is_square
 from helpers.network_helpers import get_network_devices
+from helpers.reproducible_helpers import set_random_seed
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
@@ -58,6 +59,12 @@ class LipizzanerMaster:
                              set([c['address'] for c in clients])
             self._logger.critical('Client with address {} is either busy or not accessible.'.format(non_accessible))
             self._terminate(stop_clients=False)
+
+        # It is not possible to obtain reproducible result for large grid due to nature of asynchronous training
+        # But still set seed here to minimize variance
+        set_random_seed(self.cc.settings['general']['seed'],
+                        self.cc.settings['trainer']['params']['score']['cuda'])
+        self._logger.info("Seed used in master: {}".format(self.cc.settings['general']['seed']))
 
         self.heartbeat_event = Event()
         self.heartbeat_thread = Heartbeat(self.heartbeat_event,
@@ -157,35 +164,32 @@ class LipizzanerMaster:
 
         results = node_client.gather_results(self.cc.settings['general']['distribution']['client_nodes'], 120)
 
-        for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator) in results:
-            output_dir = os.path.join(self.cc.output_dir, 'master', '{}-{}'.format(node['address'], node['port']))
-            os.makedirs(output_dir, exist_ok=True)
-
-            for generator in generator_pop.individuals:
-                source = generator.source.replace(':', '-')
-                filename = '{}{}.pkl'.format(GENERATOR_PREFIX, source)
-                torch.save(generator.genome.net.state_dict(),
-                           os.path.join(output_dir, 'generator-{}.pkl'.format(source)))
-
-                with open(os.path.join(output_dir, 'mixture.yml'), "a") as file:
-                    file.write('{}: {}\n'.format(filename, weights_generator[generator.source]))
-
-            for discriminator in discriminator_pop.individuals:
-                source = discriminator.source.replace(':', '-')
-                filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, source)
-                torch.save(discriminator.genome.net.state_dict(),
-                           os.path.join(output_dir, filename))
-
         scores = []
         for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator) in results:
             node_name = '{}:{}'.format(node['address'], node['port'])
             try:
                 output_dir = self.get_and_create_output_dir(node)
 
+                for generator in generator_pop.individuals:
+                    source = generator.source.replace(':', '-')
+                    filename = '{}{}.pkl'.format(GENERATOR_PREFIX, source)
+                    torch.save(generator.genome.net.state_dict(),
+                               os.path.join(output_dir, 'generator-{}.pkl'.format(source)))
+
+                    with open(os.path.join(output_dir, 'mixture.yml'), "a") as file:
+                        file.write('{}: {}\n'.format(filename, weights_generator[generator.source]))
+
+                for discriminator in discriminator_pop.individuals:
+                    source = discriminator.source.replace(':', '-')
+                    filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, source)
+                    torch.save(discriminator.genome.net.state_dict(),
+                               os.path.join(output_dir, filename))
+
                 # Save images
                 dataset = MixedGeneratorDataset(generator_pop,
                                                 weights_generator,
-                                                self.cc.settings['master']['score_sample_size'])
+                                                self.cc.settings['master']['score_sample_size'],
+                                                self.cc.settings['trainer']['mixture_generator_samples_mode'])
                 image_paths = self.save_samples(dataset, output_dir, dataloader)
                 self._logger.info('Saved mixture result images of client {} to target directory {}.'
                                   .format(node_name, output_dir))
@@ -251,3 +255,4 @@ class LipizzanerMaster:
                 for port in range(int(rng[0]), int(rng[1]) + 1):
                     clients.append({'address': client['address'], 'port': port})
             self.cc.settings['general']['distribution']['client_nodes'] = clients
+

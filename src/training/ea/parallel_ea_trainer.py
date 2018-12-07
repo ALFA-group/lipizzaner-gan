@@ -1,4 +1,5 @@
 from helpers.pytorch_helpers import to_pytorch_variable
+from helpers.population import TYPE_GENERATOR, TYPE_DISCRIMINATOR
 from training.ea.ea_trainer import EvolutionaryAlgorithmTrainer
 
 
@@ -18,8 +19,8 @@ class ParallelEATrainer(EvolutionaryAlgorithmTrainer):
                 if i == 0 and j == 0:
                     self.evaluate_fitness_against_population(self.population_gen, self.population_dis, input_var)
 
-                new_population_generator = self.tournament_selection(self.population_gen)
-                new_population_discriminator = self.tournament_selection(self.population_dis)
+                new_population_generator = self.tournament_selection(self.population_gen, TYPE_GENERATOR)
+                new_population_discriminator = self.tournament_selection(self.population_dis, TYPE_DISCRIMINATOR)
                 self.mutate_gaussian(new_population_generator)
                 self.mutate_gaussian(new_population_discriminator)
 

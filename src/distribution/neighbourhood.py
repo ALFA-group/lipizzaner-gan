@@ -1,4 +1,7 @@
 from math import sqrt
+from collections import OrderedDict
+
+import numpy as np
 
 from distribution.client_environment import ClientEnvironment
 from distribution.concurrent_populations import ConcurrentPopulations
@@ -7,9 +10,6 @@ from helpers.configuration_container import ConfigurationContainer
 from helpers.math_helpers import is_square
 from helpers.network_helpers import is_local_host
 from helpers.population import Population, TYPE_GENERATOR, TYPE_DISCRIMINATOR
-import numpy as np
-import math
-
 from helpers.singleton import Singleton
 
 
@@ -30,7 +30,11 @@ class Neighbourhood:
         self.all_nodes = self.neighbours + [self.local_node]
 
         self.mixture_weights_generators = self._init_mixture_weights()
-        self.mixture_weights_discriminators = self._init_mixture_weights()
+        if self.cc.settings['trainer']['name'] == 'with_disc_mixture_wgan' \
+            or self.cc.settings['trainer']['name'] == 'with_disc_mixture_gan':
+            self.mixture_weights_discriminators = self._init_mixture_weights()
+        else:
+            self.mixture_weights_discriminators = None
 
     @property
     def local_generators(self):
@@ -112,7 +116,7 @@ class Neighbourhood:
 
     def _load_cell_number(self):
         x, y = self.grid_position
-        return y * int(math.sqrt(self.grid_size)) + x
+        return y * int(sqrt(self.grid_size)) + x
 
     def _adjacent_cells(self):
         if self.grid_size == 1:
@@ -153,4 +157,8 @@ class Neighbourhood:
     def _init_mixture_weights(self):
         node_ids = [node['id'] for node in self.all_nodes]
         default_weight = 1 / len(node_ids)
-        return {n_id: default_weight for n_id in node_ids}
+        # Warning: Feature of order preservation in Dict is used in the mixture_weight
+        #          initialized here because further code involves converting it to list
+        # According to https://stackoverflow.com/a/39980548, it's still preferable/safer
+        # to use OrderedDict over Dict in Python 3.6
+        return OrderedDict({n_id: default_weight for n_id in node_ids})

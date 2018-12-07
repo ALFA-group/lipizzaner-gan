@@ -17,6 +17,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+import logging
 
 import numpy as np
 import torch
@@ -24,11 +25,15 @@ from scipy import linalg
 from torch.autograd import Variable
 from torch.nn.functional import adaptive_avg_pool2d
 
+from helpers.configuration_container import ConfigurationContainer
+from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.fid_inception import InceptionV3
 from training.mixture.score_calculator import ScoreCalculator
 
 
 class FIDCalculator(ScoreCalculator):
+
+    _logger = logging.getLogger(__name__)
 
     def __init__(self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False):
         """
@@ -39,30 +44,37 @@ class FIDCalculator(ScoreCalculator):
         :param n_samples: In the paper, min. 10k samples are suggested.
         :param verbose: Verbose logging
         """
-
+        self.cc = ConfigurationContainer.instance()
         self.imgs_original = imgs_original
         self.batch_size = batch_size
-        self.dims = dims
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
+        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+            self.dims = 10    # For MNIST the dimension of feature map is 10
+        else:
+            self.dims = dims
 
     def calculate(self, imgs, exact=True):
         """
         Calculates the Fréchet Inception Distance of two PyTorch datasets, which must have the same dimensions.
 
-        :param imgs: PyTorch dataset containing the generated images.
+        :param imgs: PyTorch dataset containing the generated images. (Could be both grey or RGB images)
         :param exact: Currently has no effect for FID.
         """
+        model = None
+        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
+            model = MNISTCnn()
+            model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+        else:    # Other RGB dataset
+            block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
+            model = InceptionV3([block_idx])
 
-        block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
-
-        model = InceptionV3([block_idx])
         if self.cuda:
             model.cuda()
-
         m1, s1 = self._compute_statistics_of_path(self.imgs_original, model)
         m2, s2 = self._compute_statistics_of_path(imgs, model)
+
         return abs(self.calculate_frechet_distance(m1, s1, m2, s2)), 0
 
     def get_activations(self, images, model):
@@ -105,13 +117,18 @@ class FIDCalculator(ScoreCalculator):
             batch = Variable(batch, volatile=True)
             if self.cuda:
                 batch = batch.cuda()
+            else:
+                # .cpu() is required to convert to torch.FloatTensor because image
+                # might be generated using CUDA and in torch.cuda.FloatTensor
+                batch = batch.cpu()
 
             pred = model(batch)[0]
 
-            # If model output is not scalar, apply global spatial average pooling.
-            # This happens if you choose a dimensionality not equal 2048.
-            if pred.shape[2] != 1 or pred.shape[3] != 1:
-                pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
+            if self.cc.settings['dataloader']['dataset_name'] != 'mnist':
+                # If model output is not scalar, apply global spatial average pooling.
+                # This happens if you choose a dimensionality not equal 2048.
+                if pred.shape[2] != 1 or pred.shape[3] != 1:
+                    pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
 
             pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
@@ -168,7 +185,11 @@ class FIDCalculator(ScoreCalculator):
         if np.iscomplexobj(covmean):
             if not np.allclose(np.diagonal(covmean).imag, 0, atol=1e-3):
                 m = np.max(np.abs(covmean.imag))
-                raise ValueError('Imaginary component {}'.format(m))
+                # raise ValueError('Imaginary component {}'.format(m))
+
+                # Temporarily ignore the error, and log it for reminder that imaginary component appears
+                self._logger.info('ValueError (but ignored): Imaginary component {}'.format(m))
+
             covmean = covmean.real
 
         tr_covmean = np.trace(covmean)
@@ -205,7 +226,12 @@ class FIDCalculator(ScoreCalculator):
         assert len(dataset) >= self.n_samples, 'Cannot draw enough samples from dataset'
 
         for i in range(self.n_samples):
-            imgs.append(dataset[i])
+            img = dataset[i]
+            if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+                # Reshape to 2D images as required by MNISTCnn class
+                img = img.view(-1, 28, 28)
+
+            imgs.append(img)
 
         return self.calculate_activation_statistics(imgs, model)
 

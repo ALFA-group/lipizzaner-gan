@@ -27,6 +27,11 @@ def noise(batch_size, data_size):
 
 
 def is_cuda_enabled():
+    cc = ConfigurationContainer.instance()
+    return is_cuda_available() and cc.settings['trainer']['params']['score']['cuda']
+
+
+def is_cuda_available():
     return torch.cuda.is_available()
 
 
@@ -49,3 +54,20 @@ def size_splits(tensor, split_sizes, dim=0):
 
     return tuple(tensor.narrow(int(dim), int(start), int(length))
                  for start, length in zip(splits, split_sizes))
+
+
+def calculate_net_weights_dist(net1, net2):
+    """Calculate the L2 distance of two set of neural network weights
+
+    Arguments:
+        net1: sequential pytorch model
+        net2: sequential pytorch model
+
+    Return:
+        l2_dist: float
+    """
+    l2_dist = 0
+    for net1_layer_weights, net2_layer_weights in zip(net1.parameters(), net2.parameters()):
+        l2_dist += torch.sum((net1_layer_weights - net2_layer_weights)**2)
+
+    return torch.sqrt(l2_dist).data.cpu().numpy()[0]

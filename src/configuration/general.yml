@@ -1,7 +1,7 @@
 logging:
   enabled: True
   log_level: INFO
-#  log_server: mongodb://user:password@address
+  log_server: # Fill in connection string with read/write access here
   image_format: jpg
   print_discriminator: False
 losswise:
@@ -11,10 +11,9 @@ output_dir: ./output
 distribution:
   auto_discover: False
   master_node:
-    address: 127.0.0.1
-    port: 4999
     exit_clients_on_disconnect: True
   client_nodes:
-    - address: 127.0.0.1
+    - address: # Fill in IP address here 
       port: 5000
-#      port: 5000-5003
+seed: 1
+num_workers: 0    # how many subprocesses to use for data loading

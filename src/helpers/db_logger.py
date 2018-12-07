@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError
 
 from helpers.configuration_container import ConfigurationContainer
-from helpers.network_helpers import local_ip_address
+from helpers.network_helpers import local_private_ip
 
 CONNECTION_TIMEOUT = 3000
 
@@ -41,7 +41,7 @@ class DbLogger:
         :return: The database ID of the new entry
         """
         name = settings['general']['distribution']['start_time']
-        master = local_ip_address()
+        master = local_private_ip()
         grid_size = len(settings['general']['distribution']['client_nodes'])
         dim = round(math.sqrt(grid_size))
 
@@ -96,6 +96,8 @@ class DbLogger:
         else:
             fake_images = None
 
+        # TODO Refactor
+        cc = ConfigurationContainer.instance()
         log_entry = {
             'experiment_id': self.current_experiment,
             'iteration': iteration,
@@ -105,13 +107,17 @@ class DbLogger:
             },
             'node_name': neighbourhood.local_node['id'],
             'mixture_weights_gen': list(neighbourhood.mixture_weights_generators.values()),
-            'mixture_weights_dis': list(neighbourhood.mixture_weights_discriminators.values()),
             'inception_score': inception_score,
             'duration_sec': duration_sec,
             'generators': [self._parse_individual(g) for g in concurrent_populations.generator.individuals],
             'discriminators': [self._parse_individual(d) for d in concurrent_populations.discriminator.individuals],
             'fake_images': fake_images
         }
+        if cc.settings['trainer']['name'] == 'with_disc_mixture_wgan' \
+            or cc.settings['trainer']['name'] == 'with_disc_mixture_gan':
+            log_entry['mixture_weights_dis'] = list(neighbourhood.mixture_weights_discriminators.values())
+        else:
+            log_entry['mixture_weights_dis'] = [0] * len(neighbourhood.mixture_weights_generators.values())
 
         if iteration == 0:
             if os.path.exists(path_real_images):

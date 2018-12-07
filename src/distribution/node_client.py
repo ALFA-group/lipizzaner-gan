@@ -164,7 +164,8 @@ class NodeClient:
                                  learning_rate=json['learning_rate'],
                                  optimizer_state=StateEncoder.decode(json['optimizer_state']),
                                  source=json['source'],
-                                 id=json['id'])
+                                 id=json['id'],
+                                 iteration=json.get('iteration', None))
 
     @staticmethod
     def _is_json_valid(json):

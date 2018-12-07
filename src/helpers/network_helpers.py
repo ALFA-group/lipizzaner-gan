@@ -1,3 +1,4 @@
+from requests import get
 import multiprocessing
 import os
 import socket
@@ -18,8 +19,16 @@ def primary_nic_info():
         return ni.ifaddresses(nic)[ni.AF_INET][0]
 
 
-def local_ip_address():
+def local_private_ip():
     return primary_nic_info()['addr']
+
+
+def local_public_ip():
+    # Some servers like AWS have both public and private IP addresses
+    try:
+        return get('https://api.ipify.org').text
+    except:
+        return None
 
 
 def local_submask():
@@ -27,7 +36,10 @@ def local_submask():
 
 
 def is_local_host(address):
-    return address == 'localhost' or address == '127.0.0.1' or address == local_ip_address()
+    # For servers like AWS, public IP is required for communciation between
+    # different instances
+    return address == 'localhost' or address == '127.0.0.1' \
+            or address == local_private_ip() or address == local_public_ip()
 
 
 def is_port_open(port):
@@ -61,7 +73,7 @@ def get_network_devices(pool_size=255):
 
     ip_list = list()
 
-    network = '{}/{}'.format(local_ip_address(), local_submask())
+    network = '{}/{}'.format(local_private_ip(), local_submask())
 
     # prepare the jobs queue
     jobs = multiprocessing.Queue()

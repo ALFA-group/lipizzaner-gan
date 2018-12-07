@@ -1,5 +1,11 @@
 # Lipizzaner
-Lipizzaner is a framework to train generative adversarial networks with gradient-based optimizers like Adam in a coevolutionary setup. It hence combines the advantages of both to achieve fast and stable results.
+Lipizzaner is a framework to train generative adversarial networks with gradient-based optimizers like Adam in a coevolutionary setup. It hence combines the advantages of both to achieve fast and stable results, as described in our papers:
+
+- Abdullah Al-Dujaili, Tom Schmiedlechner, Erik Hemberg, Una-May O'Reilly, “Towards distributed coevolutionary GANs,” AAAI 2018 Fall Symposium, 2018. 
+-The source coude of the experiments performed in this paper can be seen in the following path  `./theoretical_experiments/`
+
+- Tom Schmiedlechner, Ignavier Ng Zhi Yong, Abdullah Al-Dujaili, Erik Hemberg, Una-May O'Reilly, “Lipizzaner: A System That Scales Robust Generative Adversarial Network Training,” NeurIPS 2018 Workshop on System for Machine Learning, 2018.
+-The configuration files to run the experiments performed in this paper can be found in the following path  `./src/configuration/neurips2018/`
 
 ### Dev environment setup
 
@@ -13,6 +19,27 @@ source activate lipizzaner
 ```
 pip install -r ./src/helper_files/requirements.txt
 ```
+
+### Quick start
+
+Lipizzaner includes a quick start example to test the installation. In this experiment Lipizzaner trains a GAN by using four clients during 5 generations. The configuration files are located in `./src/configuration/quickstart/`. 
+
+It is needed to set up some configuration parameters in `general.yml` to run the quick start experiment:
+1. Set the clients IP addresses
+2. Set the Losswise API key
+
+To run the quickstart experiments the four clients should be started (e.g. by runing the above commands):
+    ```
+    python main.py train --distributed --client &
+    python main.py train --distributed --client &
+    python main.py train --distributed --client &
+    python main.py train --distributed --client &
+    ```
+
+To start the master command line parameters are:
+    ```
+    python main.py train --distributed --master -f configuration/quickstart/mnist.yml`
+    ```
 
 
 ### *Distributed* training
@@ -33,7 +60,7 @@ To run Lipizzaner in a distributed way, you have two different options:
 2. Start the client as often on each machine as you specified in `general.yml`
    - Command line parameters are `python main.py train --distributed --client`
 3. Start the master, e.g. on your local machine
-   - Command line parameters are `python main.py train --distributed --master -f configuration/circular_ea_async.yml`
+   - Command line parameters are `python main.py train --distributed --master -f configuration/lipizzaner-gan/celeba.yml`
 
 The master will then wait until the clients are finished, collect the results, and terminate itself. The clients remain running, waiting for new experiments.
 
@@ -53,18 +80,18 @@ The master will then wait until the clients are finished, collect the results, a
     docker swarm join --token <TOKEN> <MANAGER_IP_ADDRESS>:2377
     ```
     
-3. **Optional:** Login to a Docker Hub account that has access to the private tschmiedlechner/lipizzaner repository (with `docker login`) on each machine.
+3. **Optional:** Login to a Docker Hub account that has access to the private lipizzaner2018/lipizzaner repository (with `docker login`) on each machine.
 4. If you don't want to use Docker Hub, you alternatively can clone the repo and build the container on each machine. 
 
     *To manually build the container, execute:* 
     ```
-    docker build -t tschmiedlechner/lipizzaner .
+    docker build -t lipizzaner2018/lipizzaner .
     ```
 5. Run the Lipizzaner clients.
  
     *Execute on the **manager** node:* 
     ```
-    docker service create -e role=client --replicas <NR_OF_CLIENT> --network lpz-overlay --with-registry-auth --name lpz tschmiedlechner/lipizzaner:latest
+    docker service create -e role=client --replicas <NR_OF_CLIENT> --network lpz-overlay --with-registry-auth --name lpz lipizzaner2018/lipizzaner:latest
     ```
     
     Docker will automatically distribute the clients over the all nodes in your swarm. 
@@ -75,10 +102,10 @@ The master will then wait until the clients are finished, collect the results, a
 
     - *Execute on any node:* 
         ```
-        docker run -it --rm -e config_file=CONFIG_FILE -e SWARM=True -e role=master --network lpz-overlay --name lipizzaner-master tschmiedlechner/lipizzaner:lates
+        docker run -it --rm -e config_file=CONFIG_FILE -e SWARM=True -e role=master --network lpz-overlay --name lipizzaner-master lipizzaner2018/lipizzaner:lates
         ```
         
-        Set the config file path as you would for a non-docker run, e.g. `configuration/celeba_ea_async.yml`. 
+        Set the config file path as you would for a non-docker run, e.g. `configuration/lipizzaner-gan/celeba.yml`.
         Lipizzaner wil automatically detect and use all non-busy nodes in the Docker overlay network.
  
 7. When the experiment has finished, you can stop the client service (or keep it running for future experiments):
@@ -107,7 +134,7 @@ This is needed to establish communication between containers on multiple machine
     *Execute the following command multiple times on each machine, e.g. 5 times each on 5 machines for 25 Lipizzaner clients:*
     
     ```
-    docker run -d --rm -e role=client --runtime=nvidia --network lpz-overlay tschmiedlechner/lipizzaner:latest
+    docker run -d --rm -e role=client --runtime=nvidia --network lpz-overlay lipizzaner2018/lipizzaner:latest
     ```
 
 6. Run the Lipizzaner master to start the experiments. 
@@ -116,24 +143,13 @@ This is needed to establish communication between containers on multiple machine
 
     - *Execute on any node (notice that this command differs from the one in the previous section - '-e SWARM=True' was removed):* 
         ```
-        docker run -it --rm -e config_file=CONFIG_FILE -e role=master --network lpz-overlay --name lipizzaner-master tschmiedlechner/lipizzaner:lates
+        docker run -it --rm -e config_file=CONFIG_FILE -e role=master --network lpz-overlay --name lipizzaner-master lipizzaner2018/lipizzaner:lates
         ```
         
-        Set the config file path as you would for a non-docker run, e.g. `configuration/celeba_ea_async.yml`. 
+        Set the config file path as you would for a non-docker run, e.g. `configuration/lipizzaner-gan/celeba.yml`.
         Lipizzaner wil automatically detect and use all non-busy nodes in the Docker overlay network.
 
-
-### *Local* training
-To run a local instance of each supported trainer, use the predefined config files in `./configuration`, e.g.:
-
-```
-python main.py train -f configuration/gradient-free/mnist_nes_seq.yml
-python main.py train -f configuration/gradient-free/mnist_ea_alt.yml
-python main.py train -f configuration/gradient-free/circular_ea_par.yml
-```
-
 Some local implementations are parallelized, others are not (as the focus was on the distributed setup).
-
 
 ### Generating samples from a mixture
 After a distributed training session finished, the results will be gathered on the master node (saved to `<output>/<trainer>/master`).
@@ -155,5 +171,6 @@ python main.py generate --mixture-source ./output/lipizzaner_gan/master/2018-06-
 ### Further guidelines
 If you want to add your own data to Lipizzaner, refer to [this tutorial](docs/howto/add-dataloader-to-lipizzaner.md).
 For guidelines about how to compile and run the Lipizzaner dashboard, check its [README](src/lipizzaner-dashboard/README.md).
+
 
 

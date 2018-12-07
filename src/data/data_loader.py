@@ -42,7 +42,8 @@ class DataLoader(ABC):
                                download=True)
         return torch.utils.data.DataLoader(dataset=dataset,
                                            batch_size=self.batch_size if self.use_batch else len(dataset),
-                                           shuffle=self.shuffle)
+                                           shuffle=self.shuffle,
+                                           num_workers=self.cc.settings['general']['num_workers'])
 
     def transform(self):
         return transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5),

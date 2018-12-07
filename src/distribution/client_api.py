@@ -6,6 +6,7 @@ from threading import Thread, Lock, Event
 
 from flask import Flask, request, Response, jsonify
 
+from distribution.client_environment import ClientEnvironment
 from distribution.concurrent_populations import ConcurrentPopulations
 from distribution.neighbourhood import Neighbourhood
 from distribution.state_encoder import StateEncoder
@@ -181,23 +182,33 @@ class ClientAPI:
 
     @staticmethod
     def _individual_to_json(individual):
-        return {
+        json_response =  {
             'id': individual.id,
             'parameters': individual.genome.encoded_parameters,
             'learning_rate': individual.learning_rate,
             'optimizer_state': StateEncoder.encode(individual.optimizer_state)
         }
+        if individual.iteration is not None:
+            json_response['iteration'] = individual.iteration
+
+        return json_response
 
     @staticmethod
     def _gather_results():
         neighbourhood = Neighbourhood.instance()
-
-        return {
+        cc = ConfigurationContainer.instance()
+        results = {
             'generators': neighbourhood.best_generator_parameters,
             'discriminators': neighbourhood.best_discriminator_parameters,
-            'weights_generators': neighbourhood.mixture_weights_generators,
-            'weights_discriminators': neighbourhood.mixture_weights_discriminators
+            'weights_generators': neighbourhood.mixture_weights_generators
         }
+        if cc.settings['trainer']['name'] == 'with_disc_mixture_wgan' \
+            or cc.settings['trainer']['name'] == 'with_disc_mixture_gan':
+            results['weights_discriminators'] = neighbourhood.mixture_weights_discriminators
+        else:
+            results['weights_discriminators'] = 0.0
+
+        return results
 
     @classmethod
     def _set_output_dir(cls, cc):
@@ -209,5 +220,6 @@ class ClientAPI:
         os.makedirs(cc.output_dir, exist_ok=True)
 
     def listen(self, port):
+        ClientEnvironment.port = port
         ConcurrentPopulations.instance().lock()
         self.app.run(threaded=True, port=port, host="0.0.0.0")
