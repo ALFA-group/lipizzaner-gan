@@ -3,7 +3,7 @@ http://download.pytorch.org/whl/cu90/torch-0.3.1-cp36-cp36m-linux_x86_64.whl ; s
 http://download.pytorch.org/whl/torch-0.3.1-cp35-cp35m-macosx_10_6_x86_64.whl ; sys_platform == 'darwin'
 torchvision==0.2.0
 losswise==2.0
-PyYAML==3.12
+PyYAML>=4.1b
 matplotlib==2.2.2
 scipy==1.0.1
 Flask==0.12.2
