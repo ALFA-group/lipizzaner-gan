@@ -15,6 +15,9 @@ from training.ea.ea_trainer import EvolutionaryAlgorithmTrainer
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
+from data.network_data_loader import generate_random_sequences
+
+
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
     """
@@ -110,11 +113,14 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             if self.cc.settings['dataloader']['dataset_name'] == 'celeba' \
                 or self.cc.settings['dataloader']['dataset_name'] == 'cifar':
                 fitness_samples = to_pytorch_variable(fitness_samples)
+            elif self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
+                fitness_samples = to_pytorch_variable(generate_random_sequences(self.fitness_sample_size))
             else:
                 fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
 
             # Fitness evaluation
             self._logger.debug('Evaluating fitness')
+            # print(fitness_samples)
             self.evaluate_fitness(all_generators, all_discriminators, fitness_samples, self.fitness_mode)
             self.evaluate_fitness(all_discriminators, all_generators, fitness_samples, self.fitness_mode)
             self._logger.debug('Finished evaluating fitness')
@@ -134,9 +140,16 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             data_iterator = iter(loaded)
             while self.batch_number < len(loaded):
             # for i, (input_data, labels) in enumerate(loaded):
+                print("Batch Number: ", self.batch_number)
                 input_data = next(data_iterator)[0]
+                print("Input Data: ", input_data.shape)
                 batch_size = input_data.size(0)
-                input_data = to_pytorch_variable(self.dataloader.transpose_data(input_data))
+                print("Batch Size: ", batch_size)
+                if not self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
+                    input_data = to_pytorch_variable(self.dataloader.transpose_data(input_data))
+
+                print("Input Data Reshaped: ", input_data.shape)
+
 
                 # Quit if requested
                 if stop_event is not None and stop_event.is_set():
@@ -279,7 +292,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         for individual_attacker in population_attacker.individuals:
             individual_attacker.fitness = float('-inf')    # Reinitalize before evaluation started (Needed for average fitness)
             for individual_defender in population_defender.individuals:
-
+                print("Input Variable Shape: ", input_var.shape)
                 fitness_attacker = float(individual_attacker.genome.compute_loss_against(
                     individual_defender.genome, input_var)[0])
 

@@ -5,6 +5,8 @@ import socket
 import subprocess
 import netifaces as ni
 from netaddr import IPNetwork
+from contextlib import closing
+
 
 
 def primary_nic_info():
@@ -43,8 +45,24 @@ def is_local_host(address):
 
 
 def is_port_open(port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        if sock.connect_ex(("127.0.0.1", port)) == 0:
+            return False
+        else:
+            return True
+
+
+    # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # result = sock.connect_ex(('127.0.0.1',port))
+    print("Result: %i" %(result))
+    if result == 0:
+        return True
+    else:
+        return False
+
 
     try:
         s.bind(("127.0.0.1", port))
