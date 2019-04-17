@@ -65,6 +65,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.score_sample_size = self.settings['score'].get('sample_size', score_sample_size)
             self.score = float('inf') if self.score_calc.is_reversed else float('-inf')
         else:
+            self.score_sample_size = score_sample_size
             self.score_calc = None
             self.score = 0
 
@@ -141,7 +142,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             while self.batch_number < len(loaded):
             # for i, (input_data, labels) in enumerate(loaded):
                 print("Batch Number: ", self.batch_number)
-                input_data = next(data_iterator)[0]
+                input_data = to_pytorch_variable(next(data_iterator))
                 print("Input Data: ", input_data.shape)
                 batch_size = input_data.size(0)
                 print("Batch Size: ", batch_size)
@@ -225,6 +226,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 #             return
 
         self.mutate_hyperparams(attacker)
+        print("Step Input Data Shape: ", input_data.shape)
         return self.update_genomes(attacker, defender, input_data, loaded, data_iterator)
 
     def is_last_batch(self, i):
