@@ -2,7 +2,7 @@
 
 # 1st argument specifies the number of clients to create
 num_processes=$1
-sleep_time=2
+sleep_time=5
 array=()
 
 # Start the silent client processes

@@ -41,24 +41,28 @@ class LipizzanerMaster:
         if self.cc.settings['general']['distribution']['auto_discover']:
             self._logger.info('Running in auto-discover mode. Detecting clients...')
             clients = self._load_available_clients()
+            print("Done detecting clients. Clients found: %i"%(len(clients)))
             self.cc.settings['general']['distribution']['client_nodes'] = clients
             self._logger.info('Detected {} clients ({})'.format(len(clients), clients))
         else:
             # Expand port ranges to multiple client entries
             self.expand_clients()
             clients = self.cc.settings['general']['distribution']['client_nodes']
+        print("Line 50 lipizzaner_master")
         accessible_clients = self._accessible_clients(clients)
+        print("Line 52")
 
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
                                   .format(len(accessible_clients)))
             self._terminate(stop_clients=False)
 
-        if len(accessible_clients) != len(clients):
-            non_accessible = set([c['address'] for c in accessible_clients]) & \
-                             set([c['address'] for c in clients])
-            self._logger.critical('Client with address {} is either busy or not accessible.'.format(non_accessible))
-            self._terminate(stop_clients=False)
+        ### THIS WAS NOT COMMENTED BEFORE
+        # if len(accessible_clients) != len(clients):
+        #     non_accessible = set([c['address'] for c in accessible_clients]) & \
+        #                      set([c['address'] for c in clients])
+        #     self._logger.critical('Client with address {} is either busy or not accessible.'.format(non_accessible))
+        #     self._terminate(stop_clients=False)
 
         # It is not possible to obtain reproducible result for large grid due to nature of asynchronous training
         # But still set seed here to minimize variance
@@ -94,11 +98,17 @@ class LipizzanerMaster:
             address = 'http://{}:{}/status'.format(client['address'], client['port'])
             try:
                 resp = requests.get(address)
+                print(resp)
+                print(resp.json())
+                print(resp.json()['busy'])
+
                 assert resp.status_code == 200
                 assert not resp.json()['busy']
                 accessible_clients.append(client)
             except Exception:
+                print("Failed here")
                 pass
+        print(len(accessible_clients))
         return accessible_clients
 
     def _load_available_clients(self):
@@ -106,9 +116,9 @@ class LipizzanerMaster:
         possible_clients = []
         for ip in ip_addresses:
             possible_clients.append({'address': ip, 'port': 5000})
-
+        print("Got Here")
         accessible_clients = sorted(self._accessible_clients(possible_clients), key=lambda x: x['address'])
-
+        print(accessible_clients)
         # Docker swarm specific: lowest address is overlay network address, remove it
         if os.environ.get('SWARM', False) == 'True' and len(accessible_clients) != 0:
             print('Removing client 0')
@@ -229,6 +239,7 @@ class LipizzanerMaster:
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
         loaded = image_specific_loader.load()
         paths = []
+        print("DataLoader: ", dataloader)
 
         for i, data in enumerate(dataloader):
             shape = loaded.dataset.train_data.shape if hasattr(loaded.dataset, 'train_data') else None
@@ -255,4 +266,3 @@ class LipizzanerMaster:
                 for port in range(int(rng[0]), int(rng[1]) + 1):
                     clients.append({'address': client['address'], 'port': port})
             self.cc.settings['general']['distribution']['client_nodes'] = clients
-

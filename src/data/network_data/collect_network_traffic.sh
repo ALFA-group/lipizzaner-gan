@@ -1,4 +1,4 @@
 #!/bin/bash
 
 # Captures the traffic on the local machine
-sudo tcpdump -C 100 -w network_capture.pcap
+sudo tcpdump -C 1 -w small_network.pcap

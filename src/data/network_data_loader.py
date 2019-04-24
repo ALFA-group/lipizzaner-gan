@@ -37,6 +37,7 @@ class NetworkDataLoader(DataLoader):
         self.batch_size = batch_size
         self.n_batches = n_batches
         self.shuffle = shuffle
+        self.sequence_length = SEQUENCE_LENGTH
         super().__init__(NetworkDataSet, use_batch, batch_size, n_batches, shuffle)
 
     @property

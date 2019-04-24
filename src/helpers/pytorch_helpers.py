@@ -69,5 +69,5 @@ def calculate_net_weights_dist(net1, net2):
     l2_dist = 0
     for net1_layer_weights, net2_layer_weights in zip(net1.parameters(), net2.parameters()):
         l2_dist += torch.sum((net1_layer_weights - net2_layer_weights)**2)
-
+    # print(torch.sqrt(l2_dist).data.cpu().numpy())
     return torch.sqrt(l2_dist).data.cpu().numpy()[0]
