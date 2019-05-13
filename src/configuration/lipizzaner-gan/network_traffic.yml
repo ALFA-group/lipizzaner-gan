@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 20
+  n_iterations: 3
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -26,7 +26,7 @@ trainer:
 dataloader:
   dataset_name: network_traffic
   use_batch: True
-  batch_size: 40
+  batch_size: 100
   n_batches: 0
   shuffle: True
 network:
@@ -35,6 +35,6 @@ network:
 master:
   calculate_score: True
   # Same amount of data as original CIFAR contains
-  score_sample_size: 50000
+  score_sample_size: 50
   cuda: True
 general: !include ../general.yml

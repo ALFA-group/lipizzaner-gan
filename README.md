@@ -41,15 +41,6 @@ To start the master command line parameters are:
     python main.py train --distributed --master -f configuration/quickstart/mnist.yml`
     ```
 
-### Sequential Data Training
-To run lipizzaner on a sequential dataset of network traffic flows, start multiple clients with the command from the /src directory:
-
-`python main.py train --distributed --client`
-
-Then, start a master process with the following command:
-
-`python main.py train --distributed --master -f configuration/lipizzaner-gan/network_traffic.yml`
-
 
 
 ### *Distributed* training
@@ -177,6 +168,34 @@ Make sure that `<SOURCE_DIR>` points to a directory that contains both the .pkl 
 ```
 python main.py generate --mixture-source ./output/lipizzaner_gan/master/2018-06-04_10-01-50/128.30.103.19-5000 -o ./output/samples --sample-size 100 -f configuration/lipizzaner-gan/celeba.yml
 ```
+
+### Working With Sequential Data
+
+#### Creating network traffic dataset
+
+In order to create a pcap file of the network traffic from your local machine, navigate to `lipizzaner-gan/src/data/network_data` and use the following command:
+
+`sudo ./collect_network_traffic.sh`
+
+And let this run for sufficiently long to create a large enough pcap file. Note that you may need to change the name of the pcap file specified in the bash file in order to generate multiple datasets.
+
+#### Extracting netflow information
+
+Next, in order to convert this pcap into a numpy file with the desired fields, replace the `file_to_analyze` variable in the `analyze_network_file.py` script with the pcap file you're creating the dataset from, and run the following command:
+
+`sudo python3 analyze_network_file.py`
+
+This will create a `.npy` file in the same directory, with the name you specified in the `file_to_analyze` line. In order to use this numpy file in the NetworkDataLoader class, update the `flow_data` line with the directory to the generated `.npy` file.
+
+#### Training on Network Traffic Data
+
+To run lipizzaner on a sequential dataset of network traffic flows, start multiple clients with the command from the /src directory:
+
+`python main.py train --distributed --client`
+
+Then, start a master process with the following command:
+
+`python main.py train --distributed --master -f configuration/lipizzaner-gan/network_traffic.yml`
 
 ### Further guidelines
 If you want to add your own data to Lipizzaner, refer to [this tutorial](docs/howto/add-dataloader-to-lipizzaner.md).

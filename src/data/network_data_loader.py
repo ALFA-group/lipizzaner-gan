@@ -20,12 +20,12 @@ cwd = os.getcwd()
 print("CWD: ", cwd)
 
 N_RECORDS = 42
-SEQUENCE_LENGTH = 15
+SEQUENCE_LENGTH = 30
 N_VALUES_PER_RECORD = 4
 # N_MODES = 12
 
 
-flow_data = np.load("./data/network_data/small_network_data_clean.npy")
+flow_data = np.load("./data/network_data/network_capture.npy")
 
 def generate_random_sequences(num_sequences):
     sequences = []
