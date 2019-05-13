@@ -9,13 +9,23 @@ from helpers.pytorch_helpers import to_pytorch_variable
 matplotlib.use('Agg')
 import matplotlib.pylab as plt
 import numpy as np
-
+import sys
+sys.path.append('../')
+sys.path.append("./network_data")
 from data.data_loader import DataLoader
+
+
+import os
+cwd = os.getcwd()
+print("CWD: ", cwd)
 
 N_RECORDS = 42
 SEQUENCE_LENGTH = 15
 N_VALUES_PER_RECORD = 4
 # N_MODES = 12
+
+
+flow_data = np.load("./data/network_data/small_network_data_clean.npy")
 
 def generate_random_sequences(num_sequences):
     sequences = []
@@ -67,9 +77,10 @@ class NetworkDataSet(Dataset):
         # DstAddr = [random.choice([j for j in range(7)]) for i in range(N_RECORDS)]
         # packets_array = np.array((StartTime, PktSize, SrcAddr, DstAddr)).T
 
-        packets_array = generate_random_sequences(N_RECORDS)
+        # packets_array = generate_random_sequences(N_RECORDS)
         # print("Network Dataset Size: ", packets_array.shape)
-        self.data = packets_array
+        # self.data = packets_array
+        self.data = flow_data
         # print("Packets Array Size: ", self.data.shape)
 
     def __getitem__(self, index):
