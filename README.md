@@ -173,7 +173,7 @@ python main.py generate --mixture-source ./output/lipizzaner_gan/master/2018-06-
 
 #### Creating network traffic dataset
 
-In order to create a pcap file of the network traffic from your local machine, navigate to `lipizzaner-gan/src/data/network_data` and use the following command:
+In order to create a `pcap` file of the network traffic from your local machine, navigate to `lipizzaner-gan/src/data/network_data` and use the following command:
 
 `sudo ./collect_network_traffic.sh`
 
@@ -181,9 +181,9 @@ And let this run for sufficiently long to create a large enough pcap file. Note 
 
 #### Extracting netflow information
 
-Next, in order to convert this pcap into a numpy file with the desired fields, replace the `file_to_analyze` variable in the `analyze_network_file.py` script with the pcap file you're creating the dataset from, and run the following command:
+`argus` and `argus-client` is required for this step. In order to convert this `pcap` into a `numpy` file with the desired fields pass `--pcap_file` to `analyze_network_file.py` script with the pcap file you're creating the dataset from, and run the following command:
 
-`sudo python3 analyze_network_file.py`
+`sudo python3 analyze_network_file.py --pcap_file ${PCAP_FILE}`
 
 This will create a `.npy` file in the same directory, with the name you specified in the `file_to_analyze` line. In order to use this numpy file in the NetworkDataLoader class, update the `flow_data` line with the directory to the generated `.npy` file.
 

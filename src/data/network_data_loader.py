@@ -81,8 +81,11 @@ class NetworkDataSet(Dataset):
         # print("Network Dataset Size: ", packets_array.shape)
         # self.data = packets_array
         self.data = flow_data
-        # print("Packets Array Size: ", self.data.shape)
-
+        print("Packets Array Size: ", self.data.shape)
+#        for _ in range(13):
+#            self.data = np.vstack((self.data, self.data))
+#        print("Packets Array Size: ", self.data.shape)
+        
     def __getitem__(self, index):
         return self.data[index]
 
