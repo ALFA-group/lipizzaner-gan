@@ -21,4 +21,6 @@ def get_heuristic_seed(seed, ip, port):
     (Since it is desired to have different seed for different clients to ensure diversity)
     """
     # TODO Handle the case of integer overflow
-    return seed + int(ip.replace('.', '')) + 1000*port
+    seed + int(ip.replace('.', '')) + 1000*port
+    seed = seed % (2**32 - 1)
+    return seed

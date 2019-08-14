@@ -91,6 +91,7 @@ class LipizzanerMaster:
     def _accessible_clients(self, clients):
         accessible_clients = []
         for client in clients:
+            assert client['address'] is not None
             address = 'http://{}:{}/status'.format(client['address'], client['port'])
             try:
                 resp = requests.get(address)
@@ -99,6 +100,7 @@ class LipizzanerMaster:
                 accessible_clients.append(client)
             except Exception:
                 pass
+
         return accessible_clients
 
     def _load_available_clients(self):

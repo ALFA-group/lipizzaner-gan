@@ -102,7 +102,6 @@ def create_parser():
 def initialize_settings(args):
     cc = ConfigurationContainer.instance()
     cc.settings = read_settings(args.configuration_file)
-
     if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
         log_dir = os.path.join(cc.settings['general']['output_dir'], 'log')
         LogHelper.setup(cc.settings['general']['logging']['log_level'], log_dir)
