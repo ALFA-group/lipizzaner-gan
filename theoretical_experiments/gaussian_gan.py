@@ -11,7 +11,7 @@ import numpy as np
 import time
 from scipy.stats import norm
 
-from sandbox.toy_problem.opt_disc import find_optimal_discriminator
+from opt_disc import find_optimal_discriminator
 
 NEGATIVE = -1
 POSITIVE = 1
