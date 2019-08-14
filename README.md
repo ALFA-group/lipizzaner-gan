@@ -1,7 +1,7 @@
 # Lipizzaner
 Lipizzaner is a framework to train generative adversarial networks with gradient-based optimizers like Adam in a coevolutionary setup. It hence combines the advantages of both to achieve fast and stable results, as described in our papers:
 
-- Abdullah Al-Dujaili, Tom Schmiedlechner, Erik Hemberg, Una-May O'Reilly, “Towards distributed coevolutionary GANs,” AAAI 2018 Fall Symposium, 2018. 
+- Abdullah Al-Dujaili, Tom Schmiedlechner, Erik Hemberg, Una-May O'Reilly, “Towards distributed coevolutionary GANs,” AAAI 2018 Fall Symposium, 2018.
   - The source coude of the experiments performed in this paper can be seen in the following path  `./theoretical_experiments/`
 
 - Tom Schmiedlechner, Ignavier Ng Zhi Yong, Abdullah Al-Dujaili, Erik Hemberg, Una-May O'Reilly, “Lipizzaner: A System That Scales Robust Generative Adversarial Network Training,” NeurIPS 2018 Workshop on System for Machine Learning, 2018.
@@ -22,7 +22,7 @@ pip install -r ./src/helper_files/requirements.txt
 
 ### Quick start
 
-Lipizzaner includes a quick start example to test the installation. In this experiment Lipizzaner trains a GAN by using four clients during 5 generations. The configuration files are located in `./src/configuration/quickstart/`. 
+Lipizzaner includes a quick start example to test the installation. In this experiment Lipizzaner trains a GAN by using four clients during 5 generations. The configuration files are located in `./src/configuration/quickstart/`.
 
 It is needed to set up some configuration parameters in `general.yml` to run the quick start experiment:
 1. Set the clients IP addresses
@@ -48,6 +48,7 @@ To start the master command line parameters are:
 ```
 python main.py train --distributed --master -f configuration/quickstart/mnist.yml
 ```
+
 
 
 ### *Distributed* training
@@ -87,35 +88,35 @@ The master will then wait until the clients are finished, collect the results, a
     ```
     docker swarm join --token <TOKEN> <MANAGER_IP_ADDRESS>:2377
     ```
-    
-3. **Optional:** Login to a Docker Hub account that has access to the private lipizzaner2018/lipizzaner repository (with `docker login`) on each machine.
-4. If you don't want to use Docker Hub, you alternatively can clone the repo and build the container on each machine. 
 
-    *To manually build the container, execute:* 
+3. **Optional:** Login to a Docker Hub account that has access to the private lipizzaner2018/lipizzaner repository (with `docker login`) on each machine.
+4. If you don't want to use Docker Hub, you alternatively can clone the repo and build the container on each machine.
+
+    *To manually build the container, execute:*
     ```
     docker build -t lipizzaner2018/lipizzaner .
     ```
 5. Run the Lipizzaner clients.
- 
-    *Execute on the **manager** node:* 
+
+    *Execute on the **manager** node:*
     ```
     docker service create -e role=client --replicas <NR_OF_CLIENT> --network lpz-overlay --with-registry-auth --name lpz lipizzaner2018/lipizzaner:latest
     ```
-    
-    Docker will automatically distribute the clients over the all nodes in your swarm. 
-   
-6. Run the Lipizzaner master to start the experiments. 
+
+    Docker will automatically distribute the clients over the all nodes in your swarm.
+
+6. Run the Lipizzaner master to start the experiments.
 
     - **Make sure that autodiscover is set to `True` in `general.yml`, as this is required when running in docker.**
 
-    - *Execute on any node:* 
+    - *Execute on any node:*
         ```
         docker run -it --rm -e config_file=CONFIG_FILE -e SWARM=True -e role=master --network lpz-overlay --name lipizzaner-master lipizzaner2018/lipizzaner:lates
         ```
-        
+
         Set the config file path as you would for a non-docker run, e.g. `configuration/lipizzaner-gan/celeba.yml`.
         Lipizzaner wil automatically detect and use all non-busy nodes in the Docker overlay network.
- 
+
 7. When the experiment has finished, you can stop the client service (or keep it running for future experiments):
     ```
     docker service rm lpz
@@ -132,28 +133,28 @@ GPU support for Docker Swarms is currently limited:
 ##### Option 3: Docker with GPU support
 The most simple workaround for the limitations stated above (especially the first one) is to manually run the docker containers manually (not as swarm services):
 
-1. Use the command described in the first point of the section above to create a swarm and an overlay network. 
+1. Use the command described in the first point of the section above to create a swarm and an overlay network.
 This is needed to establish communication between containers on multiple machines.
 
 2. Login to Docker Hub (or manually build the image), also described above.
 
 5. Run the Lipizzaner clients.
- 
+
     *Execute the following command multiple times on each machine, e.g. 5 times each on 5 machines for 25 Lipizzaner clients:*
-    
+
     ```
     docker run -d --rm -e role=client --runtime=nvidia --network lpz-overlay lipizzaner2018/lipizzaner:latest
     ```
 
-6. Run the Lipizzaner master to start the experiments. 
+6. Run the Lipizzaner master to start the experiments.
 
     - **Again, make sure that autodiscover is set to `True` in `general.yml`, as this is required when running in docker.**
 
-    - *Execute on any node (notice that this command differs from the one in the previous section - '-e SWARM=True' was removed):* 
+    - *Execute on any node (notice that this command differs from the one in the previous section - '-e SWARM=True' was removed):*
         ```
         docker run -it --rm -e config_file=CONFIG_FILE -e role=master --network lpz-overlay --name lipizzaner-master lipizzaner2018/lipizzaner:lates
         ```
-        
+
         Set the config file path as you would for a non-docker run, e.g. `configuration/lipizzaner-gan/celeba.yml`.
         Lipizzaner wil automatically detect and use all non-busy nodes in the Docker overlay network.
 
@@ -171,14 +172,39 @@ python main.py generate --mixture-source <SOURCE_DIR> -o <TARGET_DIR> --sample-s
 
 Make sure that `<SOURCE_DIR>` points to a directory that contains both the .pkl files and the mixture.yml configuration file (created by Lipizzaner after training). Use the same `<CONFIG_FILE>` as for the training process. A concrete example could look like this:
 
- 
+
 ```
 python main.py generate --mixture-source ./output/lipizzaner_gan/master/2018-06-04_10-01-50/128.30.103.19-5000 -o ./output/samples --sample-size 100 -f configuration/lipizzaner-gan/celeba.yml
 ```
 
+### Working With Sequential Data
+
+#### Creating network traffic dataset
+
+In order to create a `pcap` file of the network traffic from your local machine, navigate to `lipizzaner-gan/src/data/network_data` and use the following command:
+
+`sudo ./collect_network_traffic.sh`
+
+And let this run for sufficiently long to create a large enough pcap file. Note that you may need to change the name of the pcap file specified in the bash file in order to generate multiple datasets.
+
+#### Extracting netflow information
+
+`argus` and `argus-client` is required for this step. In order to convert this `pcap` into a `numpy` file with the desired fields pass `--pcap_file` to `analyze_network_file.py` script with the pcap file you're creating the dataset from, and run the following command:
+
+`sudo python3 analyze_network_file.py --pcap_file ${PCAP_FILE}`
+
+This will create a `.npy` file in the same directory, with the name you specified in the `file_to_analyze` line. In order to use this numpy file in the NetworkDataLoader class, update the `flow_data` line with the directory to the generated `.npy` file.
+
+#### Training on Network Traffic Data
+
+To run lipizzaner on a sequential dataset of network traffic flows, start multiple clients with the command from the /src directory:
+
+`python main.py train --distributed --client`
+
+Then, start a master process with the following command:
+
+`python main.py train --distributed --master -f configuration/lipizzaner-gan/network_traffic.yml`
+
 ### Further guidelines
 If you want to add your own data to Lipizzaner, refer to [this tutorial](docs/howto/add-dataloader-to-lipizzaner.md).
 For guidelines about how to compile and run the Lipizzaner dashboard, check its [README](src/lipizzaner-dashboard/README.md).
-
-
-

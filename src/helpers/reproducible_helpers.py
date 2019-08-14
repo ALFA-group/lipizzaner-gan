@@ -1,8 +1,10 @@
+import sys
 import random
 
 import numpy as np
 import torch
 
+MAXINT = 2**32 - 1
 
 def set_random_seed(seed, cuda):
     random.seed(seed)
@@ -22,5 +24,5 @@ def get_heuristic_seed(seed, ip, port):
     """
     # TODO Handle the case of integer overflow
     seed + int(ip.replace('.', '')) + 1000*port
-    seed = seed % (2**32 - 1)
+    seed = seed % MAXINT
     return seed

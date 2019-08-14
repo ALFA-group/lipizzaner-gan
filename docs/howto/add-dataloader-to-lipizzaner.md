@@ -6,8 +6,8 @@ This tutorial describes that steps that are necessary to add a new data source a
        Basically, the dataset provides the data, and the DataLoader only allows to iterate over it (a concept given by PyTorch)
 2) Create your network factory, the class that creates your NN models, in `src/networks/network_factory.py` (or use a separate file; this should be split up in the future anyway).
    1) Inherit from `NetworkFactory`, `gen_input_size` is the number of input neurons of the **generator**. Generally, at least 100 input neurons should be used.
-     
-      You can basically copy this from another network factory. Just make sure you specify `self.gen_input_size` as the generator's input size, and `self.input_data_size` as the generator's output/discriminator's input size (good example: CircularProblemFactory). 
+
+      You can basically copy this from another network factory. Just make sure you specify `self.gen_input_size` as the generator's input size, and `self.input_data_size` as the generator's output/discriminator's input size (good example: CircularProblemFactory).
       **`self.input_data_size` must match the size of your data.**
 3) Create class mappings for your new classes (both network factory and data loader) in `src/helpers/configuration_container.py`. These mappings will be used to create the class instances at runtime (pick any alphanumeric mapping name you want).
 4) Create a configuration file in `src/configuration/lipizzaner-[w]gan`. You can copy a pre-existing one and just change the dataloader and network factory properties.
@@ -15,6 +15,6 @@ This tutorial describes that steps that are necessary to add a new data source a
 To run and debug the application locally, set your IP address in `src/configuration/general.yml`, select one port for a one-cell-grid (`5000`), and then run:
 
    ```
-   python main.py --distributed --client
-   python main.py --distributed --master -f configuration/lipizzaner-(w)gan/your_config.yml
+   python main.py train --distributed --client
+   python main.py train --distributed --master -f configuration/lipizzaner-(w)gan/your_config.yml
    ```

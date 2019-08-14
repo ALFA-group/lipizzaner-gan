@@ -47,6 +47,7 @@ class LipizzanerMaster:
             # Expand port ranges to multiple client entries
             self.expand_clients()
             clients = self.cc.settings['general']['distribution']['client_nodes']
+
         accessible_clients = self._accessible_clients(clients)
 
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
@@ -54,11 +55,12 @@ class LipizzanerMaster:
                                   .format(len(accessible_clients)))
             self._terminate(stop_clients=False)
 
-        if len(accessible_clients) != len(clients):
-            non_accessible = set([c['address'] for c in accessible_clients]) & \
-                             set([c['address'] for c in clients])
-            self._logger.critical('Client with address {} is either busy or not accessible.'.format(non_accessible))
-            self._terminate(stop_clients=False)
+        ### THIS WAS NOT COMMENTED BEFORE
+        # if len(accessible_clients) != len(clients):
+        #     non_accessible = set([c['address'] for c in accessible_clients]) & \
+        #                      set([c['address'] for c in clients])
+        #     self._logger.critical('Client with address {} is either busy or not accessible.'.format(non_accessible))
+        #     self._terminate(stop_clients=False)
 
         # It is not possible to obtain reproducible result for large grid due to nature of asynchronous training
         # But still set seed here to minimize variance
@@ -110,10 +112,8 @@ class LipizzanerMaster:
             possible_clients.append({'address': ip, 'port': 5000})
 
         accessible_clients = sorted(self._accessible_clients(possible_clients), key=lambda x: x['address'])
-
         # Docker swarm specific: lowest address is overlay network address, remove it
         if os.environ.get('SWARM', False) == 'True' and len(accessible_clients) != 0:
-            print('Removing client 0')
             del accessible_clients[0]
 
         return accessible_clients
@@ -257,4 +257,3 @@ class LipizzanerMaster:
                 for port in range(int(rng[0]), int(rng[1]) + 1):
                     clients.append({'address': client['address'], 'port': port})
             self.cc.settings['general']['distribution']['client_nodes'] = clients
-

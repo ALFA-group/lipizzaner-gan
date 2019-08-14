@@ -14,6 +14,7 @@ class ConfigurationContainer:
         'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
         'cifar': ('data.cifar10_data_loader', 'CIFAR10DataLoader'),
         'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
+        'network_traffic': ('data.network_data_loader', 'NetworkDataLoader'),
         'gaussian': ('data.gaussian_data_loader', 'GaussianDataLoader'),
         'circular': ('data.circular_toy_data_loader', 'CircularToyDataLoader'),
         'grid': ('data.grid_toy_data_loader', 'GridToyDataLoader'),
@@ -28,6 +29,7 @@ class ConfigurationContainer:
         'convolutional': ('networks.network_factory', 'ConvolutionalNetworkFactory'),
         'mooc_net': ('networks.mooc_net', 'MOOCFourLayerPerceptronFactory'),
         'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),
+        'rnn': ('networks.network_factory', 'RNNFactory'),
         'lipizzaner_gan': ('training.ea.lipizzaner_gan_trainer', 'LipizzanerGANTrainer'),
         'lipizzaner_wgan': ('training.ea.lipizzaner_wgan_trainer', 'LipizzanerWGANTrainer'),
     }
