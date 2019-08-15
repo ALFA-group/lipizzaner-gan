@@ -121,7 +121,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             # Fitness evaluation
             self._logger.debug('Evaluating fitness')
-            # print(fitness_samples)
             self.evaluate_fitness(all_generators, all_discriminators, fitness_samples, self.fitness_mode)
             self.evaluate_fitness(all_discriminators, all_generators, fitness_samples, self.fitness_mode)
             self._logger.debug('Finished evaluating fitness')
@@ -141,17 +140,14 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             data_iterator = iter(loaded)
             while self.batch_number < len(loaded):
             # for i, (input_data, labels) in enumerate(loaded):
-                print("Batch Number: ", self.batch_number)
-                input_data = to_pytorch_variable(next(data_iterator))
-                print("Input Data: ", input_data.shape)
-                batch_size = input_data.size(0)
-                print("Batch Size: ", batch_size)
-                if not self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
+                if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
+                    input_data = to_pytorch_variable(next(data_iterator))
+                    batch_size = input_data.size(0)
+                else:
+                    input_data = next(data_iterator)[0]
+                    batch_size = input_data.size(0)
                     input_data = to_pytorch_variable(self.dataloader.transpose_data(input_data))
-
-                print("Input Data Reshaped: ", input_data.shape)
-
-
+                    
                 # Quit if requested
                 if stop_event is not None and stop_event.is_set():
                     self._logger.warning('External stop requested.')
@@ -226,7 +222,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 #             return
 
         self.mutate_hyperparams(attacker)
-        print("Step Input Data Shape: ", input_data.shape)
+
         return self.update_genomes(attacker, defender, input_data, loaded, data_iterator)
 
     def is_last_batch(self, i):
@@ -294,7 +290,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         for individual_attacker in population_attacker.individuals:
             individual_attacker.fitness = float('-inf')    # Reinitalize before evaluation started (Needed for average fitness)
             for individual_defender in population_defender.individuals:
-                print("Input Variable Shape: ", input_var.shape)
                 fitness_attacker = float(individual_attacker.genome.compute_loss_against(
                     individual_defender.genome, input_var)[0])
 

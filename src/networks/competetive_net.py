@@ -17,7 +17,6 @@ from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_s
 class CompetetiveNet(ABC):
     def __init__(self, loss_function, net, data_size, optimize_bias=True):
         self.data_size = data_size
-        # print("Net Data Size: ", data_size)
         self.loss_function = loss_function
         self.net = net.cuda() if is_cuda_enabled() else net
         self.optimize_bias = optimize_bias
@@ -29,8 +28,8 @@ class CompetetiveNet(ABC):
             if optimize_bias:
                 self.split_positions_biases = [l.bias.numel() for l in self.net if hasattr(l, 'bias')]
         except Exception as e:
-            # self.n_weights = = np.sum([lnet.all_weights])
             print(e)
+
     @abstractmethod
     def compute_loss_against(self, opponent, input):
         """
@@ -120,16 +119,13 @@ class GeneratorNet(CompetetiveNet):
         return float('-inf')
 
     def compute_loss_against(self, opponent, input):
-        # print(input)
         batch_size = input.size(0)
-        # batch_size = input.shape[0]
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
 
         z = noise(batch_size, self.data_size)
 
         fake_images = self.net(z)
-        # print(fake_images)
         outputs = opponent.net(fake_images).view(-1)
 
         # Compute BCELoss using D(G(z))
@@ -152,9 +148,6 @@ class DiscriminatorNet(CompetetiveNet):
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
         fake_labels = to_pytorch_variable(torch.zeros(batch_size))
-
-        # print("Input Size: ", input.size())
-        # print("Net Output: ", self.net())
 
         outputs = self.net(input).view(-1)
         d_loss_real = self.loss_function(outputs, real_labels)
@@ -179,7 +172,6 @@ class GeneratorNetSequential(CompetetiveNet):
         return float('-inf')
 
     def compute_loss_against(self, opponent, input):
-        print("Generator Input Shape: ",input.shape)
         batch_size = input.size(0)
         sequence_length = input.size(1)
         num_inputs = input.size(2)
@@ -188,26 +180,17 @@ class GeneratorNetSequential(CompetetiveNet):
         # Define differently based on whether we're evaluating entire sequences as true or false, vs. individual messages.
         real_labels = to_pytorch_variable(torch.ones(batch_size))
 
-        # z = noise(batch_size, (self.data_size, sequence_length))
         z = noise(batch_size, self.data_size)
-        # print(self.data_size)
-        # print("z: ", z.shape)
 
         # Repeats the noise to match the shape
         new_z = z.unsqueeze(1).repeat(1,sequence_length,1)
-        # print(new_z.shape)
-        # print(type(new_z))
         fake_sequences = self.net(new_z)
-        # print(fake_images)
-        # outputs = opponent.net(fake_sequences)
 
         outputs_intermediate = opponent.net(fake_sequences)
-        # print("Intermediate Outputs Shape Size for compute_loss_against: ", outputs_intermediate.shape)
+
         # Compute BCELoss using D(G(z))
-        # outputs =  outputs_intermediate.view(-1)
         sm = Softmax()
         outputs = sm(outputs_intermediate[:, -1, :].contiguous().view(-1))
-        # print(outputs.shape)
 
         return self.loss_function(outputs, real_labels), fake_sequences
 
@@ -224,39 +207,29 @@ class DiscriminatorNetSequential(CompetetiveNet):
     def compute_loss_against(self, opponent, input):
         # Compute BCE_Loss using real images where BCE_Loss(x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
         # Second term of the loss is always zero since real_labels == 1
-        print("Discriminator Input Shape: ",input.shape)
+
         batch_size = input.size(0)
         sequence_length = input.size(1)
         num_inputs = input.size(2)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
         fake_labels = to_pytorch_variable(torch.zeros(batch_size))
-        # input = to_pytorch_variable(input)
 
-        # print("Input Size: ", input.size())
-        # print("Net Output: ", self.net(to_pytorch_variable(input)))
-        # print(type(input))
         outputs_intermediate = self.net(input)
-        # print("Outer Output Shape: ", outputs_intermediate.shape)
         sm = Softmax()
 
-        # print("Outputs Full Shape: ", outputs_intermediate.shape)
         outputs = sm(outputs_intermediate[:, -1, :].contiguous().view(-1))
         d_loss_real = self.loss_function(outputs, real_labels)
-
-
 
         # Compute BCELoss using fake images
         # First term of the loss is always zero since fake_labels == 0
         z = noise(batch_size, self.data_size)
         new_z = z.unsqueeze(1).repeat(1,sequence_length,1)
 
-        # print(z.shape)
         fake_images = opponent.net(new_z)
         outputs_full = self.net(fake_images)
         sm = Softmax()
 
-        # print("Outputs Full Shape: ", outputs_full.shape)
         outputs = sm(outputs_full[:, -1, :].contiguous().view(-1))
         d_loss_fake = self.loss_function(outputs, fake_labels)
 

@@ -112,6 +112,8 @@ def initialize_settings(args):
         losswise.set_api_key(cc.settings['general']['losswise']['api_key'])
     print("done initializing settings")
     return cc
+
+
 def calc_score(args, cc):
     print("calculating scores")
 
@@ -134,6 +136,8 @@ def calc_score(args, cc):
     LipizzanerMaster().save_samples(dataset, output_dir, dataloader)
     inc = score_calc.calculate(dataset)
     _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.generator_file, inc))
+
+
 def generate_samples(args, cc):
     print("generating samples")
     batch_size = 100
@@ -170,16 +174,15 @@ initialize_settings(args)
 
 
 sequences = ndl.generate_random_sequences(100)
+
+
 def fake_loss(*args):
     return 0
 
 rnn_factory = nf.RNNFactory(4, loss_function=fake_loss)
-# perceptron = nf.FourLayerPerceptronFactory(4, loss_function=fake_loss)
 
 generator = rnn_factory.create_generator()
-# print(generator.net)
 discriminator = rnn_factory.create_discriminator()
-# print(discriminator.net)
 
 dataloader = ndl.NetworkDataLoader()
 
@@ -188,16 +191,5 @@ good_sequences = torch.from_numpy(sequences)
 data = dataloader.load()
 
 for batch in data:
-    # print(generator.net(batch))
-    # x = generator.compute_loss_against(discriminator, batch)
-    # print(x[1].shape)
-
     y = discriminator.compute_loss_against(generator, batch)
-    sys.exit()
-
-    print(len(x))
-    print((x[0]))
-    print(x[1].shape)
-
-
     sys.exit()

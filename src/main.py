@@ -29,7 +29,6 @@ def read_settings(config_filepath):
 
 
 def create_parser():
-    print("creating parser")
     def add_config_file(grp, is_required):
         grp.add_argument(
             '--configuration-file',
@@ -101,7 +100,6 @@ def create_parser():
 
 
 def initialize_settings(args):
-    print("initializing settings")
     cc = ConfigurationContainer.instance()
     cc.settings = read_settings(args.configuration_file)
     if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
@@ -109,13 +107,11 @@ def initialize_settings(args):
         LogHelper.setup(cc.settings['general']['logging']['log_level'], log_dir)
     if cc.is_losswise_enabled:
         losswise.set_api_key(cc.settings['general']['losswise']['api_key'])
-    print("done initializing settings")
+
     return cc
 
 
 def calc_score(args, cc):
-    print("calculating scores")
-
     score_calc = ScoreCalculatorFactory.create()
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
     network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
@@ -138,7 +134,6 @@ def calc_score(args, cc):
 
 
 def generate_samples(args, cc):
-    print("generating samples")
     batch_size = 100
 
     mixture_source = args.mixture_source

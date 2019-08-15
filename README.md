@@ -49,7 +49,9 @@ To start the master command line parameters are:
 python main.py train --distributed --master -f configuration/quickstart/mnist.yml
 ```
 
+### Notes
 
+- The clients need to be restarted between non-sequential and sequential GAN training.
 
 ### *Distributed* training
 Lipizzaner currently supports two types of training: distributed (in a master/client setup, with `AsynchronousEATrainer`) and local (with all other `*Trainer` classes).

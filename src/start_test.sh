@@ -23,20 +23,3 @@ read -p "Press Enter to Quit. "
 for i in "${array[@]}"; do
   kill -9 $i
 done
-
-
-
-# python main.py train --distributed --client > /dev/null 2>&1 &
-# P1=$!
-# sleep 1 ; python main.py train --distributed --client > /dev/null 2>&1 &
-# P2=$!
-# sleep 2 ; python main.py train --distributed --client > /dev/null 2>&1 &
-# P3=$!
-# sleep 3 ; python main.py train --distributed --client &
-# P4=$!
-#
-# read -p "Press enter to continue"
-# kill -9 $P1
-# kill -9 $P2
-# kill -9 $P3
-# kill -9 $P4

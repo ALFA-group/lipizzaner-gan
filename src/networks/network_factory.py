@@ -23,7 +23,7 @@ class NetworkFactory(ABC):
             self.loss_function = cc.create_instance(cc.settings['network']['loss'])
         else:
             self.loss_function = loss_function
-        # print("Input Data Size:", input_data_size)
+
         self.input_data_size = input_data_size
 
     @abstractmethod
@@ -61,7 +61,6 @@ class RNNFactory(NetworkFactory):
     def create_generator(self, parameters=None, encoded_parameters=None):
         net = GeneratorNetSequential(
             self.loss_function,
-            # RNN(self.gen_input_size, self.gen_input_size * 2, 2),
             SimpleRNN(self.gen_input_size, self.input_data_size, self.gen_input_size),
             self.gen_input_size
         )
@@ -76,7 +75,6 @@ class RNNFactory(NetworkFactory):
     def create_discriminator(self, parameters=None, encoded_parameters=None):
         net = DiscriminatorNetSequential(
             self.loss_function,
-            # RNN(self.input_data_size, self.gen_input_size * 2, 2),
             SimpleRNN(self.input_data_size, 1, self.gen_input_size),
             self.gen_input_size
         )
@@ -157,8 +155,6 @@ class FourLayerPerceptronFactory(NetworkFactory):
         return net
 
     def create_discriminator(self, parameters=None, encoded_parameters=None):
-        # print("Gen Input Size: ", self.gen_input_size)
-        # print("Input Data Size: ", self.input_data_size)
 
         net = DiscriminatorNet(
             self.loss_function,
@@ -252,10 +248,6 @@ class ConvolutionalNetworkFactory(NetworkFactory):
             m.bias.data.zero_()
 
 
-
-
-
-
 class SimpleRNN(nn.Module):
     def __init__(self, input_size, output_size, hidden_size):
         super(SimpleRNN, self).__init__()
@@ -267,22 +259,6 @@ class SimpleRNN(nn.Module):
         self.rnn = nn.LSTM(hidden_size, hidden_size, 2, dropout=0.05)
         self.out = nn.Linear(hidden_size, output_size)
 
-    # def step(self, input, hidden=None):
-    #     # print("Input: ", input)
-    #     print("Hidden: ", hidden)
-    #     print("Input Size: ", input.shape)
-    #     print("View of Input: ", input.view(1,  -1))
-    #     # print("Inputted View of Input: ", self.inp(input.view(1, -1)))
-    #     input = self.inp(input.view(1, -1)).unsqueeze(1)
-    #     print("Check")
-    #     print("Input Size Updated: ", input.shape)
-    #     output, hidden = self.rnn(input, hidden)
-    #     print("Hidden Size: ", self.hidden_size)
-    #     output = self.out(output.squeeze(1))
-    #     print("Check 3")
-    #     print("Output Size: ", output.shape)
-    #     return output, hidden
-
     def forward(self, inputs, hidden=None):
         """
         inputs: (batches, sequence_number, rnn_inputs)
@@ -292,19 +268,14 @@ class SimpleRNN(nn.Module):
         samples = inputs.size(0)
         steps = inputs.size(1)
         outputs = Variable(torch.zeros(samples, steps, self.output_size))
-        print("Outputs Shape: ", outputs.shape)
+
         hidden = None
         for step in range(steps):
             # Get only one step of the function
             input = inputs[:,step,:].unsqueeze(1)
 
             # Go through inp layer
-            # print(self.inp)
-            # print(self.inp)
-            # print(input.shape)
-            # print(type(input))
             intermediate = self.inp(input.float())
-
 
             # Go through RNN layer
             rnn_out, hidden = self.rnn(intermediate, hidden)

@@ -1,4 +1,5 @@
 import random
+import sys
 
 import torch
 from torch.utils.data import Dataset
@@ -9,20 +10,14 @@ from helpers.pytorch_helpers import to_pytorch_variable
 matplotlib.use('Agg')
 import matplotlib.pylab as plt
 import numpy as np
-import sys
 sys.path.append('../')
 sys.path.append("./network_data")
 from data.data_loader import DataLoader
 
 
-import os
-cwd = os.getcwd()
-print("CWD: ", cwd)
-
 N_RECORDS = 42
 SEQUENCE_LENGTH = 30
 N_VALUES_PER_RECORD = 4
-# N_MODES = 12
 
 
 flow_data = np.load("./data/network_data/network_capture.npy")
@@ -61,30 +56,12 @@ class NetworkDataLoader(DataLoader):
     def save_images(self, images, shape, filename):
         self.dataset().save_images(images, filename)
 
-    # def transpose_data(self, data):
-    #     pass
-
 
 class NetworkDataSet(Dataset):
 
     def __init__(self, **kwargs):
-        # xs, ys = self.points()
-        # points_array = np.array((xs, ys), dtype=np.float).T
-        # self.data = torch.from_numpy(points_array[np.random.choice(points_array.shape[0], N_RECORDS), :]).float()
-        # StartTime = [i for i in range(N_RECORDS)]
-        # PktSize = [random.choice([j for j in range(400)]) for i in range(N_RECORDS)]
-        # SrcAddr = [random.choice([j for j in range(7)]) for i in range(N_RECORDS)]
-        # DstAddr = [random.choice([j for j in range(7)]) for i in range(N_RECORDS)]
-        # packets_array = np.array((StartTime, PktSize, SrcAddr, DstAddr)).T
-
-        # packets_array = generate_random_sequences(N_RECORDS)
-        # print("Network Dataset Size: ", packets_array.shape)
-        # self.data = packets_array
         self.data = flow_data
         print("Packets Array Size: ", self.data.shape)
-#        for _ in range(13):
-#            self.data = np.vstack((self.data, self.data))
-#        print("Packets Array Size: ", self.data.shape)
         
     def __getitem__(self, index):
         return self.data[index]
