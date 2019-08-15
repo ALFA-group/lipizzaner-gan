@@ -6,6 +6,9 @@ import torch
 
 MAXINT = 2**32 - 1
 
+MAXINT = 2**32 - 1
+
+
 def set_random_seed(seed, cuda):
     random.seed(seed)
     np.random.seed(seed)
