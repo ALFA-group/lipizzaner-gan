@@ -5,68 +5,61 @@ from datetime import datetime
 import numpy as np
 
 
-def main(file_to_analyze):
+def main(file_to_analyze, sequence_length):
     # Defining and creating new files to be created
-    pcap_file = file_to_analyze + ".pcap"
-    argus_file = file_to_analyze + ".argus"
-    tmp_file = file_to_analyze + ".txt"
+    basename = os.path.splitext(file_to_analyze)[0]
+    pcap_file = "{}.pcap".format(basename)
+    argus_file = "{}.argus".format(basename)
+    tmp_file = "{}.txt".format(basename)
 
     # Remove previous versions of these files
-    remove_old_argus_file = "rm %s"%(argus_file)
-    remove_old_tmp_file = "rm %s"%(tmp_file)
-    os.system(remove_old_argus_file)
-    os.system(remove_old_tmp_file)
-    # os.system("touch %s; chmod 777 %s"%(tmp_file,tmp_file))
-
+    if os.path.exists(argus_file):
+        os.remove(argus_file)
+    if os.path.exists(tmp_file):
+        os.remove(tmp_file)
 
     # Convert to argus and get the required fields
-    convert_to_argus_command = "argus -r %s -w %s"%(pcap_file, argus_file)
-    read_argus_command = "racluster -r %s -M rmon dsrs=\"-agr\" -m smac saddr -s stime dur:20 pkts bytes trans > %s"%(argus_file, tmp_file)
+    convert_to_argus_command = "argus -r {} -w {}".format(pcap_file, argus_file)
+    read_argus_command = "racluster -r {} -M rmon dsrs=\"-agr\" -m smac saddr -s stime dur:20 pkts bytes trans > {}".format(argus_file, tmp_file)
     os.system(convert_to_argus_command)
     os.system(read_argus_command)
 
 
-    f = open(tmp_file, 'r')
-    first_line = f.readline()
+    with open(tmp_file, 'r') as f:
+        first_line = f.readline()
+        first = True
+        data = []
+        sequence_data = []
+        sequence_num = 0
 
-    first = True
-    data = []
+        # Read the data and create the dataset
+        for line in f.readlines():
+            split_line = line.strip().split()
+            length = len(split_line)
+            start_time = split_line[0]
+            start_time_datetime = datetime.strptime(start_time, "%H:%M:%S.%f")
+            if first:
+                last_time = start_time_datetime
+                first = False
+                continue
 
-    # TODO: Get this as an argument in the future
-    SEQUENCE_LENGTH = 30
-
-    sequence_data = []
-    sequence_num = 0
-
-    # Read the data and create the dataset
-    for line in f.readlines():
-        split_line = line.strip().split()
-        length = len(split_line)
-        start_time = split_line[0]
-        start_time_datetime = datetime.strptime(start_time, "%H:%M:%S.%f")
-        if first:
+            elapsed_time = (last_time - start_time_datetime).total_seconds()
             last_time = start_time_datetime
-            first = False
-            continue
 
-        elapsed_time = (last_time - start_time_datetime).total_seconds()
-        last_time = start_time_datetime
+            flow_duration = float(split_line[1])
+            num_packets = int(split_line[2])
+            num_bytes = int(split_line[3])
 
-        flow_duration = float(split_line[1])
-        num_packets = int(split_line[2])
-        num_bytes = int(split_line[3])
-
-        new_line = [elapsed_time, flow_duration, num_packets, num_bytes]
-        sequence_data.append(new_line)
-        sequence_num += 1
-        if sequence_num >= SEQUENCE_LENGTH:
-            data.append(sequence_data)
-            sequence_data = []
-            sequence_num = 0
-
+            new_line = [elapsed_time, flow_duration, num_packets, num_bytes]
+            sequence_data.append(new_line)
+            sequence_num += 1
+            if sequence_num >= sequence_length:
+                data.append(sequence_data)
+                sequence_data = []
+                sequence_num = 0
 
     data = np.array(data)
-    np.save(file_to_analyze + ".npy", data)
+    np.save("{}.npy".format(basename), data)
 
 
 if __name__ == '__main__':
@@ -74,6 +67,11 @@ if __name__ == '__main__':
     parser.add_argument('--pcap_file',
                         type=str,
                         required=True,
-                        help='Name of pcap file to extract the netflow data from; do not include the .pcap at the end.')
+                        help='Name of pcap file to extract the netflow data from.')
+    parser.add_argument('--sequence_length',
+                        type=int,
+                        required=True,
+                        default=30,
+                        help='Length of a sequence.')
     args = parser.parse_args()
-    main(args.pcap_file)
+    main(args.pcap_file, args.sequence_length)
