@@ -1,0 +1,22 @@
+#!/bin/bash
+# Begin BSUB Options
+#BSUB -P csc292
+#BSUB -W 01:00
+#BSUB -nnodes 1
+#BSUB -alloc_flags "gpumps"
+#BSUB -J ganwork
+#BSUB -o ganwork.%J
+#BSUB -e ganwork.%J
+
+
+cd $PROJWORK/csc292/ganwork/lipizzaner-gan
+source bashsetup.sh
+source deactivate
+source activate /autofs/nccs-svm1_proj/csc292/xsy/summit/pytorch-env
+
+RUNID=ganrun_000
+
+
+jsrun -n 1 -g 6 -c 42 -r 1 -a 1  bash gan-script.sh
+#jsrun -n 12 -a 1 -c 7 -g 1 -r 6 -l CPU-CPU -d packed -b packed:7 which python
+
