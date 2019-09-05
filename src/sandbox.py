@@ -1,3 +1,8 @@
+from data import network_data_loader as ndl
+from networks import network_factory as nf
+from helpers.configuration_container import ConfigurationContainer
+
+import torch
 import argparse
 import logging
 import os
@@ -22,13 +27,11 @@ from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 
 _logger = logging.getLogger(__name__)
 
-
 def read_settings(config_filepath):
     with open(config_filepath, 'r') as config_file:
         return yaml.load(config_file, YamlIncludeLoader)
-
-
 def create_parser():
+    print("creating parser")
     def add_config_file(grp, is_required):
         grp.add_argument(
             '--configuration-file',
@@ -97,21 +100,23 @@ def create_parser():
     add_config_file(group_score, True)
 
     return parser
-
-
 def initialize_settings(args):
+    print("initializing settings")
     cc = ConfigurationContainer.instance()
     cc.settings = read_settings(args.configuration_file)
+
     if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
         log_dir = os.path.join(cc.settings['general']['output_dir'], 'log')
         LogHelper.setup(cc.settings['general']['logging']['log_level'], log_dir)
     if cc.is_losswise_enabled:
         losswise.set_api_key(cc.settings['general']['losswise']['api_key'])
-
+    print("done initializing settings")
     return cc
 
 
 def calc_score(args, cc):
+    print("calculating scores")
+
     score_calc = ScoreCalculatorFactory.create()
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
     network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
@@ -134,6 +139,7 @@ def calc_score(args, cc):
 
 
 def generate_samples(args, cc):
+    print("generating samples")
     batch_size = 100
 
     mixture_source = args.mixture_source
@@ -160,34 +166,30 @@ def generate_samples(args, cc):
     LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
 
 
-if __name__ == '__main__':
-    os.environ['TORCH_MODEL_ZOO'] = os.path.join(os.getcwd(), 'output/.models')
+os.environ['TORCH_MODEL_ZOO'] = os.path.join(os.getcwd(), 'output/.models')
 
-    parser = create_parser()
-    args = parser.parse_args(args=sys.argv[1:])
+parser = create_parser()
+args = parser.parse_args(args=sys.argv[1:])
+initialize_settings(args)
 
-    if 'cuda_device' in args and args.cuda_device:
-        print('Enforcing usage of CUDA device {}'.format(args.cuda_device))
-        os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda_device)
 
-    if args.task == 'train':
-        if args.distributed:
-            if args.master:
-                initialize_settings(args)
-                LipizzanerMaster().run()
-            elif args.client:
-                LipizzanerClient().run()
-        else:
-            cc = initialize_settings(args)
-            lipizzaner = Lipizzaner()
-            lipizzaner.run(cc.settings['trainer']['n_iterations'])
+sequences = ndl.generate_random_sequences(100)
 
-    elif args.task == 'score':
-        cc = initialize_settings(args)
-        calc_score(args, cc)
 
-    elif args.task == 'generate':
-        cc = initialize_settings(args)
-        generate_samples(args, cc)
-    else:
-        parser.print_help()
+def fake_loss(*args):
+    return 0
+
+rnn_factory = nf.RNNFactory(4, loss_function=fake_loss)
+
+generator = rnn_factory.create_generator()
+discriminator = rnn_factory.create_discriminator()
+
+dataloader = ndl.NetworkDataLoader()
+
+good_sequences = torch.from_numpy(sequences)
+
+data = dataloader.load()
+
+for batch in data:
+    y = discriminator.compute_loss_against(generator, batch)
+    sys.exit()

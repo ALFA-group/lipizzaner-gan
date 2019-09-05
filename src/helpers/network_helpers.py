@@ -5,6 +5,8 @@ import socket
 import subprocess
 import netifaces as ni
 from netaddr import IPNetwork
+from contextlib import closing
+
 
 
 def primary_nic_info():
@@ -43,16 +45,15 @@ def is_local_host(address):
 
 
 def is_port_open(port):
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # TODO Testing connection, why not test bind as original?
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as sock:
+        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            sock.bind(("127.0.0.1", port))
+        except socket.error:
+            return False
 
-    try:
-        s.bind(("127.0.0.1", port))
-    except socket.error:
-        return False
-
-    s.close()
-    return True
+        return True
 
 
 def get_network_devices(pool_size=255):

@@ -74,7 +74,7 @@ class ClientAPI:
             response = Response()
 
         ClientAPI._lock.release()
-            
+
         return response
 
     @staticmethod
@@ -182,7 +182,7 @@ class ClientAPI:
 
     @staticmethod
     def _individual_to_json(individual):
-        json_response =  {
+        json_response = {
             'id': individual.id,
             'parameters': individual.genome.encoded_parameters,
             'learning_rate': individual.learning_rate,

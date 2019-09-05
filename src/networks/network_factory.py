@@ -1,10 +1,13 @@
 from abc import ABC, abstractmethod
 
+import torch
 from torch import nn
 from torch.nn import Sequential
+from torch.nn import RNN
+from torch.autograd import Variable
 
 from helpers.configuration_container import ConfigurationContainer
-from networks.competetive_net import DiscriminatorNet, GeneratorNet
+from networks.competetive_net import DiscriminatorNet, GeneratorNet, GeneratorNetSequential, DiscriminatorNetSequential
 
 
 class NetworkFactory(ABC):
@@ -20,6 +23,7 @@ class NetworkFactory(ABC):
             self.loss_function = cc.create_instance(cc.settings['network']['loss'])
         else:
             self.loss_function = loss_function
+
         self.input_data_size = input_data_size
 
     @abstractmethod
@@ -49,6 +53,38 @@ class NetworkFactory(ABC):
     def gen_input_size(self):
         pass
 
+class RNNFactory(NetworkFactory):
+    @property
+    def gen_input_size(self):
+        return 10
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+        net = GeneratorNetSequential(
+            self.loss_function,
+            SimpleRNN(self.gen_input_size, self.input_data_size, self.gen_input_size),
+            self.gen_input_size
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+        net = DiscriminatorNetSequential(
+            self.loss_function,
+            SimpleRNN(self.input_data_size, 1, self.gen_input_size),
+            self.gen_input_size
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
 
 class CircularProblemFactory(NetworkFactory):
 
@@ -83,7 +119,8 @@ class CircularProblemFactory(NetworkFactory):
                 nn.Linear(128, 128),
                 nn.Tanh(),
                 nn.Linear(128, 1),
-                nn.Sigmoid()), self.gen_input_size)
+                nn.Sigmoid()),
+            self.gen_input_size)
 
         if parameters is not None:
             net.parameters = parameters
@@ -118,6 +155,7 @@ class FourLayerPerceptronFactory(NetworkFactory):
         return net
 
     def create_discriminator(self, parameters=None, encoded_parameters=None):
+
         net = DiscriminatorNet(
             self.loss_function,
             Sequential(
@@ -208,3 +246,44 @@ class ConvolutionalNetworkFactory(NetworkFactory):
         if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
             m.weight.data.normal_(0, 0.02)
             m.bias.data.zero_()
+
+
+class SimpleRNN(nn.Module):
+    def __init__(self, input_size, output_size, hidden_size):
+        super(SimpleRNN, self).__init__()
+        self.input_size = input_size
+        self.output_size = output_size
+        self.hidden_size = hidden_size
+
+        self.inp = nn.Linear(input_size, hidden_size)
+        self.rnn = nn.LSTM(hidden_size, hidden_size, 2, dropout=0.05)
+        self.out = nn.Linear(hidden_size, output_size)
+
+    def forward(self, inputs, hidden=None):
+        """
+        inputs: (batches, sequence_number, rnn_inputs)
+
+        returns outputs of shape (batches, sequence_number, output_size)
+        """
+        samples = inputs.size(0)
+        steps = inputs.size(1)
+        outputs = Variable(torch.zeros(samples, steps, self.output_size))
+
+        hidden = None
+        for step in range(steps):
+            # Get only one step of the function
+            input = inputs[:,step,:].unsqueeze(1)
+
+            # Go through inp layer
+            intermediate = self.inp(input.float())
+
+            # Go through RNN layer
+            rnn_out, hidden = self.rnn(intermediate, hidden)
+
+            # Go through out layer
+            output = self.out(rnn_out)
+
+            # Set the value of outputs to the correct value
+            outputs[:, step, :] = output
+
+        return outputs

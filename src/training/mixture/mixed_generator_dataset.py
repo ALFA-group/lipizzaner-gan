@@ -45,6 +45,13 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
 
         self.z = noise(n_samples, self.individuals[0].genome.data_size)
 
+        #HACK: If it's a sequential model, add another dimension to the noise input
+        # Also we're currently just using a fixed sequence length for sequence generation; make this
+        # able to be specified by the user.
+        if self.individuals[0].genome.name in ["DiscriminatorSequential", "GeneratorSequential"]:
+            sequence_length = 100
+            self.z = self.z.unsqueeze(1).repeat(1,sequence_length,1)
+
     def __len__(self):
         return self.n_samples
 

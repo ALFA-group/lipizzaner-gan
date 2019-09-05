@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 5
+  n_iterations: 3
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -16,24 +16,25 @@ trainer:
     mixture_sigma: 0.01
     enable_selection: True
     score:
-      enabled: True
+      enabled: False
       type: fid
-      score_sample_size: 1000
-      cuda: False
+      score_sample_size: 50
+      cuda: True
     fitness:
-      fitness_sample_size: 1000
+      fitness_sample_size: 50
       fitness_mode: average    # worse, best, average
 dataloader:
-  dataset_name: mnist
+  dataset_name: network_traffic
   use_batch: True
-  batch_size: 400
+  batch_size: 100
   n_batches: 0
   shuffle: True
 network:
-  name: four_layer_perceptron
+  name: rnn
   loss: bceloss
 master:
-  calculate_score: True
-  score_sample_size: 50000
+  calculate_score: False
+  # Same amount of data as original CIFAR contains
+  score_sample_size: 50
   cuda: False
-general: !include general.yml
+general: !include ../general.yml

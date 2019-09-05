@@ -15,6 +15,9 @@ from training.ea.ea_trainer import EvolutionaryAlgorithmTrainer
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
+from data.network_data_loader import generate_random_sequences
+
+
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
     """
@@ -62,6 +65,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.score_sample_size = self.settings['score'].get('sample_size', score_sample_size)
             self.score = float('inf') if self.score_calc.is_reversed else float('-inf')
         else:
+            self.score_sample_size = score_sample_size
             self.score_calc = None
             self.score = 0
 
@@ -110,6 +114,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             if self.cc.settings['dataloader']['dataset_name'] == 'celeba' \
                 or self.cc.settings['dataloader']['dataset_name'] == 'cifar':
                 fitness_samples = to_pytorch_variable(fitness_samples)
+            elif self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
+                fitness_samples = to_pytorch_variable(generate_random_sequences(self.fitness_sample_size))
             else:
                 fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
 
@@ -134,10 +140,14 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             data_iterator = iter(loaded)
             while self.batch_number < len(loaded):
             # for i, (input_data, labels) in enumerate(loaded):
-                input_data = next(data_iterator)[0]
-                batch_size = input_data.size(0)
-                input_data = to_pytorch_variable(self.dataloader.transpose_data(input_data))
-
+                if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
+                    input_data = to_pytorch_variable(next(data_iterator))
+                    batch_size = input_data.size(0)
+                else:
+                    input_data = next(data_iterator)[0]
+                    batch_size = input_data.size(0)
+                    input_data = to_pytorch_variable(self.dataloader.transpose_data(input_data))
+                    
                 # Quit if requested
                 if stop_event is not None and stop_event.is_set():
                     self._logger.warning('External stop requested.')
@@ -212,6 +222,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 #             return
 
         self.mutate_hyperparams(attacker)
+
         return self.update_genomes(attacker, defender, input_data, loaded, data_iterator)
 
     def is_last_batch(self, i):
@@ -279,7 +290,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         for individual_attacker in population_attacker.individuals:
             individual_attacker.fitness = float('-inf')    # Reinitalize before evaluation started (Needed for average fitness)
             for individual_defender in population_defender.individuals:
-
                 fitness_attacker = float(individual_attacker.genome.compute_loss_against(
                     individual_defender.genome, input_var)[0])
 

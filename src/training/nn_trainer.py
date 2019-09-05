@@ -59,6 +59,10 @@ class NeuralNetworkTrainer(ABC):
                 loader.dataset.save_images(input_var, path_real)
 
             z = noise(batch_size, self.network_factory.gen_input_size)
+            if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
+                sequence_length = input_var.size(1)
+                z = z.unsqueeze(1).repeat(1,sequence_length,1)
+
             if self.cc.settings['general']['logging'].get('print_multiple_generators', False):
                 generated_output = []
                 for i in range(min(len(self.population_gen.individuals), 5)):
