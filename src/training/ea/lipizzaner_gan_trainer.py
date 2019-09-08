@@ -138,7 +138,22 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             self.batch_number = 0
             data_iterator = iter(loaded)
-            while self.batch_number < len(loaded):
+
+
+            # Code to include data partition
+            PARTITION_SIZE = int(len(loaded)/4)
+            i = 0
+
+            for i in range(PARTITION_SIZE*self.neighbourhood.cell_number):
+                input_data = next(data_iterator)[0]
+
+            print("AAAAAAAAAAAAAAAAAAAAAAAA")
+            print(self.neighbourhood.cell_number)
+            print(i)
+            print("AAAAAAAAAAAAAAAAAAAAAAAA")
+
+            while self.batch_number < PARTITION_SIZE:
+            #while self.batch_number < len(loaded):
             # for i, (input_data, labels) in enumerate(loaded):
                 if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
                     input_data = to_pytorch_variable(next(data_iterator))
