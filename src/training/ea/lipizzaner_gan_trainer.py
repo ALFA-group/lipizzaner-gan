@@ -5,6 +5,8 @@ import torch
 import random
 import numpy as np
 
+from itertools import cycle
+
 from distribution.concurrent_populations import ConcurrentPopulations
 from distribution.neighbourhood import Neighbourhood
 from helpers.configuration_container import ConfigurationContainer
@@ -136,25 +138,37 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                                                                 is_logging=True)
                 self._logger.debug('Finished tournament selection')
 
-            self.batch_number = 0
-            data_iterator = iter(loaded)
-
-
+            self.batch_number = 0        
+            data_iterator = cycle(iter(loaded))
+            
             # Code to include data partition
-            PARTITION_SIZE = int(len(loaded)/4)
+            NUMBER_OF_CHUNKS = 9
+            CHUNK_SIZE = int(len(loaded)/9)
+            PARTITION_SIZE = NUMBER_OF_CHUNKS * CHUNK_SIZE
+            
             i = 0
 
-            for i in range(PARTITION_SIZE*self.neighbourhood.cell_number):
+            for i in range(CHUNK_SIZE*self.neighbourhood.cell_number):
                 input_data = next(data_iterator)[0]
 
             print("AAAAAAAAAAAAAAAAAAAAAAAA")
             print(self.neighbourhood.cell_number)
             print(i)
+            print(PARTITION_SIZE)
+            print(CHUNK_SIZE)
             print("AAAAAAAAAAAAAAAAAAAAAAAA")
 
             while self.batch_number < PARTITION_SIZE:
             #while self.batch_number < len(loaded):
             # for i, (input_data, labels) in enumerate(loaded):
+
+#                if self.neighbourhood.cell_number == 8:
+ #                   if (self.batch_number > (CHUNK_SIZE-1) or self.batch_number < (self.neighbourhood.cell_number*CHUNK_SIZE)):
+  #                       input_data = next(data_iterator)[0]
+   #                      pass
+    #                else:
+     #                    print(self.batch_number)
+
                 if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
                     input_data = to_pytorch_variable(next(data_iterator))
                     batch_size = input_data.size(0)
