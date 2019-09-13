@@ -3,7 +3,6 @@
 ## Setup
 ```
 git clone https://github.com/ALFA-group/lipizzaner-gan.git
-git. checkout eh/ORNL
 cd lipizzaner-gan/
 python3 --version
 sudo apt-get update
