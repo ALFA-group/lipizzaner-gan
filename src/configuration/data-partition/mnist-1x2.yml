@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 900 
+  n_iterations: 1800 
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -16,7 +16,7 @@ trainer:
     mixture_sigma: 0.01
     enable_selection: False 
     score:
-      enabled: False 
+      enabled: True
       type: fid
       score_sample_size: 1000
       cuda: True

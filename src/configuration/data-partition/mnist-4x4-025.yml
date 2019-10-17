@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 900 
+  n_iterations: 200 
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -14,9 +14,9 @@ trainer:
     mutation_probability: 0.5
     discriminator_skip_each_nth_step: 1
     mixture_sigma: 0.01
-    enable_selection: False 
+    enable_selection: True 
     score:
-      enabled: False 
+      enabled: False
       type: fid
       score_sample_size: 1000
       cuda: True
@@ -29,6 +29,7 @@ dataloader:
   batch_size: 100
   n_batches: 0
   shuffle: True
+  sampling_ratio: 0.25 
 network:
   name: four_layer_perceptron
   loss: bceloss
@@ -36,4 +37,4 @@ master:
   calculate_score: True
   score_sample_size: 50000
   cuda: True
-general: !include general.yml
+general: !include general-4x4.yml

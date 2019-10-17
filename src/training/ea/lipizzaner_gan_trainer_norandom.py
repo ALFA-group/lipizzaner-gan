@@ -19,7 +19,6 @@ from training.mixture.score_factory import ScoreCalculatorFactory
 
 from data.network_data_loader import generate_random_sequences
 
-from helpers.reproducible_helpers import set_random_seed
 
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
@@ -47,8 +46,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self.mixture_sigma = self.settings.get('mixture_sigma', mixture_sigma)
 
         self.neighbourhood = Neighbourhood.instance()
-
-        self.init_chunk = None
 
         for i, individual in enumerate(self.population_gen.individuals):
             individual.learning_rate = self._default_adam_learning_rate
@@ -86,21 +83,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         else:
             # TODO: Add code for safe implementation & error handling
             raise KeyError("Fitness section must be defined in configuration file")
-        
 
     def train(self, n_iterations, stop_event=None):
 
         loaded = self.dataloader.load()
-
-        # LO hago en data_loader
-        #set_random_seed(self.cc.settings['general']['seed'] + self.neighbourhood.cell_number,
-        #                self.cc.settings['trainer']['params']['score']['cuda'])
-
-        # Correct iterations according to the sampling of the data
-        sampling_ratio = self.cc.settings['dataloader']['sampling_ratio']
-        
-        n_iterations = int(n_iterations * (1/sampling_ratio))
-        self._logger.debug('The process will carry out {} iterations after the correction due to the sampling ratio {}'.format(n_iterations, sampling_ratio))
 
         for iteration in range(n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
@@ -151,41 +137,29 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                                                                 TYPE_DISCRIMINATOR,
                                                                                 is_logging=True)
                 self._logger.debug('Finished tournament selection')
-            
-            self.batch_read = 0
+
             self.batch_number = 0        
             data_iterator = cycle(iter(loaded))
             
             # Code to include data partition
-            NUMBER_OF_CHUNKS = 9
-            DATA_PARTITION_CHUNKS = 9
-            CHUNK_SIZE = int(len(loaded)/DATA_PARTITION_CHUNKS)
+            NUMBER_OF_CHUNKS = 7
+            CHUNK_SIZE = int(len(loaded)/9)
             PARTITION_SIZE = NUMBER_OF_CHUNKS * CHUNK_SIZE
+            
+            i = 0
 
-            #print("AAAAAAAAAAAAAAAAAAAAAAAA")
-            #print(self.init_chunk)
-            #print("AAAAAAAAAAAAAAAAAAAAAAAA")
+            for i in range(CHUNK_SIZE*self.neighbourhood.cell_number):
+                input_data = next(data_iterator)[0]
 
-           
-            #self.init_chunk = self.neighbourhood.cell_number
-            #if self.init_chunk is None:
-            #    self.init_chunk = random.randrange(DATA_PARTITION_CHUNKS)
+            print("AAAAAAAAAAAAAAAAAAAAAAAA")
+            print(self.neighbourhood.cell_number)
+            print(i)
+            print(PARTITION_SIZE)
+            print(CHUNK_SIZE)
+            print("AAAAAAAAAAAAAAAAAAAAAAAA")
 
-            #i = 0
-            #for i in range(CHUNK_SIZE * self.init_chunk):
-            #    input_data = next(data_iterator)[0]
-
-            #print("AAAAAAAAAAAAAAAAAAAAAAAA")
-            #print(self.neighbourhood.cell_number)
-            #print(self.init_chunk)
-            #print(i)
-            #print(PARTITION_SIZE)
-            #print(CHUNK_SIZE)
-            #print("AAAAAAAAAAAAAAAAAAAAAAAA")
-
-
-            #while self.batch_number < PARTITION_SIZE:
-            while self.batch_number < len(loaded):
+            while self.batch_number < PARTITION_SIZE:
+            #while self.batch_number < len(loaded):
             # for i, (input_data, labels) in enumerate(loaded):
 
 #                if self.neighbourhood.cell_number == 8:
