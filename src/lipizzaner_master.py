@@ -123,6 +123,17 @@ class LipizzanerMaster:
 
         # If DB logging is enabled, create a new experiment and attach its ID to settings for clients
         db_logger = DbLogger()
+
+        self._logger.info('********************************************\n{}\n*****************************************'.format(self.cc.settings))
+        if 'sampling_ratio' in self.cc.settings['dataloader']:
+            sampling_ratio = self.cc.settings['dataloader']['sampling_ratio']
+            self._logger.info('Sampling ration in configuration file with value: {}'.format(sampling_ratio))
+        else:
+            sampling_ratio = 1
+        self.cc.settings['trainer']['n_iterations'] = int(self.cc.settings['trainer']['n_iterations'] * (1/sampling_ratio))
+
+        self._logger.info('Number iterations change to {} due to sampling ratio is {}.'.format(self.cc.settings['trainer']['n_iterations'], sampling_ratio))
+
         if db_logger.is_enabled:
             self.experiment_id = db_logger.create_experiment(self.cc.settings)
             self.cc.settings['general']['logging']['experiment_id'] = self.experiment_id

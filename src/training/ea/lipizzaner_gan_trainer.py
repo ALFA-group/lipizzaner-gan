@@ -97,10 +97,13 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         #                self.cc.settings['trainer']['params']['score']['cuda'])
 
         # Correct iterations according to the sampling of the data
-        sampling_ratio = self.cc.settings['dataloader']['sampling_ratio']
-        
-        n_iterations = int(n_iterations * (1/sampling_ratio))
-        self._logger.debug('The process will carry out {} iterations after the correction due to the sampling ratio {}'.format(n_iterations, sampling_ratio))
+        #if 'sampling_ratio' in self.settings:
+        #    sampling_ratio = self.cc.settings['dataloader']['sampling_ratio']
+        #else:
+        #    sampling_ratio = 1
+
+        #n_iterations = int(n_iterations * (1/sampling_ratio))
+        #self._logger.debug('The process will carry out {} iterations after the correction due to the sampling ratio {}'.format(n_iterations, sampling_ratio))
 
         for iteration in range(n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
