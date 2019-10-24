@@ -9,6 +9,7 @@ import numpy as np
 import time
 from helpers.pytorch_helpers import noise
 from training.mixture.mixed_generator_dataset import MixedGeneratorDatasetES
+from helpers.math_helpers import get_basic_stats
 
 import losswise
 import torch
@@ -114,6 +115,40 @@ def create_parser():
         dest='sample_size',
         required=True,
         help='The number of samples that will be created.')
+    group_generate.add_argument(
+        '--final_score',
+        type=float,
+        dest='final_score',
+        required=True,
+        help='The number of samples that will be created.')
+    add_config_file(group_generate, True)
+
+    group_generate = subparsers.add_parser('evaluate_fid_stability')
+    group_generate.add_argument(
+        '--mixture-source',
+        type=str,
+        dest='mixture_source',
+        required=True,
+        help='The directory that contains both the generator .pkl files and the yml mixture configuration.')
+    group_generate.add_argument(
+        '--output',
+        '-o',
+        type=str,
+        dest='output_dir',
+        required=True,
+        help='The output directory in which the samples will be created in. Will be created if it does not exist yet.')
+    group_generate.add_argument(
+        '--sampling-size',
+        type=int,
+        dest='sampling_size',
+        required=True,
+        help='The number of iterations of Monte-Carlo evaluation.')
+    group_generate.add_argument(
+        '--sample-size',
+        type=int,
+        dest='sample_size',
+        required=True,
+        help='The number of samples that will be created.')
     add_config_file(group_generate, True)
 
     group_score = subparsers.add_parser('score')
@@ -190,23 +225,25 @@ def generate_samples(args, cc):
     os.makedirs(output_dir, exist_ok=True)
     LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
 
+
 def individual_scores(population, mixture_definition, sample_size, batch_size, z_noise, cc):
+    print('Individual score')
     weight_vector_length = len(mixture_definition)
     # Uniform weights distribution
     transformed = (1.0/float(weight_vector_length)) * np.ones(weight_vector_length)
     new_mixture_weights_generators = OrderedDict(zip(mixture_definition.keys(), transformed))
     print('Individual score')
-
+    #
     
     _logger.info('Mixture {}'.format(transformed))
-
+    
     dataset = MixedGeneratorDatasetES(population,
-                                    new_mixture_weights_generators,
-                                    sample_size * batch_size,
-                                    cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
-
+                                     new_mixture_weights_generators,
+                                     sample_size * batch_size,
+                                     cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
+    
     #LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
-
+   
     score_calc = ScoreCalculatorFactory.create()
     inc = score_calc.calculate(dataset)
     _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.mixture_source, inc))
@@ -219,14 +256,14 @@ def individual_scores(population, mixture_definition, sample_size, batch_size, z
         transformed[i] = 1.0
         new_mixture_weights_generators = OrderedDict(zip(mixture_definition.keys(), transformed))
         _logger.info('Mixture {}'.format(transformed))
-
+    
         dataset = MixedGeneratorDatasetES(population,
                                         new_mixture_weights_generators,
                                         sample_size * batch_size,
                                         cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
-
+    
         #LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
-
+    #
         score_calc = ScoreCalculatorFactory.create()
         inc = score_calc.calculate(dataset)[0]
         _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.mixture_source, inc))
@@ -237,13 +274,14 @@ def individual_scores(population, mixture_definition, sample_size, batch_size, z
 
 def optimize_ensamble(args, cc):
     batch_size = 100
-
-    #generations = 20
     execution_time = 30 * 60 # in seconds
+    max_generations = 5000
     mixture_source = args.mixture_source
     output_dir = args.output_dir
     sample_size = args.sample_size
+    final_score = args.final_score
     mixture_sigma = cc.settings['trainer']['params']['mixture_sigma']
+    cc.settings['general']['distribution']['client_id']=1
 
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
     network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
@@ -272,33 +310,26 @@ def optimize_ensamble(args, cc):
                                     sample_size * batch_size,
                                     cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
 
+    #os.makedirs(output_dir, exist_ok=True)
     #LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
-
     score_calc = ScoreCalculatorFactory.create()
-    score = score_calc.calculate(dataset)[0]
+    if final_score == 0:
+        print('No final score given')
+        score = score_calc.calculate(dataset)[0]
+    else:
+        print('Final score: {}'.format(final_score))
+        score = final_score
+
     _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.mixture_source, score))
     print('Generator loaded from \'{}\' yielded a score of {}'.format(args.mixture_source, score))
     print('Runing information:{},{}'.format(-1, score))
-
-    weight_vector_length = len(mixture_definition)
-    # Uniform weights distribution
-    transformed = (1.0/float(weight_vector_length)) * np.ones(weight_vector_length)
-    mixture_weights_generators = OrderedDict(zip(mixture_definition.keys(), transformed))
-    print('Mutated Mixture {}'.format(transformed))
-
-    dataset = MixedGeneratorDatasetES(population, mixture_definition, sample_size * batch_size, cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
-    score_calc = ScoreCalculatorFactory.create()
-    score = score_calc.calculate(dataset)[0]
-    _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.mixture_source, score))
-    print('Generator loaded from \'{}\' yielded a score of {}'.format(args.mixture_source, score))
-    print('Runing information:{},{}'.format(-1, score))
-    mixture_definition = mixture_weights_generators
 
     g = 0
     start_time = time.time()
-    while(execution_time > (time.time() - start_time)):
-    #for g in range(generations):
-        # Mutate mixture weights
+    while (g < max_generations):
+    #while(execution_time > (time.time() - start_time)):
+        if g == 4998:
+            sample_size = 1000
         z = np.random.normal(loc=0, scale=mixture_sigma, size=len(mixture_definition))
         transformed = np.asarray([value for _, value in mixture_definition.items()])
         transformed += z
@@ -310,20 +341,11 @@ def optimize_ensamble(args, cc):
 
         new_mixture_weights_generators = OrderedDict(zip(mixture_definition.keys(), transformed))
 
-        #dataset_before_mutation = MixedGeneratorDataset(population,
-        #                                                mixture_definition,
-        #                                                sample_size * batch_size,
-        #                                                cc.settings['trainer']['mixture_generator_samples_mode'])
-        #dataset_after_mutation = MixedGeneratorDataset(population,
         dataset = MixedGeneratorDatasetES(population, new_mixture_weights_generators,
                                                         sample_size * batch_size,
                                                         cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
 
         if score_calc is not None:
-            # logger.info('Calculating FID/inception score.')
-            #
-            # score_before_mutation = score_calc.calculate(dataset_before_mutation)[0]
-            # _logger.info('Score before mutation: {}.'.format(score_before_mutation))
             score_after_mutation = score_calc.calculate(dataset)[0]
             _logger.info('Score after mutation: {}.'.format(score_after_mutation))
             print('Generation: {} \tScore after mutation: {}.'.format(g, score_after_mutation))
@@ -332,25 +354,83 @@ def optimize_ensamble(args, cc):
             # For fid the lower the better, for inception_score, the higher the better
             if (score_after_mutation < score and score_calc.is_reversed) \
                     or (score_after_mutation > score and (not score_calc.is_reversed)):
-                # Adopt the mutated mixture_weights only if the performance after mutation is better
+
                 mixture_definition = new_mixture_weights_generators
                 score = score_after_mutation
-            # else:
-            #     # Do not adopt the mutated mixture_weights here
-            #     score = score_before_mutation
 
         _logger.info('Generation: {} \tScore: {}'.format(g, score))
         print('Runing information:{},{}'.format(g, score))
         g += 1
 
-        #LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
-
     _logger.info('Generations: {} \tFinal score: {} \tRun time: {} minutes'.format(g, score, (time.time() - start_time)/60))
     print('Generations: {} \tFinal score: {} \tRun time: {} minutes'.format(g, score, (time.time() - start_time)/60))
 
-    individual_scores(population, mixture_definition, sample_size, batch_size, z_noise, cc)
-    #os.makedirs(output_dir, exist_ok=True)
-    #LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
+    individual_scores(population, mixture_definition, 1000, batch_size, z_noise, cc)
+
+
+def evaluate_fid_stability(args, cc):
+    batch_size = 100
+    score_list = []
+
+    sampling_size = args.sampling_size
+    mixture_source = args.mixture_source
+    output_dir = args.output_dir
+    sample_size = args.sample_size
+    mixture_sigma = cc.settings['trainer']['params']['mixture_sigma']
+
+    dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+
+    population = Population(individuals=[], default_fitness=0)
+    mixture_definition = read_settings(os.path.join(mixture_source, 'mixture.yml'))
+    if len(mixture_definition) < 2:
+        print('No weights to optimize')
+        _logger.info('No weights to optimize')
+        sys.exit(1)
+   
+    _logger.info('Mixture {}'.format(mixture_definition))
+    print('Mixture {}'.format(mixture_definition))
+    print(len(mixture_definition.items()))
+    for source, weight in mixture_definition.items():
+        path = os.path.join(mixture_source, source)
+        generator = network_factory.create_generator()
+        generator.net.load_state_dict(torch.load(path))
+        generator.net.eval()
+        population.individuals.append(Individual(genome=generator, fitness=0, source=source))
+
+    z_noise = noise(sample_size * batch_size, population.individuals[0].genome.data_size)
+
+    for i in range(sampling_size):
+
+        dataset = MixedGeneratorDatasetES(population,
+                                        mixture_definition,
+                                        sample_size * batch_size,
+                                        cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
+
+        score_calc = ScoreCalculatorFactory.create()
+        score = score_calc.calculate(dataset)[0]
+        score_list.append(score)
+        _logger.info('Sample [{}] \t Score [{}]'.format(i, score))
+        print('Runing information:{},{}'.format(i, score))
+
+    _logger.info('Creating images. Output folder: {}'.format(output_dir))
+    print('Creating images. Output folder: {}'.format(output_dir))
+
+    print('Final summary: {}'.format(get_basic_stats(score_list)))
+    print(get_basic_stats(score_list))
+
+    #Create images
+    sample_size = 100
+    z_noise = noise(sample_size * batch_size, population.individuals[0].genome.data_size)
+    dataset = MixedGeneratorDatasetES(population,
+                                          mixture_definition,
+                                          sample_size * batch_size,
+                                          cc.settings['trainer']['mixture_generator_samples_mode'], z_noise)
+
+    score_calc = ScoreCalculatorFactory.create()
+    score = score_calc.calculate(dataset)[0]
+    LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
+
 
 if __name__ == '__main__':
     os.environ['TORCH_MODEL_ZOO'] = os.path.join(os.getcwd(), 'output/.models')
@@ -358,11 +438,12 @@ if __name__ == '__main__':
     parser = create_parser()
     args = parser.parse_args(args=sys.argv[1:])
 
+
     if 'cuda_device' in args and args.cuda_device:
         print('Enforcing usage of CUDA device {}'.format(args.cuda_device))
         os.environ['CUDA_VISIBLE_DEVICES'] = str(args.cuda_device)
 
-    print(args.task)
+
 
     if args.task == 'train':
         if args.distributed:
@@ -387,6 +468,11 @@ if __name__ == '__main__':
     elif args.task == 'optimize':
         cc = initialize_settings(args)
         optimize_ensamble(args, cc)
+
+    elif args.task == 'evaluate_fid_stability':
+        cc = initialize_settings(args)
+        print(args)
+        evaluate_fid_stability(args, cc)
 
     else:
         parser.print_help()
