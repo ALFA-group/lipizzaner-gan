@@ -59,7 +59,7 @@ class DataLoader(ABC):
 
             mask = random.sample(range(dataset_size), sample_size)
 
-            self.sampler = SubsetRandomSampler(mask)
+            self.sampler = torch.utils.data.SubsetRandomSampler(mask)
             self.shuffle = False
             return torch.utils.data.DataLoader(dataset=dataset,
                                                batch_size=self.batch_size if self.use_batch else len(dataset),
