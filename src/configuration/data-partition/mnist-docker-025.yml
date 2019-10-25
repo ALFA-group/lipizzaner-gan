@@ -29,7 +29,7 @@ dataloader:
   batch_size: 100
   n_batches: 0
   shuffle: True
-  sampling_ratio: 0.75 
+  sampling_ratio: 0.25 
 network:
   name: four_layer_perceptron
   loss: bceloss
@@ -37,5 +37,4 @@ master:
   calculate_score: True
   score_sample_size: 50000
   cuda: True
-general: !include general-4x4.yml
-
+general: !include general-docker.yml

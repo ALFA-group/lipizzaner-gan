@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 200 
+  n_iterations: 50
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -8,13 +8,13 @@ trainer:
     population_size: 1
     tournament_size: 2
     n_replacements: 1
-    default_adam_learning_rate: 0.0002
+    default_adam_learning_rate: 0.00005
     # Hyperparameter mutation
     alpha: 0.0001
     mutation_probability: 0.5
-    discriminator_skip_each_nth_step: 1
-    mixture_sigma: 0.01
-    enable_selection: True 
+    discriminator_skip_each_nth_step: 0
+    mixture_sigma: 0.05
+    enable_selection: False
     score:
       enabled: False
       type: fid
@@ -24,18 +24,17 @@ trainer:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
 dataloader:
-  dataset_name: mnist
+  dataset_name: celeba
   use_batch: True
-  batch_size: 100
+  batch_size: 128
   n_batches: 0
   shuffle: True
-  sampling_ratio: 0.75 
+  sampling_ratio: 0.25
 network:
-  name: four_layer_perceptron
+  name: convolutional
   loss: bceloss
 master:
   calculate_score: True
-  score_sample_size: 50000
+  score_sample_size: 5000
   cuda: True
-general: !include general-4x4.yml
-
+general: !include general-docker.yml

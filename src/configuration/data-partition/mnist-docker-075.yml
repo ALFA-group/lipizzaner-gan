@@ -37,5 +37,5 @@ master:
   calculate_score: True
   score_sample_size: 50000
   cuda: True
-general: !include general-4x4.yml
+general: !include general-docker.yml
 
