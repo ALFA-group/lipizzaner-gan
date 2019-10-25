@@ -27,4 +27,4 @@ COPY helper_files/requirements.txt ./helper_files/
 RUN pip install -r ./helper_files/requirements.txt
 
 COPY . .
-CMD [ "sh", "-c", "python3.6 train ./main.py --distributed --${role} -f ${config_file}" ]
+CMD [ "sh", "-c", "python3.6 ./main.py train --distributed --${role} -f ${config_file}" ]
