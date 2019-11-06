@@ -72,6 +72,6 @@ def calculate_net_weights_dist(net1, net2):
         l2_dist += torch.sum((net1_layer_weights - net2_layer_weights)**2)
     result = torch.sqrt(l2_dist).data.cpu().numpy()
     if result is np.ndarray:
-        return  result[0]
+        return result[0]
     else:
         return result

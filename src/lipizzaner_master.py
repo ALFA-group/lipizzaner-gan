@@ -47,7 +47,6 @@ class LipizzanerMaster:
             # Expand port ranges to multiple client entries
             self.expand_clients()
             clients = self.cc.settings['general']['distribution']['client_nodes']
-
         accessible_clients = self._accessible_clients(clients)
 
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
