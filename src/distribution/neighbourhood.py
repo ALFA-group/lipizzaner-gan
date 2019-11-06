@@ -155,6 +155,8 @@ class Neighbourhood:
         return population
 
     def _init_mixture_weights(self):
+        for i in range(10):
+            print('*')
         node_ids = [node['id'] for node in self.all_nodes]
         default_weight = 1 / len(node_ids)
         # Warning: Feature of order preservation in Dict is used in the mixture_weight
