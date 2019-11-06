@@ -93,6 +93,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.es_random_init = self.settings['optimize_mixture'].get('es_random_init', es_random_init)
             self.mixture_sigma = self.settings['optimize_mixture'].get('mixture_sigma', mixture_sigma)
             self.mixture_generator_samples_mode = self.cc.settings['trainer']['mixture_generator_samples_mode']
+        else:
+            self.optimize_weights_at_the_end = False
 
 
     def train(self, n_iterations, stop_event=None):
