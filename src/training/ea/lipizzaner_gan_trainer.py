@@ -78,6 +78,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.score_sample_size = self.settings['score'].get('sample_size', score_sample_size)
             self.score = float('inf') if self.score_calc.is_reversed else float('-inf')
             self.mixture_generator_samples_mode = self.cc.settings['trainer']['mixture_generator_samples_mode']
+        elif 'optimize_mixture' in self.settings:
+            self.score_calc = ScoreCalculatorFactory.create()
+            self.score = float('inf') if self.score_calc.is_reversed else float('-inf')
         else:
             self.score_sample_size = score_sample_size
             self.score_calc = None
@@ -90,9 +93,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.es_random_init = self.settings['optimize_mixture'].get('es_random_init', es_random_init)
             self.mixture_sigma = self.settings['optimize_mixture'].get('mixture_sigma', mixture_sigma)
             self.mixture_generator_samples_mode = self.cc.settings['trainer']['mixture_generator_samples_mode']
-            if not ('score' in self.settings and self.settings['score'].get('enabled', calc_mixture)):
-                self.score_calc = ScoreCalculatorFactory.create()
-                self.score = float('inf') if self.score_calc.is_reversed else float('-inf')
+
 
     def train(self, n_iterations, stop_event=None):
 
@@ -152,7 +153,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.batch_number = 0
             data_iterator = iter(loaded)
             while self.batch_number < len(loaded):
-                # for i, (input_data, labels) in enumerate(loaded):
                 if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
                     input_data = to_pytorch_variable(next(data_iterator))
                     batch_size = input_data.size(0)
@@ -324,12 +324,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                                                                                         self.score))
 
     def step(self, original, attacker, defender, input_data, i, loaded, data_iterator):
-        # Don't execute for remote populations - needed if generator and discriminator are on different node
-        #         if any(not ind.is_local for ind in original.individuals):
-        #             return
-
         self.mutate_hyperparams(attacker)
-
         return self.update_genomes(attacker, defender, input_data, loaded, data_iterator)
 
     def is_last_batch(self, i):

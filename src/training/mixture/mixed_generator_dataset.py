@@ -60,12 +60,12 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
 
 
 
-# To use always a given noise vector z from the latent space in order to use it during the ES-(1+1)
 class MixedGeneratorDatasetES(torch.utils.data.Dataset):
 
     def __init__(self, generator_population, weights, n_samples, mixture_generator_samples_mode, z):
         """
-        Creates samples from a mixture of generators, with sample probability defined by a weights vector
+        Creates samples from a mixture of generators, with sample probability defined given a random noise vector
+        sampled from the latent space by a weights vector
 
         :param generator_population: Population of generators that will be used to create the images
         :param weights: Dictionary that maps generator IDs to weights, e.g. {'127.0.0.1:5000': 0.8, '127.0.0.1:5001': 0.2}
