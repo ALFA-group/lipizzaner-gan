@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 2
+  n_iterations: 0
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -32,7 +32,7 @@ dataloader:
   dataset_name: mnist
   use_batch: True
   batch_size: 100
-  n_batches: 10
+  n_batches: 0
   shuffle: True
 network:
   name: four_layer_perceptron

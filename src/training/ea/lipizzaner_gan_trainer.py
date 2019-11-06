@@ -13,7 +13,7 @@ from helpers.population import TYPE_GENERATOR, TYPE_DISCRIMINATOR
 from helpers.pytorch_helpers import to_pytorch_variable
 from helpers.pytorch_helpers import noise
 from training.ea.ea_trainer import EvolutionaryAlgorithmTrainer
-from training.mixture.mixed_generator_dataset import MixedGeneratorDataset, MixedGeneratorDatasetES
+from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
 from data.network_data_loader import generate_random_sequences
@@ -271,7 +271,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             weights_generators = OrderedDict(zip(weights_generators.keys(), aux_weights))
             self.neighbourhood.mixture_weights_generators = weights_generators
 
-        dataset = MixedGeneratorDatasetES(generators, weights_generators,
+        dataset = MixedGeneratorDataset(generators, weights_generators,
                                           self.score_sample_size, self.mixture_generator_samples_mode, z_noise)
 
         self.score = self.score_calc.calculate(dataset)[0]
@@ -296,7 +296,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             new_mixture_weights = OrderedDict(zip(weights_generators.keys(), transformed))
 
             # TODO: Testing the idea of not generating the images again
-            dataset = MixedGeneratorDatasetES(generators, new_mixture_weights,
+            dataset = MixedGeneratorDataset(generators, new_mixture_weights,
                                               self.score_sample_size,
                                               self.mixture_generator_samples_mode, z_noise)
 
