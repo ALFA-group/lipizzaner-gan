@@ -2,6 +2,7 @@ import os
 import torch
 from torch.autograd import Variable
 from torchvision.utils import save_image
+import numpy as np
 
 from helpers.configuration_container import ConfigurationContainer
 
@@ -69,5 +70,8 @@ def calculate_net_weights_dist(net1, net2):
     l2_dist = 0
     for net1_layer_weights, net2_layer_weights in zip(net1.parameters(), net2.parameters()):
         l2_dist += torch.sum((net1_layer_weights - net2_layer_weights)**2)
-
-    return torch.sqrt(l2_dist).data.cpu().numpy()[0]
+    result = torch.sqrt(l2_dist).data.cpu().numpy()
+    if result is np.ndarray:
+        return  result[0]
+    else:
+        return result
