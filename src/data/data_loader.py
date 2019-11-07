@@ -45,27 +45,25 @@ class DataLoader(ABC):
                                train=True,
                                transform=self.transform(),
                                download=True)
-        if self.sampling_ratio == 1:
+
+        if self.sampling_ratio >= 1:
             self.sampler = None
-            return torch.utils.data.DataLoader(dataset=dataset,
-                                           batch_size=self.batch_size if self.use_batch else len(dataset),
-                                           shuffle=self.shuffle,
-                                           num_workers=self.cc.settings['general']['num_workers'])
         else:
             set_random_seed(self.cc.settings['general']['seed'] + self.cell_number,
                             self.cc.settings['trainer']['params']['score']['cuda'])
-
             dataset_size = len(dataset)
             sample_size = int(dataset_size * self.sampling_ratio)
             mask = random.sample(range(dataset_size), sample_size)
 
             self.sampler = torch.utils.data.SubsetRandomSampler(mask)
             self.shuffle = False
-            return torch.utils.data.DataLoader(dataset=dataset,
-                                               batch_size=self.batch_size if self.use_batch else len(dataset),
-                                               shuffle=self.shuffle,
-                                               num_workers=self.cc.settings['general']['num_workers'],
-                                               sampler=self.sampler)
+
+        return torch.utils.data.DataLoader(dataset=dataset,
+                                           batch_size=self.batch_size if self.use_batch else len(dataset),
+                                           shuffle=self.shuffle,
+                                           num_workers=self.cc.settings['general']['num_workers'],
+                                           sampler=self.sampler)
+
 
     def transform(self):
         return transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5),

@@ -126,11 +126,10 @@ class LipizzanerMaster:
             self.experiment_id = db_logger.create_experiment(self.cc.settings)
             self.cc.settings['general']['logging']['experiment_id'] = self.experiment_id
 
-        client_id = 0
-        for client in self.cc.settings['general']['distribution']['client_nodes']:
+
+        for client_id, client in enumerate(self.cc.settings['general']['distribution']['client_nodes']):
             address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
             self.cc.settings['general']['distribution']['client_id'] = client_id
-            client_id += 1
             try:
                 resp = requests.post(address, json=self.cc.settings)
                 assert resp.status_code == 200, resp.text
