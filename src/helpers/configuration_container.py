@@ -11,6 +11,9 @@ import importlib
 class ConfigurationContainer:
     class_maps = {
         'bceloss': ('torch.nn', 'BCELoss'),
+        'mseloss': ('torch.nn', 'MSELoss'),
+        'heuristicloss': ('networks.customized_loss.heuristic_loss', 'HeuristicLoss'),
+        'mustangs': ('networks.customized_loss.mustangs_loss', 'MustangsLoss'),
         'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
         'cifar': ('data.cifar10_data_loader', 'CIFAR10DataLoader'),
         'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
