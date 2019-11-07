@@ -26,6 +26,7 @@ class NetworkFactory(ABC):
 
         self.input_data_size = input_data_size
 
+
     @abstractmethod
     def create_generator(self, parameters=None):
         """
@@ -137,6 +138,7 @@ class FourLayerPerceptronFactory(NetworkFactory):
         return 64
 
     def create_generator(self, parameters=None, encoded_parameters=None):
+
         net = GeneratorNet(
             self.loss_function,
             Sequential(
