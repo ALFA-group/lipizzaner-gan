@@ -278,12 +278,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         self.score = self.score_calc.calculate(dataset)[0]
         init_score = self.score
-        init_weights = weights_generators
 
         self._logger.info(
-            'Mixture weight mutation - Generation: {} \tScore of new weights: {}\tNew weights: {}.'.format(-1,
-                                                                                                    init_score,
-                                                                                                    weights_generators))
+            'Mixture weight mutation - Starting mixture weights optimization ...')
+        self._logger.info('Init score: {}\tInit weights: {}.'.format(init_score, weights_generators))
 
         for g in range(self.es_generations):
 
