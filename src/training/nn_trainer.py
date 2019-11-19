@@ -5,6 +5,12 @@ from abc import abstractmethod, ABC
 from helpers.configuration_container import ConfigurationContainer
 from helpers.pytorch_helpers import noise
 
+import yaml
+from datetime import datetime
+import torch
+GENERATOR_PREFIX = 'generator-'
+DISCRIMINATOR_PREFIX = 'discriminator-'
+
 
 class NeuralNetworkTrainer(ABC):
 
@@ -93,3 +99,47 @@ class NeuralNetworkTrainer(ABC):
             generated_output = gen(z)
             self.dataloader.save_images(generated_output, shape, path_fake)
             gen.train()
+
+    def save_checkpoint(self, generators, discriminators, cell_number):
+        checkpoint = dict()
+
+        checkpoint['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        if len(generators) > 0:
+            checkpoint['generators'] = dict()
+            checkpoint['generators']['iteration'] = generators[0].iteration
+            checkpoint['generators']['learning_rate'] = '{}'.format(generators[0].learning_rate)
+            checkpoint['generators']['individuals'] = []
+
+        if len(discriminators) > 0:
+            checkpoint['discriminators'] = dict()
+            checkpoint['discriminators']['iteration'] = discriminators[0].iteration
+            checkpoint['discriminators']['learning_rate'] = '{}'.format(discriminators[0].learning_rate)
+            checkpoint['discriminators']['individuals'] = []
+
+        for generator in generators:
+            gen = dict()
+            gen['id'] = generator.id
+            gen['is_local'] = generator.is_local
+            gen['fitness'] = generator.fitness
+            checkpoint['generators']['individuals'].append(gen)
+
+            if gen['is_local']:
+                filename = '{}{}.pkl'.format(GENERATOR_PREFIX, cell_number)
+                torch.save(generator.genome.net.state_dict(),
+                           os.path.join(self.cc.output_dir, filename))
+        for discriminator in discriminators:
+            disc = dict()
+            disc['id'] = discriminator.id
+            disc['is_local'] = discriminator.is_local
+            disc['fitness'] = discriminator.fitness
+            checkpoint['discriminators']['individuals'].append(disc)
+
+            if disc['is_local']:
+                filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, cell_number)
+                torch.save(discriminator.genome.net.state_dict(),
+                       os.path.join(self.cc.output_dir, filename))
+
+        path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}.yml'.format(cell_number))
+        with open(path_checkpoint, 'w') as file:
+            yaml.dump(checkpoint, file)

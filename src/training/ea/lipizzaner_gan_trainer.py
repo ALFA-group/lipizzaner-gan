@@ -29,7 +29,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                  n_replacements=1, sigma=0.25, alpha=0.25, default_adam_learning_rate=0.001, calc_mixture=False,
                  mixture_sigma=0.01, score_sample_size=10000, discriminator_skip_each_nth_step=0,
                  enable_selection=True, fitness_sample_size=10000, calculate_net_weights_dist=False,
-                 fitness_mode='worst',  es_generations=10, es_score_sample_size=10000, es_random_init=False):
+                 fitness_mode='worst',  es_generations=10, es_score_sample_size=10000, es_random_init=False,
+                 checkpoint_period=0):
 
         super().__init__(dataloader, network_factory, population_size, tournament_size, mutation_probability,
                          n_replacements, sigma, alpha)
@@ -96,10 +97,12 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         else:
             self.optimize_weights_at_the_end = False
 
+        self.checkpoint_period = self.cc.settings['general'].get('checkpoint_period', checkpoint_period)
+
 
     def train(self, n_iterations, stop_event=None):
-
         loaded = self.dataloader.load()
+
 
         for iteration in range(n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
@@ -236,6 +239,11 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 self.db_logger.log_results(iteration, self.neighbourhood, self.concurrent_populations,
                                            self.score, stop_time - start_time,
                                            path_real_images, path_fake_images)
+
+            if self.checkpoint_period>0 and iteration%self.checkpoint_period==0:
+                self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
+                                     self.neighbourhood.cell_number)
+
 
         if self.optimize_weights_at_the_end:
             self.optimize_generator_mixture_weights()
