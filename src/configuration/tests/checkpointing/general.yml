@@ -16,5 +16,5 @@ distribution:
     - address: 127.0.0.1 # Fill in IP address here 
       port: 5000-5003
 seed: 1
-num_workers: 0    # how many subprocesses to use for data loading
-checkpoint_period: 2
+num_workers: 0    # How many subprocesses to use for data loading
+checkpoint_period: 2 # Number of iterations to be performed between the checkpoint (0 no check points are stored)
