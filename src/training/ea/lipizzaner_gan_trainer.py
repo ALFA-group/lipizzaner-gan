@@ -117,13 +117,20 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             local_generators = self.neighbourhood.local_generators
             local_discriminators = self.neighbourhood.local_discriminators
 
-            # Log the name of individuals in entire neighborhood for every iteration
+            # Log the name of individuals in entire neighborhood and local individuals for every iteration
             # (to help tracing because individuals from adjacent cells might be from different iterations)
+            self._logger.info('Neighborhood located in possition {} of the grid'.format(self.neighbourhood.grid_position))
             self._logger.info('Generators in current neighborhood are {}'.format([
                 individual.name for individual in all_generators.individuals
             ]))
             self._logger.info('Discriminators in current neighborhood are {}'.format([
                 individual.name for individual in all_discriminators.individuals
+            ]))
+            self._logger.info('Local generators in current neighborhood are {}'.format([
+                individual.name for individual in local_generators.individuals
+            ]))
+            self._logger.info('Local discriminators in current neighborhood are {}'.format([
+                individual.name for individual in local_discriminators.individuals
             ]))
 
             self._logger.info('L2 distance between all generators weights: {}'.format(all_generators.net_weights_dist))
@@ -244,9 +251,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                            self.score, stop_time - start_time,
                                            path_real_images, path_fake_images)
 
-            if self.checkpoint_period>0 and iteration%self.checkpoint_period==0:
+            if self.checkpoint_period>0 and (iteration+1)%self.checkpoint_period==0:
                 self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
-                                     self.neighbourhood.cell_number)
+                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position)
 
 
         if self.optimize_weights_at_the_end:

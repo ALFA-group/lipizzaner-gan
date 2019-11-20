@@ -100,7 +100,7 @@ class NeuralNetworkTrainer(ABC):
             self.dataloader.save_images(generated_output, shape, path_fake)
             gen.train()
 
-    def save_checkpoint(self, generators, discriminators, cell_number):
+    def save_checkpoint(self, generators, discriminators, cell_number, grid_position):
 
         def get_individuals_information(individuals, prefix, cell_number):
             individuals_info = dict()
@@ -125,6 +125,9 @@ class NeuralNetworkTrainer(ABC):
 
         checkpoint = dict()
         checkpoint['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        checkpoint['position'] = dict()
+        checkpoint['position']['x'] = grid_position[0]
+        checkpoint['position']['y'] = grid_position[1]
         checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number)
         checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number)
 
