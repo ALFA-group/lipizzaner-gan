@@ -115,6 +115,7 @@ class NeuralNetworkTrainer(ABC):
                     indiv['id'] = individual.id
                     indiv['is_local'] = individual.is_local
                     indiv['fitness'] = individual.fitness
+                    indiv['source'] = individual.source
                     individuals_info['individuals'].append(indiv)
 
                     if indiv['is_local']:
