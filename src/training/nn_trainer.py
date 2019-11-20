@@ -115,6 +115,9 @@ class NeuralNetworkTrainer(ABC):
                     indiv['id'] = individual.id
                     indiv['is_local'] = individual.is_local
                     indiv['fitness'] = individual.fitness
+                    # The individual.source parameter stores the network source of that individual represented by
+                    # <ip addres>:<port>
+                    indiv['source'] = individual.source
                     individuals_info['individuals'].append(indiv)
 
                     if indiv['is_local']:
