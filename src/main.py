@@ -54,6 +54,13 @@ def create_parser():
         action='store_true',
         help='Start as long-running client node. Waits for master '
              'to send experiment configuration, and runs them.')
+    group_train.add_argument(
+        '--checkpoint-folder',
+        '-c',
+        type=str,
+        required=False,
+        dest='checkpoint_folder',
+        help='Folder of the experiment to recover from its checkpoints.')
     group_distributed = group_train.add_mutually_exclusive_group(required='--distributed' in sys.argv)
     group_distributed.add_argument(
         '--master',
@@ -102,6 +109,9 @@ def create_parser():
 def initialize_settings(args):
     cc = ConfigurationContainer.instance()
     cc.settings = read_settings(args.configuration_file)
+    if args.checkpoint_folder is not None:
+        cc.settings['general']['distribution']['auto_discover'] = False
+        cc.settings['general']['distribution']['resuming'] = args.checkpoint_folder
     if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
         log_dir = os.path.join(cc.settings['general']['output_dir'], 'log')
         LogHelper.setup(cc.settings['general']['logging']['log_level'], log_dir)

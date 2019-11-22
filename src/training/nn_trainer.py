@@ -24,7 +24,8 @@ class NeuralNetworkTrainer(ABC):
         self.network_factory = network_factory
         self.cc = ConfigurationContainer.instance()
 
-        self.population_gen, self.population_dis = self.initialize_populations()
+        checkpoint = self.cc.settings['general']['distribution'].get('client_checkpoint', None)
+        self.population_gen, self.population_dis = self.initialize_populations(checkpoint)
 
     @abstractmethod
     def initialize_populations(self):
@@ -100,36 +101,41 @@ class NeuralNetworkTrainer(ABC):
             self.dataloader.save_images(generated_output, shape, path_fake)
             gen.train()
 
-    def save_checkpoint(self, generators, discriminators, cell_number):
+    def save_checkpoint(self, generators, discriminators, cell_number, grid_position, grid_size):
 
         def get_individuals_information(individuals, prefix, cell_number):
             individuals_info = dict()
-
             if len(individuals) > 0:
-                individuals_info['iteration'] = individuals[0].iteration
                 individuals_info['learning_rate'] = '{}'.format(individuals[0].learning_rate)
                 individuals_info['individuals'] = []
-
+                local_id = 0
                 for individual in individuals:
                     indiv = dict()
                     indiv['id'] = individual.id
                     indiv['is_local'] = individual.is_local
                     indiv['fitness'] = individual.fitness
                     # The individual.source parameter stores the network source of that individual represented by
-                    # <ip addres>:<port>
+                    # <addres>:<port>
                     indiv['source'] = individual.source
                     individuals_info['individuals'].append(indiv)
-
                     if indiv['is_local']:
-                        filename = '{}{}.pkl'.format(prefix, cell_number)
+                        filename = '{}{}-{}.pkl'.format(prefix, cell_number, local_id)
                         torch.save(individual.genome.net.state_dict(),
                                    os.path.join(self.cc.output_dir, filename))
+                        local_id += 1
+
             return individuals_info
 
         checkpoint = dict()
         checkpoint['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number)
         checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number)
+        checkpoint['id'] = cell_number
+        checkpoint['iteration'] = generators[0].iteration
+        checkpoint['position'] = dict()
+        checkpoint['position']['x'] = grid_position[0]
+        checkpoint['position']['y'] = grid_position[1]
+        checkpoint['grid_size'] = grid_size
 
         path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}.yml'.format(cell_number))
         with open(path_checkpoint, 'w') as file:

@@ -17,8 +17,10 @@ from helpers.heartbeat import Heartbeat
 from helpers.math_helpers import is_square
 from helpers.network_helpers import get_network_devices
 from helpers.reproducible_helpers import set_random_seed
+from helpers.checkpointing import ExperimentResuming
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
+
 
 GENERATOR_PREFIX = 'generator-'
 DISCRIMINATOR_PREFIX = 'discriminator-'
@@ -32,6 +34,7 @@ class LipizzanerMaster:
         self.heartbeat_event = None
         self.heartbeat_thread = None
         self.experiment_id = None
+        self.checkpoint = None
 
     def run(self):
         if os.environ.get('DOCKER', False) == 'True':
@@ -43,10 +46,18 @@ class LipizzanerMaster:
             clients = self._load_available_clients()
             self.cc.settings['general']['distribution']['client_nodes'] = clients
             self._logger.info('Detected {} clients ({})'.format(len(clients), clients))
+        elif self.cc.settings['general']['distribution'].get('resuming', None) is not None:
+            self.checkpoint = ExperimentResuming(self.cc.settings['general']['distribution']['resuming'])
+            clients = self.checkpoint.get_population_cell_info()
+            self.cc.settings['general']['distribution']['client_nodes'] = clients
+            self._logger.info('Resuming to the following {} clients ({})'.format(len(clients), clients))
+
         else:
             # Expand port ranges to multiple client entries
             self.expand_clients()
             clients = self.cc.settings['general']['distribution']['client_nodes']
+            self._logger.info('Detected {} clients ({})'.format(len(clients), clients))
+
         accessible_clients = self._accessible_clients(clients)
 
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
@@ -126,17 +137,36 @@ class LipizzanerMaster:
             self.experiment_id = db_logger.create_experiment(self.cc.settings)
             self.cc.settings['general']['logging']['experiment_id'] = self.experiment_id
 
+        if not self.checkpoint is None:
+            for client in self.cc.settings['general']['distribution']['client_nodes']:
+                client_id = self.checkpoint.get_id('{}:{}'.format(client['address'], client['port']))
+                address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
+                self.cc.settings['general']['distribution']['client_id'] = client_id
+                self.cc.settings['general']['distribution'][
+                    'client_checkpoint'] = self.checkpoint.get_checkpoint_data_id(client_id)
+                try:
+                    resp = requests.post(address, json=self.cc.settings)
+                    assert resp.status_code == 200, resp.text
+                    self._logger.info('Successfully started experiment on {}'.format(address))
+                except AssertionError as err:
+                    self._logger.critical('Could not start experiment on {}: {}'.format(address, err))
+                    self._terminate()
 
-        for client_id, client in enumerate(self.cc.settings['general']['distribution']['client_nodes']):
-            address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
-            self.cc.settings['general']['distribution']['client_id'] = client_id
-            try:
-                resp = requests.post(address, json=self.cc.settings)
-                assert resp.status_code == 200, resp.text
-                self._logger.info('Successfully started experiment on {}'.format(address))
-            except AssertionError as err:
-                self._logger.critical('Could not start experiment on {}: {}'.format(address, err))
-                self._terminate()
+        else:
+
+#AQUI CONTROLAR LOS PARAMETROS PARA RESUMING
+
+
+            for client_id, client in enumerate(self.cc.settings['general']['distribution']['client_nodes']):
+                address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
+                self.cc.settings['general']['distribution']['client_id'] = client_id
+                try:
+                    resp = requests.post(address, json=self.cc.settings)
+                    assert resp.status_code == 200, resp.text
+                    self._logger.info('Successfully started experiment on {}'.format(address))
+                except AssertionError as err:
+                    self._logger.critical('Could not start experiment on {}: {}'.format(address, err))
+                    self._terminate()
 
     def _terminate(self, stop_clients=True, return_code=-1):
         try:
