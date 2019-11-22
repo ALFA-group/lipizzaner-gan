@@ -18,6 +18,8 @@ from training.mixture.score_factory import ScoreCalculatorFactory
 
 from data.network_data_loader import generate_random_sequences
 
+import sys
+
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
     """
@@ -39,18 +41,30 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self.cc = ConfigurationContainer.instance()
 
         self._default_adam_learning_rate = self.settings.get('default_adam_learning_rate', default_adam_learning_rate)
+
+        # Resume status from checkpoint
+        checkpoint = self.cc.settings['general']['distribution'].get('client_checkpoint', None)
+        if checkpoint is not None:
+            iteration, generators_learning_rate, discriminators_learning_rate = self.read_ckeckpoint()
+            self.neighbourhood = Neighbourhood.instance()
+        else:
+            generators_learning_rate = self._default_adam_learning_rate
+            discriminators_learning_rate = self._default_adam_learning_rate
+            self.neighbourhood = Neighbourhood.instance()
+            iteration=0
+
+        self.iteration = iteration
+
         self._discriminator_skip_each_nth_step = self.settings.get('discriminator_skip_each_nth_step',
                                                                    discriminator_skip_each_nth_step)
         self._enable_selection = self.settings.get('enable_selection', enable_selection)
         self.mixture_sigma = self.settings.get('mixture_sigma', mixture_sigma)
 
-        self.neighbourhood = Neighbourhood.instance()
-
         for i, individual in enumerate(self.population_gen.individuals):
-            individual.learning_rate = self._default_adam_learning_rate
+            individual.learning_rate = generators_learning_rate
             individual.id = '{}/G{}'.format(self.neighbourhood.cell_number, i)
         for i, individual in enumerate(self.population_dis.individuals):
-            individual.learning_rate = self._default_adam_learning_rate
+            individual.learning_rate = discriminators_learning_rate
             individual.id = '{}/D{}'.format(self.neighbourhood.cell_number, i)
 
         self.concurrent_populations = ConcurrentPopulations.instance()
@@ -97,18 +111,26 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         else:
             self.optimize_weights_at_the_end = False
 
+        # Create checkpoints parameters
         n_iterations = self.cc.settings['trainer'].get('n_iterations', 0)
         assert 0 <= checkpoint_period <= n_iterations, 'Checkpoint period paramenter (checkpoint_period) should be ' \
                                                        'between 0 and the number of iterations (n_iterations).'
         self.checkpoint_period = self.cc.settings['general'].get('checkpoint_period', checkpoint_period)
 
 
+    def read_ckeckpoint(self):
+        checkpoint = self.cc.settings['general']['distribution']['client_checkpoint']
+        return checkpoint.get('iteration', 0), float(checkpoint.get('generators_learning_rate', None)),  float(checkpoint.get('discriminators_learning_rate', None))
+
 
     def train(self, n_iterations, stop_event=None):
         loaded = self.dataloader.load()
 
+        self._logger.info('Starting network training at cell {} in position {} of the grid.'.format(
+            self.neighbourhood.cell_number, self.neighbourhood.grid_position))
 
-        for iteration in range(n_iterations):
+        while(self.iteration < n_iterations):
+            iteration = self.iteration
             self._logger.debug('Iteration {} started'.format(iteration + 1))
             start_time = time()
 
@@ -246,7 +268,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             if self.checkpoint_period>0 and iteration%self.checkpoint_period==0:
                 self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
-                                     self.neighbourhood.cell_number)
+                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position,
+                                     self.neighbourhood.grid_size)
+
+            self.iteration += 1
 
 
         if self.optimize_weights_at_the_end:

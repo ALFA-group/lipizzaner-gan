@@ -15,18 +15,27 @@ from helpers.singleton import Singleton
 
 @Singleton
 class Neighbourhood:
-
     def __init__(self):
         self.cc = ConfigurationContainer.instance()
         self.concurrent_populations = ConcurrentPopulations.instance()
+
+        checkpoint = self.cc.settings['general']['distribution'].get('client_checkpoint', None)
+        if checkpoint is not None:
+            self.checkpoint = checkpoint
+            self.grid_size =  checkpoint['topology_details']['grid_size']
+            self.grid_position = (checkpoint['topology_details']['position'][0], checkpoint['topology_details']['position'][1])
+            self.local_node = checkpoint['topology_details']['cell_info']
+            self.cell_number = checkpoint['cell_number']
+            self.neighbours = checkpoint['adjacent_cells']
+        else:
+            self.grid_size, self.grid_position, self.local_node = self._load_topology_details()
+            self.cell_number = self._load_cell_number()
+            self.neighbours = self._adjacent_cells()
 
         dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
         network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
         self.node_client = NodeClient(network_factory)
 
-        self.grid_size, self.grid_position, self.local_node = self._load_topology_details()
-        self.cell_number = self._load_cell_number()
-        self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]
 
         self.mixture_weights_generators = self._init_mixture_weights()
@@ -140,6 +149,7 @@ class Neighbourhood:
 
         mask = np.zeros((dim, dim))
         mask[tuple(neighbours(x, y).T)] = 1
+        print(nodes[mask == 1].tolist())
 
         return nodes[mask == 1].tolist()
 

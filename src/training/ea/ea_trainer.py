@@ -11,7 +11,6 @@ from helpers.individual import Individual
 from helpers.population import Population, TYPE_GENERATOR, TYPE_DISCRIMINATOR
 from training.nn_trainer import NeuralNetworkTrainer
 
-
 class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
     _logger = logging.getLogger(__name__)
 
@@ -94,16 +93,25 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
 
         return new_population
 
-    def initialize_populations(self):
+    def initialize_populations(self, checkpoint):
         populations = [None] * 2
         populations[TYPE_GENERATOR] = Population(individuals=[], default_fitness=0, population_type=TYPE_GENERATOR)
         populations[TYPE_DISCRIMINATOR] = Population(individuals=[], default_fitness=0,
                                                      population_type=TYPE_DISCRIMINATOR)
-
-        for i in range(self._population_size):
-            gen, dis = self.network_factory.create_both()
-            populations[TYPE_GENERATOR].individuals.append(Individual(genome=gen, fitness=gen.default_fitness))
-            populations[TYPE_DISCRIMINATOR].individuals.append(Individual(genome=dis, fitness=dis.default_fitness))
+        if checkpoint is not None:
+            for gen_path, dis_path in zip(checkpoint['generators_path'], checkpoint['discriminators_path']):
+                gen, dis = self.network_factory.create_both()
+                gen.net.load_state_dict(torch.load(gen_path))
+                dis.net.load_state_dict(torch.load(dis_path))
+                gen.net.eval()
+                dis.net.eval()
+                populations[TYPE_GENERATOR].individuals.append(Individual(genome=gen, fitness=gen.default_fitness))
+                populations[TYPE_DISCRIMINATOR].individuals.append(Individual(genome=dis, fitness=dis.default_fitness))
+        else:
+            for i in range(self._population_size):
+                gen, dis = self.network_factory.create_both()
+                populations[TYPE_GENERATOR].individuals.append(Individual(genome=gen, fitness=gen.default_fitness))
+                populations[TYPE_DISCRIMINATOR].individuals.append(Individual(genome=dis, fitness=dis.default_fitness))
 
         populations[TYPE_GENERATOR].default_fitness = populations[TYPE_GENERATOR].individuals[0].fitness
         populations[TYPE_DISCRIMINATOR].default_fitness = populations[TYPE_DISCRIMINATOR].individuals[0].fitness
