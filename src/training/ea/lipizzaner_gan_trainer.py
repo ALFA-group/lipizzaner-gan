@@ -30,7 +30,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                  mixture_sigma=0.01, score_sample_size=10000, discriminator_skip_each_nth_step=0,
                  enable_selection=True, fitness_sample_size=10000, calculate_net_weights_dist=False,
                  fitness_mode='worst',  es_generations=10, es_score_sample_size=10000, es_random_init=False,
-                 checkpoint_period=0):
+                 checkpoint_period=0, communicating_neghbours=True):
 
         super().__init__(dataloader, network_factory, population_size, tournament_size, mutation_probability,
                          n_replacements, sigma, alpha)
@@ -102,20 +102,31 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                                        'between 0 and the number of iterations (n_iterations).'
         self.checkpoint_period = self.cc.settings['general'].get('checkpoint_period', checkpoint_period)
 
+        self.communicating_neghbours = self.settings.get('communicating_neghbours', communicating_neghbours)
+
 
 
     def train(self, n_iterations, stop_event=None):
         loaded = self.dataloader.load()
+
+        self._logger.info('\n\n\nAllow communication among the neighborhoods: {}\n\n\n'.format(self.communicating_neghbours))
+
+        if not self.communicating_neghbours:
+            all_generators = self.neighbourhood.all_generators
+            all_discriminators = self.neighbourhood.all_discriminators
+            local_generators = self.neighbourhood.local_generators
+            local_discriminators = self.neighbourhood.local_discriminators
 
 
         for iteration in range(n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
             start_time = time()
 
-            all_generators = self.neighbourhood.all_generators
-            all_discriminators = self.neighbourhood.all_discriminators
-            local_generators = self.neighbourhood.local_generators
-            local_discriminators = self.neighbourhood.local_discriminators
+            if self.communicating_neghbours:
+                all_generators = self.neighbourhood.all_generators
+                all_discriminators = self.neighbourhood.all_discriminators
+                local_generators = self.neighbourhood.local_generators
+                local_discriminators = self.neighbourhood.local_discriminators
 
             # Log the name of individuals in entire neighborhood for every iteration
             # (to help tracing because individuals from adjacent cells might be from different iterations)
