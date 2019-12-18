@@ -29,6 +29,7 @@ class ConfigurationContainer:
         'alternating_ea': ('training.ea.alternating_ea_trainer', 'AlternatingEATrainer'),
         'parallel_ea': ('training.ea.parallel_ea_trainer', 'ParallelEATrainer'),
         'four_layer_perceptron': ('networks.network_factory', 'FourLayerPerceptronFactory'),
+        'ssgan_perceptron': ('networks.network_factory', 'SSGANPerceptronFactory'),
         'convolutional': ('networks.network_factory', 'ConvolutionalNetworkFactory'),
         'mooc_net': ('networks.mooc_net', 'MOOCFourLayerPerceptronFactory'),
         'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),
@@ -43,10 +44,10 @@ class ConfigurationContainer:
         self.settings = {}
         self._output_dir = None
 
-    def create_instance(self, name, *args):
+    def create_instance(self, name, *args, **kwargs):
         module_name, class_name = self.class_maps[name]
         cls = getattr(importlib.import_module(module_name), class_name)
-        return cls(*args)
+        return cls(*args, **kwargs)
 
     # Encapsulated properties for often used settings
     @property

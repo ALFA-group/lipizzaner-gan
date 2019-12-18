@@ -7,12 +7,19 @@ from torch.nn import RNN
 from torch.autograd import Variable
 
 from helpers.configuration_container import ConfigurationContainer
-from networks.competetive_net import DiscriminatorNet, GeneratorNet, GeneratorNetSequential, DiscriminatorNetSequential
+from networks.competetive_net import (
+    DiscriminatorNet,
+    GeneratorNet,
+    GeneratorNetSequential,
+    DiscriminatorNetSequential,
+    SSDiscriminatorNet,
+    SSGeneratorNet
+)
 
 
 class NetworkFactory(ABC):
 
-    def __init__(self, input_data_size, loss_function=None):
+    def __init__(self, input_data_size, num_classes=None, loss_function=None):
         """
         :param loss_function: The loss function computing the network error, e.g. BCELoss. Read from config if not set.
         :param input_data_size: The number of discriminator input/generator output neurons,
@@ -25,6 +32,8 @@ class NetworkFactory(ABC):
             self.loss_function = loss_function
 
         self.input_data_size = input_data_size
+
+        self.num_classes = num_classes
 
 
     @abstractmethod
@@ -289,3 +298,59 @@ class SimpleRNN(nn.Module):
             outputs[:, step, :] = output
 
         return outputs
+
+
+class SSGANPerceptronFactory(NetworkFactory):
+
+    @property
+    def gen_input_size(self):
+        return 128
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+        net = SSGeneratorNet(
+            self.loss_function,
+            self.num_classes,
+            Sequential(
+                nn.Linear(128, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 512),
+                nn.LeakyReLU(0.2),
+                nn.Linear(512, self.input_data_size),
+                nn.Tanh()), self.gen_input_size)
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+        net = SSDiscriminatorNet(
+            self.loss_function,
+            nn.CrossEntropyLoss(),
+            self.num_classes,
+            Sequential(
+                nn.Linear(self.input_data_size, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 512),
+                nn.LeakyReLU(0.2)),
+            self.gen_input_size,
+            Sequential(
+                nn.Linear(512, 1),
+                nn.Sigmoid()
+            ),
+            Sequential(
+                nn.Linear(512, self.num_classes + 1),
+                nn.Softmax()
+            ),
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net

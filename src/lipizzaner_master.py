@@ -161,7 +161,7 @@ class LipizzanerMaster:
 
         # Initialize node client
         dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
+        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
         node_client = NodeClient(network_factory)
         db_logger = DbLogger()
 

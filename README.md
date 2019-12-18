@@ -7,19 +7,33 @@ Lipizzaner is a framework to train generative adversarial networks with gradient
 - Tom Schmiedlechner, Ignavier Ng Zhi Yong, Abdullah Al-Dujaili, Erik Hemberg, Una-May O'Reilly, “Lipizzaner: A System That Scales Robust Generative Adversarial Network Training,” NeurIPS 2018 Workshop on System for Machine Learning, 2018.
   - The configuration files to run the experiments performed in this paper can be found in the following path  `./src/configuration/neurips2018/`
 
+### Setup
+
+1. Install Docker
+2. In the lipizzaner-gan folder run:
+```
+docker build -t lipizzaner-gan .
+```
+3. Link the files on your computer with the files in the container by running:
+```
+docker run -v "`pwd`":/lipizzaner-gan -ti --name lipizzaner-gan lipizzaner-gan
+```
+
+If the 3 steps outlined above are run successfully then you should be in the repo folder in the container.
+```
+root@925bdac2f9b3:/lipizzaner-gan/src#
+```
 ### Dev environment setup
-
-##### Conda
-```
-conda env create -f ./src/helper_files/environment.yml
-source activate lipizzaner
-```
-
 ##### Pip
 ```
-pip install -r ./src/helper_files/requirements.txt
+wget http://download.pytorch.org/whl/cu90/torch-0.3.1-cp36-cp36m-linux_x86_64.whl
 ```
-
+```
+pip3 install torch-0.3.1-cp36-cp36m-linux_x86_64.whl
+```
+```
+pip3 install -r ./src/helper_files/requirements.txt
+```
 ### Quick start
 
 Lipizzaner includes a quick start example to test the installation on your localhost. In this experiment Lipizzaner trains a GAN by using four clients during 5 generations. The configuration files are located in `./src/configuration/quickstart/`. 

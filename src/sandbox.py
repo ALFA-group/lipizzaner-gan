@@ -119,7 +119,7 @@ def calc_score(args, cc):
 
     score_calc = ScoreCalculatorFactory.create()
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
-    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
 
     generator = network_factory.create_generator()
     generator.net.load_state_dict(torch.load(args.generator_file))
@@ -147,7 +147,7 @@ def generate_samples(args, cc):
     sample_size = args.sample_size
 
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
-    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
 
     population = Population(individuals=[], default_fitness=0)
     mixture_definition = read_settings(os.path.join(mixture_source, 'mixture.yml'))

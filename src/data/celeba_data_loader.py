@@ -24,6 +24,10 @@ class CelebADataLoader(DataLoader):
     def n_input_neurons(self):
         return 3072
 
+    @property
+    def num_classes(self):
+        return None
+
     def transform(self):
         return transforms.Compose([transforms.Resize([64,64]), transforms.ToTensor(),
                                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])

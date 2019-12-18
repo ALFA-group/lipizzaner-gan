@@ -42,7 +42,7 @@ class Lipizzaner:
         else:
             self.cc = ConfigurationContainer.instance()
             dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-            network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
+            network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
             self.trainer = self.cc.create_instance(self.cc.settings['trainer']['name'], dataloader, network_factory)
 
         if 'params' in self.cc.settings['trainer'] and 'score' in self.cc.settings['trainer']['params']:

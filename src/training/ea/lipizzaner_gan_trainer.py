@@ -140,19 +140,23 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             new_populations = {}
 
             # Create random dataset to evaluate fitness in each iterations
-            fitness_samples = self.generate_random_fitness_samples(self.fitness_sample_size)
+            fitness_input, fitness_labels = self.generate_random_fitness_samples(self.fitness_sample_size)
             if self.cc.settings['dataloader']['dataset_name'] == 'celeba' \
                     or self.cc.settings['dataloader']['dataset_name'] == 'cifar':
-                fitness_samples = to_pytorch_variable(fitness_samples)
+                fitness_input = to_pytorch_variable(fitness_input)
+                fitness_labels = to_pytorch_variable(fitness_labels)
             elif self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
-                fitness_samples = to_pytorch_variable(generate_random_sequences(self.fitness_sample_size))
+                fitness_input = to_pytorch_variable(generate_random_sequences(self.fitness_sample_size))
             else:
-                fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
+                fitness_input = to_pytorch_variable(fitness_input.view(self.fitness_sample_size, -1))
+                fitness_labels = to_pytorch_variable(fitness_labels.view(self.fitness_sample_size, -1))
+
+            fitness_labels = torch.squeeze(fitness_labels)
 
             # Fitness evaluation
             self._logger.debug('Evaluating fitness')
-            self.evaluate_fitness(all_generators, all_discriminators, fitness_samples, self.fitness_mode)
-            self.evaluate_fitness(all_discriminators, all_generators, fitness_samples, self.fitness_mode)
+            self.evaluate_fitness(all_generators, all_discriminators, fitness_input, self.fitness_mode)
+            self.evaluate_fitness(all_discriminators, all_generators, fitness_input, self.fitness_mode, labels=fitness_labels, logger=self._logger)
             self._logger.debug('Finished evaluating fitness')
 
             # Tournament selection
@@ -173,9 +177,11 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     input_data = to_pytorch_variable(next(data_iterator))
                     batch_size = input_data.size(0)
                 else:
-                    input_data = next(data_iterator)[0]
+                    input_data, labels = next(data_iterator)
                     batch_size = input_data.size(0)
                     input_data = to_pytorch_variable(self.dataloader.transpose_data(input_data))
+                    labels = to_pytorch_variable(self.dataloader.transpose_data(labels))
+                    labels = torch.squeeze(labels)
 
                 # Quit if requested
                 if stop_event is not None and stop_event.is_set():
@@ -194,7 +200,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     attackers = new_populations[TYPE_DISCRIMINATOR] if self._enable_selection else local_discriminators
                     defenders = new_populations[TYPE_GENERATOR] if self._enable_selection else all_generators
                     input_data = self.step(local_discriminators, attackers, defenders, input_data, self.batch_number,
-                                           loaded, data_iterator)
+                                           loaded, data_iterator, labels=labels)
 
                 self._logger.info('Iteration {}, Batch {}/{}'.format(iteration + 1, self.batch_number, len(loaded)))
 
@@ -208,10 +214,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             # Replace the worst with the best new
             if self._enable_selection:
                 # Evaluate fitness of new_populations against neighborhood
-                self.evaluate_fitness(new_populations[TYPE_GENERATOR], all_discriminators, fitness_samples,
+                self.evaluate_fitness(new_populations[TYPE_GENERATOR], all_discriminators, fitness_input,
                                       self.fitness_mode)
-                self.evaluate_fitness(new_populations[TYPE_DISCRIMINATOR], all_generators, fitness_samples,
-                                      self.fitness_mode)
+                self.evaluate_fitness(new_populations[TYPE_DISCRIMINATOR], all_generators, fitness_input,
+                                      self.fitness_mode, labels=fitness_labels)
                 self.concurrent_populations.lock()
                 local_generators.replacement(new_populations[TYPE_GENERATOR], self._n_replacements, is_logging=True)
                 local_generators.sort_population(is_logging=True)
@@ -229,8 +235,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     individual.iteration = iteration + 1
             else:
                 # Re-evaluate fitness of local_generators and local_discriminators against neighborhood
-                self.evaluate_fitness(local_generators, all_discriminators, fitness_samples, self.fitness_mode)
-                self.evaluate_fitness(local_discriminators, all_generators, fitness_samples, self.fitness_mode)
+                self.evaluate_fitness(local_generators, all_discriminators, fitness_input, self.fitness_mode)
+                self.evaluate_fitness(local_discriminators, all_generators, fitness_input, self.fitness_mode, labels=fitness_labels)
 
 
             # Mutate mixture weights after selection
@@ -342,9 +348,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                                                                                         init_score,
                                                                                                         self.score))
 
-    def step(self, original, attacker, defender, input_data, i, loaded, data_iterator):
+    def step(self, original, attacker, defender, input_data, i, loaded, data_iterator, labels=None):
         self.mutate_hyperparams(attacker)
-        return self.update_genomes(attacker, defender, input_data, loaded, data_iterator)
+        return self.update_genomes(attacker, defender, input_data, loaded, data_iterator, labels=labels)
 
     def is_last_batch(self, i):
         return self.dataloader.n_batches != 0 and self.dataloader.n_batches - 1 == i
@@ -362,7 +368,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         for i, individual in enumerate(population.individuals):
             individual.learning_rate = max(0, individual.learning_rate + deltas[i] * self._alpha)
 
-    def update_genomes(self, population_attacker, population_defender, input_var, loaded, data_iterator):
+    def update_genomes(self, population_attacker, population_defender, input_var, loaded, data_iterator, labels=None):
 
         # TODO Currently picking random opponent, introduce parameter for this
         defender = random.choice(population_defender.individuals).genome
@@ -376,7 +382,12 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             # Restore previous state dict, if available
             if individual_attacker.optimizer_state is not None:
                 optimizer.load_state_dict(individual_attacker.optimizer_state)
-            loss = attacker.compute_loss_against(defender, input_var)[0]
+
+            if labels is None:
+                loss = attacker.compute_loss_against(defender, input_var)[0]
+            else:
+                loss = attacker.compute_loss_against(defender, input_var,
+                                                     labels=labels)[0]
 
             attacker.net.zero_grad()
             defender.net.zero_grad()
@@ -388,7 +399,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         return input_var
 
     @staticmethod
-    def evaluate_fitness(population_attacker, population_defender, input_var, fitness_mode):
+    def evaluate_fitness(population_attacker, population_defender, input_var, fitness_mode, labels=None, logger=None):
         # Single direction only: Evaluate fitness of attacker based on defender
         # TODO: Simplify and refactor this function
         def compare_fitness(curr_fitness, fitness, mode):
@@ -412,14 +423,51 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             individual_attacker.fitness = float(
                 '-inf')  # Reinitalize before evaluation started (Needed for average fitness)
             for individual_defender in population_defender.individuals:
-                fitness_attacker = float(individual_attacker.genome.compute_loss_against(
-                    individual_defender.genome, input_var)[0])
+                if labels is None:
+                    fitness_attacker = float(
+                        individual_attacker.genome.compute_loss_against(
+                            individual_defender.genome, input_var)[0])
+                else:
+                    fitness_attacker = float(
+                        individual_attacker.genome.compute_loss_against(
+                            individual_defender.genome, input_var,
+                            labels=labels)[0])
 
                 individual_attacker.fitness = compare_fitness(fitness_attacker, individual_attacker.fitness,
                                                               fitness_mode)
 
             if fitness_mode == 'average':
                 individual_attacker.fitness /= len(population_defender.individuals)
+
+        if labels is not None and logger is not None:
+            gen = None
+            for g in population_defender.individuals:
+                if g.is_local:
+                    gen = g
+                    break
+            dis = None
+            for d in population_attacker.individuals:
+                if d.is_local:
+                    dis = d
+                    break
+            generator = gen.genome
+            discriminator = dis.genome
+            discriminator_output = discriminator.compute_loss_against(
+                generator, input_var, labels=labels
+            )
+            accuracy = discriminator_output[2]
+            if discriminator.name == "SemiSupervisedDiscriminator" and \
+                    accuracy is not None:
+                d_acc = accuracy[0]
+                real_acc = accuracy[1]
+                fake_acc = accuracy[2]
+                logger.info(
+                    "Label Prediction Accuracy: %d%%, "
+                    "Real Image Prediction Accuracy: %d%%, "
+                    "Fake Image Prediction Accuracy: %d%%"
+                    % (100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc))
+                )
+
 
     def mutate_mixture_weights_with_score(self, input_data):
         # Not necessary for single-cell grids, as mixture must always be [1]
@@ -485,28 +533,37 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         def get_next_batch(iterator, loaded):
             # Handle if the end of iterator is reached
             try:
-                return next(iterator)[0], iterator
+                input, labels = next(iterator)
+                return input, labels, iterator
             except StopIteration:
                 # Use a new iterator
                 iterator = iter(loaded)
-                return next(iterator)[0], iterator
+                input, labels = next(iterator)
+                return input, labels, iterator
 
-        sampled_data, self.fitness_iterator = get_next_batch(self.fitness_iterator, self.fitness_loaded)
-        batch_size = sampled_data.size(0)
+        sampled_input, sampled_labels, self.fitness_iterator = get_next_batch(
+            self.fitness_iterator, self.fitness_loaded)
+        batch_size = sampled_input.size(0)
 
         if fitness_sample_size < batch_size:
-            return sampled_data[:fitness_sample_size]
+            return sampled_input[:fitness_sample_size], sampled_labels[:fitness_sample_size]
         else:
             fitness_sample_size -= batch_size
             while fitness_sample_size >= batch_size:
                 # Keep concatenate a full batch of data
-                curr_data, self.fitness_iterator = get_next_batch(self.fitness_iterator, self.fitness_loaded)
-                sampled_data = torch.cat((sampled_data, curr_data), 0)
+                curr_input, curr_labels, self.fitness_iterator = get_next_batch(
+                    self.fitness_iterator, self.fitness_loaded)
+                sampled_input = torch.cat((sampled_input, curr_input), 0)
+                sampled_labels = torch.cat((sampled_labels, curr_labels), 0)
                 fitness_sample_size -= batch_size
 
             if fitness_sample_size > 0:
                 # Concatenate partial batch of data
-                curr_data, self.fitness_iterator = get_next_batch(self.fitness_iterator, self.fitness_loaded)
-                sampled_data = torch.cat((sampled_data, curr_data[:fitness_sample_size]), 0)
+                curr_input, curr_labels, self.fitness_iterator = get_next_batch(
+                    self.fitness_iterator, self.fitness_loaded)
+                sampled_input = torch.cat(
+                    (sampled_input, curr_input[:fitness_sample_size]), 0)
+                sampled_labels = torch.cat(
+                    (sampled_labels, curr_labels[:fitness_sample_size]), 0)
 
-            return sampled_data
+            return sampled_input, sampled_labels
