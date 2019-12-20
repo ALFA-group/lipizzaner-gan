@@ -37,9 +37,16 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
         elif mixture_generator_samples_mode == 'exact_proportion':
             # Does not perform checking here if weights_np.tolist() sum up to one
             # There will be some trivial error if prob*n_samples is not integer for prob in weights_np.tolist()
-            self.gen_indices = [
-                i for gen_idx, prob in enumerate(weights_np.tolist()) for i in [gen_idx] * math.ceil(n_samples * prob)
-            ]
+            try:
+                self.gen_indices = [
+                    i for gen_idx, prob in enumerate(weights_np.tolist()) for i in [gen_idx] * math.ceil(n_samples * prob)
+                ]
+            except:
+                self.gen_indices = [
+                    i for gen_idx, prob in enumerate([1.0, 0.0, 0.0, 0.0, 0.0]) for i in
+                    [gen_idx] * math.ceil(n_samples * prob)
+                ]
+                print('\n\n\n\n\n\n\n\n\n -------------------------ERROR----------------------\n\n\n\n\n\n\n\n\n ')
             np.random.shuffle(self.gen_indices)
             self.gen_indices = self.gen_indices[:n_samples]
         else:

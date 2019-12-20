@@ -20,10 +20,21 @@ from lipizzaner_master import LipizzanerMaster, GENERATOR_PREFIX
 from training.mixture.score_factory import ScoreCalculatorFactory
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 
-from datetime import datetime, timezone
 import time
 from tvd_based_constructor import TVDBasedConstructor
 from random_search_ensemble_generator import TVDBasedRandomSearch
+from ga_ensemble_generator import TVDBasedGA
+
+from deap import base
+from deap import creator
+from deap import tools
+import math
+import random
+from itertools import repeat
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
 
 _logger = logging.getLogger(__name__)
 
@@ -160,6 +171,45 @@ def create_parser():
         help='Max size of the ensemble.')
     add_config_file(group_optimize_random, True)
 
+    group_optimize_ga = subparsers.add_parser('optimize-ga')
+    group_optimize_ga.add_argument(
+        '--generations',
+        type=int,
+        dest='generations',
+        help='Number of generations of the random search')
+    group_optimize_ga.add_argument(
+        '--population_size',
+        type=int,
+        dest='population_size',
+        help='Number of generations of the random search')
+    group_optimize_ga.add_argument(
+        '--mutation_probability',
+        '-mp',
+        type=float,
+        dest='mutation_probability',
+        help='Number of generations of the random search')
+    group_optimize_ga.add_argument(
+        '--crossover_probability',
+        '-cp',
+        type=float,
+        dest='crossover_probability',
+        help='Number of generations of the random search')
+    group_optimize_ga.add_argument(
+        '--output',
+        '-o',
+        type=str,
+        dest='output_file',
+        required=True,
+        help='The output file to store the output.')
+    group_optimize_ga.add_argument(
+        '--ensemble-max-size',
+        '-e',
+        type=int,
+        dest='ensemble_max_size',
+        required=True,
+        help='Max size of the ensemble.')
+    add_config_file(group_optimize_ga, True)
+
     return parser
 
 
@@ -173,6 +223,181 @@ def initialize_settings(args):
         losswise.set_api_key(cc.settings['general']['losswise']['api_key'])
 
     return cc
+
+def optimize_ga(args, cc):
+#def optimize_random_search(args, cc):
+    def evalOneMax(individual, network_factory, mixture_generator_samples_mode='exact_proportion', fitness_type='TVD'):
+        population = Population(individuals=[], default_fitness=0)
+        weight_and_generator_indices = [math.modf(gen) for gen in individual]
+        generators_paths, sources = ga.get_genarators_for_ensemble(weight_and_generator_indices)
+        tentative_weights = ga.extract_weights(weight_and_generator_indices)
+        mixture_definition = dict(zip(sources, tentative_weights))
+        for path, source in zip(generators_paths, sources):
+            generator = network_factory.create_generator()
+            generator.net.load_state_dict(torch.load(path))
+            generator.net.eval()
+            population.individuals.append(Individual(genome=generator, fitness=0, source=source))
+
+        dataset = MixedGeneratorDataset(population,
+                                        mixture_definition,
+                                        50000,
+                                        mixture_generator_samples_mode)
+        fid, tvd = score_calc.calculate(dataset)
+        return fid, tvd,
+
+
+    output_file = args.output_file
+    ensemble_max_size = args.ensemble_max_size
+    generations = args.generations
+    population_size = args.population_size
+    mutation_probability = args.mutation_probability
+    crossover_probability = args.crossover_probability
+    max_generators_index = 218
+    ensemble_size = ensemble_max_size
+
+    print('Starting experiments....')
+    print('Configuration: ')
+    print('Number of generations={}'.format(generations))
+    print('Population size={}'.format(population_size))
+    print('P_mu={}\nP_cr={}'.format(mutation_probability, crossover_probability))
+    print('Max generators={}'.format(max_generators_index))
+
+
+    ga = TVDBasedGA()
+    fitness_type = 'TVD'
+    score_calc = ScoreCalculatorFactory.create()
+#    dataloader = 'mnist'
+#    network_name = 'four_layer_perceptron'
+    mixture_generator_samples_mode = 'exact_proportion'
+    dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+
+
+
+    creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
+    creator.create("Individual", list, fitness=creator.FitnessMin)
+    toolbox = base.Toolbox()
+    toolbox.register("attr_rand", random.uniform, 0, max_generators_index)
+    toolbox.register('individual', ga.create_individual, creator.Individual, size=ensemble_size,
+                     max_generators_index=max_generators_index)
+    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+    toolbox.register("evaluate", evalOneMax, network_factory=network_factory,
+                     mixture_generator_samples_mode=mixture_generator_samples_mode, fitness_type=fitness_type)
+    toolbox.register("mate", tools.cxTwoPoint)
+    toolbox.register("mutate", ga.mutate, low=0, up=max_generators_index, indpb=1 / ensemble_size)
+    toolbox.register('crossoverGAN', ga.cxTwoPointGAN)
+    toolbox.register("select", tools.selTournament, tournsize=3)
+
+    pop = toolbox.population(n=population_size)
+    generators_examined = 0
+
+    # Evaluate the entire population
+    fitnesses = list(map(toolbox.evaluate, pop))
+    tvds = []
+    fids = []
+    for ind, (fid, tvd) in zip(pop, fitnesses):
+        if fitness_type == 'TVD':
+            ind.fitness.values = tvd,
+        elif fitness_type == 'FID':
+            ind.fitness.values = fid,
+        elif fitness_type == 'FID-TVD':
+            ind.fitness.values = fid,
+        tvds.append(tvd)
+        fids.append(fid)
+
+    for gen, fid, tvd in zip(pop, fids, tvds):
+        print(
+            'Generators examined={} - Mixture: {} - FID={}, TVD={}'.format( \
+                generators_examined, gen, fid, tvd))
+
+    # Extracting all the fitnesses of
+    fits = [ind.fitness.values[0] for ind in pop]
+
+    # Variable keeping track of the number of generations
+    g = 0
+
+    start_time = time.time()
+    # Begin the evolution
+    while generators_examined < generations: # g < generations:
+        # A new generation
+        g = g + 1
+        print("-- Generation %i --" % g)
+        # Select the next generation individuals
+        offspring = toolbox.select(pop, len(pop))
+        # Clone the selected individuals
+        offspring = list(map(toolbox.clone, offspring))
+
+        # Apply crossover and mutation on the offspring
+        for child1, child2 in zip(offspring[::2], offspring[1::2]):
+            if random.random() < crossover_probability:
+                # toolbox.mate(child1, child2)
+                toolbox.crossoverGAN(child1, child2)
+                del child1.fitness.values
+                del child2.fitness.values
+
+        for mutant in offspring:
+            if random.random() < mutation_probability:
+                toolbox.mutate(mutant)
+                del mutant.fitness.values
+
+        # Evaluate the individuals with an invalid fitness
+        invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
+        fitnesses = map(toolbox.evaluate, invalid_ind)
+        tvds = []
+        fids = []
+        for ind, (fid, tvd) in zip(invalid_ind, fitnesses):
+            generators_examined += 1
+            if fitness_type == 'TVD':
+                ind.fitness.values = tvd,
+            elif fitness_type == 'FID':
+                ind.fitness.values = fid,
+            elif fitness_type == 'FID-TVD':
+                ind.fitness.values = fid,
+            tvds.append(tvd)
+            fids.append(fid)
+        for gen, fid, tvd in zip(invalid_ind, fids, tvds):
+            print(
+                'Generators examined={} - Mixture: {} - FID={}, TVD={}'.format( \
+                    generators_examined, gen, fid, tvd))
+
+        pop[:] = offspring
+
+        tvd = [ind.fitness.values[0] for ind in pop]
+
+
+        # Gather all the fitnesses in one list and print the stats
+        fits = [ind.fitness.values[0] for ind in pop]
+
+        length = len(pop)
+        mean = sum(fids) / length
+        sum2 = sum(x * x for x in fids)
+        std = abs(sum2 / length - mean ** 2) ** 0.5
+
+        print("FID  Min %s" % min(fids))
+        print("FID  Max %s" % max(fids))
+        print("FID  Avg %s" % mean)
+        print("FID  Std %s" % std)
+
+        mean = sum(tvds) / length
+        sum2 = sum(x * x for x in tvds)
+        std = abs(sum2 / length - mean ** 2) ** 0.5
+
+        print("TVD  Min %s" % min(tvds))
+        print("TVD  Max %s" % max(tvds))
+        print("TVD  Avg %s" % mean)
+        print("TVD  Std %s" % std)
+        print('Generators examined={}'.format(generators_examined))
+        print('Execution time={}'.format(time.time() - start_time))
+
+
+    print('Finishing execution....')
+    # print('FID={}'.format(current_fid))
+    # print('TVD={}'.format(current_tvd))
+    print('Generators examined={}'.format(generators_examined))
+    # print('Ensemble: {}'.format(current_mixture_definition))
+    print('Execution time={}'.format(time.time() - start_time))
+
+
 
 
 def optimize_random_search(args, cc):
@@ -452,5 +677,8 @@ if __name__ == '__main__':
     elif args.task == 'optimize-random-search':
         cc = initialize_settings(args)
         optimize_random_search(args, cc)
+    elif args.task == 'optimize-ga':
+        cc = initialize_settings(args)
+        optimize_ga(args, cc)
     else:
         parser.print_help()
