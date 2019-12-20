@@ -97,7 +97,11 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         else:
             self.optimize_weights_at_the_end = False
 
+        n_iterations = self.cc.settings['trainer'].get('n_iterations', 0)
+        assert 0 <= checkpoint_period <= n_iterations, 'Checkpoint period paramenter (checkpoint_period) should be ' \
+                                                       'between 0 and the number of iterations (n_iterations).'
         self.checkpoint_period = self.cc.settings['general'].get('checkpoint_period', checkpoint_period)
+
 
 
     def train(self, n_iterations, stop_event=None):

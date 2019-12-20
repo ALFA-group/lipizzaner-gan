@@ -19,15 +19,15 @@ trainer:
       enabled: True
       type: fid
       score_sample_size: 1000
-      cuda: False
+      cuda: True
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
 dataloader:
   dataset_name: mnist
   use_batch: True
-  batch_size: 400
-  n_batches: 2
+  batch_size: 100
+  n_batches: 0
   shuffle: True
 network:
   name: four_layer_perceptron
@@ -35,5 +35,6 @@ network:
 master:
   calculate_score: True
   score_sample_size: 50000
-  cuda: False
+  cuda: True
 general: !include general.yml
+

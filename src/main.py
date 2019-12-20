@@ -20,6 +20,11 @@ from lipizzaner_master import LipizzanerMaster, GENERATOR_PREFIX
 from training.mixture.score_factory import ScoreCalculatorFactory
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 
+from datetime import datetime, timezone
+import time
+from tvd_based_constructor import TVDBasedConstructor
+from random_search_ensemble_generator import TVDBasedRandomSearch
+
 _logger = logging.getLogger(__name__)
 
 
@@ -96,6 +101,65 @@ def create_parser():
         help='Generator .pkl file.')
     add_config_file(group_score, True)
 
+    group_evaluate = subparsers.add_parser('evaluate')
+    group_evaluate.add_argument(
+        '--generator',
+        type=str,
+        dest='generator_file',
+        help='Generator .pkl file.')
+    group_evaluate.add_argument(
+        '--output',
+        '-o',
+        type=str,
+        dest='output_dir',
+        required=True,
+        help='The output directory in which the samples will be created in. Will be created if it does not exist yet.')
+    add_config_file(group_evaluate, True)
+
+    group_optimize_greedy = subparsers.add_parser('optimize-greedy')
+    group_optimize_greedy.add_argument(
+        '--mode',
+        type=str,
+        dest='mode',
+        help='iterative or random selection')
+    group_optimize_greedy.add_argument(
+        '--output',
+        '-o',
+        type=str,
+        dest='output_file',
+        required=True,
+        help='The output file to store the output.')
+    group_optimize_greedy.add_argument(
+        '--ensemble-max-size',
+        '-e',
+        type=int,
+        dest='ensemble_max_size',
+        required=True,
+        help='Max size of the ensemble.')
+    add_config_file(group_optimize_greedy, True)
+
+    group_optimize_random = subparsers.add_parser('optimize-random-search')
+    group_optimize_random.add_argument(
+        '--generations',
+        type=int,
+        dest='generations',
+        help='Number of generations of the random search')
+    group_optimize_random.add_argument(
+        '--output',
+        '-o',
+        type=str,
+        dest='output_file',
+        required=True,
+        help='The output file to store the output.')
+    group_optimize_random.add_argument(
+        '--ensemble-max-size',
+        '-e',
+        type=int,
+        dest='ensemble_max_size',
+        required=True,
+        help='Max size of the ensemble.')
+    add_config_file(group_optimize_random, True)
+
     return parser
 
 
@@ -109,6 +173,186 @@ def initialize_settings(args):
         losswise.set_api_key(cc.settings['general']['losswise']['api_key'])
 
     return cc
+
+
+def optimize_random_search(args, cc):
+    output_file = args.output_file
+    ensemble_max_size = args.ensemble_max_size
+    generations=args.generations
+
+    generators_path = './generators/'
+    precision = 10
+
+    constructor = TVDBasedRandomSearch(precision=precision, generators_path=generators_path)
+    score_calc = ScoreCalculatorFactory.create()
+    dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+
+    current_tvd = 1.0
+    current_fid = 100
+    generators_examined = 0
+    current_mixture_definition = dict()
+
+    start_time = time.time()
+    for generation in range(generations):
+        population = Population(individuals=[], default_fitness=0)
+        generators_paths, sources = constructor.get_genarators_for_ensemble(ensemble_max_size)
+        tentative_weights = constructor.get_weights_tentative(ensemble_max_size)[0]
+        mixture_definition = dict(zip(sources, tentative_weights))
+        for path, source in zip(generators_paths, sources):
+            generator = network_factory.create_generator()
+            generator.net.load_state_dict(torch.load(path))
+            generator.net.eval()
+            population.individuals.append(Individual(genome=generator, fitness=0, source=source))
+
+        dataset = MixedGeneratorDataset(population,
+                                        mixture_definition,
+                                        50000,
+                                        cc.settings['trainer']['mixture_generator_samples_mode'])
+        fid, tvd = score_calc.calculate(dataset)
+        if tvd < current_tvd:
+            current_tvd = tvd
+            current_fid = fid
+            current_mixture_definition = mixture_definition
+        generators_examined += 1
+        print(
+            'Generators examined={} - Mixture: {} - FID={}, TVD={}, FIDbest={}, TVDbest={}'.format( \
+                generators_examined, mixture_definition, fid, tvd, current_fid, current_tvd))
+
+    print('Finishing execution....')
+    print('FID={}'.format(current_fid))
+    print('TVD={}'.format(current_tvd))
+    print('Generators examined={}'.format(generators_examined))
+    print('Ensemble: {}'.format(current_mixture_definition))
+    print('Execution time={}'.format(time.time() - start_time))
+
+    file = open(output_file,'w')
+    file.write('FID={}\n'.format(current_fid))
+    file.write('TVD={}\n'.format(current_tvd))
+    file.write('Generators examined={}'.format(generators_examined))
+    file.write('Ensemble: {}\n'.format(current_mixture_definition))
+    file.write('Execution time={}\n'.format(time.time()-start_time))
+    file.close()
+
+
+def optimize_greedy(args, cc):
+    output_file = args.output_file
+    ensemble_max_size = args.ensemble_max_size
+    mode=args.mode
+    max_time_without_improvements = 3
+
+    generators_path = './generators/'
+    precision = 10
+    using_max_size = ensemble_max_size!=0
+
+    constructor = TVDBasedConstructor(precision=precision, generators_path=generators_path, mode=mode)
+    score_calc = ScoreCalculatorFactory.create()
+    dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+    population = Population(individuals=[], default_fitness=0)
+    sources = []
+
+    current_tvd = 1.0
+    current_fid = 100
+    current_mixture_definition = dict()
+    generators_examined = 0
+
+    start_time = time.time()
+    while True:
+        next_generator_path, source = constructor.get_next_generator_path()#'{}mnist-generator-{:03d}.pkl'.format(generators_path,generator_index)
+        generator = network_factory.create_generator()
+        generator.net.load_state_dict(torch.load(next_generator_path))
+        generator.net.eval()
+        #source = '{:03d}'.format(generator_index)
+        population.individuals.append(Individual(genome=generator, fitness=0, source=source))
+        sources.append(source)
+        ensemble_size = len(population.individuals)
+
+        tvd_tentative = 1.0
+        mixture_definition_i = dict()
+
+        combinations_of_weights, size = constructor.get_weights_tentative(ensemble_size)
+        if size == 0:
+            break
+        for tentative_mixture_definition in combinations_of_weights:
+            mixture_definition = dict(zip(sources, tentative_mixture_definition))
+            dataset = MixedGeneratorDataset(population,
+                                            mixture_definition,
+                                            50000,
+                                            cc.settings['trainer']['mixture_generator_samples_mode'])
+            fid, tvd = score_calc.calculate(dataset)
+            if tvd < tvd_tentative:
+                tvd_tentative = tvd
+                fid_tentative = fid
+                mixture_definition_i = mixture_definition
+            generators_examined += 1
+            print(
+                'Generators examined={} - Mixture: {} - FID={}, TVD={}, FIDi={}, TVDi={}, FIDbest={}, TVDbest={}'.format( \
+                    generators_examined, mixture_definition, fid, tvd, fid_tentative, tvd_tentative, current_fid, current_tvd))
+
+        if tvd_tentative < current_tvd:
+            current_tvd = tvd_tentative
+            current_fid = fid_tentative
+            current_mixture_definition = mixture_definition_i
+            convergence_time = 0
+        else:
+            sources.pop()
+            population.individuals.pop()
+            convergence_time += 1
+
+        # print('Ensemble size = {} '.format(len(population.individuals)))
+        # _logger.info('Generator loaded from \'{}\' yielded a score of FID={} TVD={}\n{}'.format(next_generator_path,
+        #                                                                                     current_fid, current_tvd,
+        #                                                                                         current_mixture_definition))
+        # print('Generator loaded from \'{}\' yielded a score of FID={} TVD={}\n{}'.format(next_generator_path, current_fid,
+        #                                                                             current_tvd, current_mixture_definition))
+        #
+
+        if using_max_size and len(sources) == ensemble_max_size:
+            break
+        else:
+            if convergence_time > max_time_without_improvements:
+                break
+
+    print('Finishing execution....')
+    print('FID={}'.format(current_fid))
+    print('TVD={}'.format(current_tvd))
+    print('Generators examined={}'.format(generators_examined))
+    print('Ensemble: {}'.format(current_mixture_definition))
+    print('Execution time={}'.format(time.time() - start_time))
+
+    file = open(output_file, 'w')
+    file.write('FID={}\n'.format(current_fid))
+    file.write('TVD={}\n'.format(current_tvd))
+    file.write('Generators examined={}'.format(generators_examined))
+    file.write('Ensemble: {}\n'.format(current_mixture_definition))
+    file.write('Execution time={}\n'.format(time.time() - start_time))
+    file.close()
+
+def calc_score_optimization(args, cc):
+    output_dir = args.output_dir
+
+    score_calc = ScoreCalculatorFactory.create()
+    dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+
+    generator = network_factory.create_generator()
+    generator.net.load_state_dict(torch.load(args.generator_file))
+    generator.net.eval()
+    individual = Individual(genome=generator, fitness=0, source='local')
+
+    dataset = MixedGeneratorDataset(Population(individuals=[individual], default_fitness=0),
+                                    {'local': 1.0},
+                                    50000,
+                                    cc.settings['trainer']['mixture_generator_samples_mode'])
+
+    if output_dir != 'no-images':
+        os.makedirs(output_dir, exist_ok=True)
+        LipizzanerMaster().save_samples(dataset, output_dir, dataloader)
+    inc = score_calc.calculate(dataset)
+    _logger.info('Output dir {}'.format(output_dir))
+    _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.generator_file, inc))
+    print('Generator loaded from \'{}\' yielded a score of {}'.format(args.generator_file, inc))
 
 
 def calc_score(args, cc):
@@ -130,6 +374,7 @@ def calc_score(args, cc):
     os.makedirs(output_dir, exist_ok=True)
     LipizzanerMaster().save_samples(dataset, output_dir, dataloader)
     inc = score_calc.calculate(dataset)
+    _logger.info('Output dir {}'.format(output_dir))
     _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(args.generator_file, inc))
 
 
@@ -159,6 +404,16 @@ def generate_samples(args, cc):
     os.makedirs(output_dir, exist_ok=True)
     LipizzanerMaster().save_samples(dataset, output_dir, dataloader, sample_size, batch_size)
 
+    dataset = MixedGeneratorDataset(population,
+                                    mixture_definition,
+                                    50000,
+                                    cc.settings['trainer']['mixture_generator_samples_mode'])
+    score_calc = ScoreCalculatorFactory.create()
+    inc = score_calc.calculate(dataset)
+    _logger.info('Generator loaded from \'{}\' yielded a score of {}'.format(mixture_source, inc))
+
+
+
 
 if __name__ == '__main__':
     os.environ['TORCH_MODEL_ZOO'] = os.path.join(os.getcwd(), 'output/.models')
@@ -185,9 +440,17 @@ if __name__ == '__main__':
     elif args.task == 'score':
         cc = initialize_settings(args)
         calc_score(args, cc)
-
     elif args.task == 'generate':
         cc = initialize_settings(args)
         generate_samples(args, cc)
+    elif args.task == 'evaluate':
+        cc = initialize_settings(args)
+        calc_score_optimization(args, cc)
+    elif args.task == 'optimize-greedy':
+        cc = initialize_settings(args)
+        optimize_greedy(args, cc)
+    elif args.task == 'optimize-random-search':
+        cc = initialize_settings(args)
+        optimize_random_search(args, cc)
     else:
         parser.print_help()

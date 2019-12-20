@@ -101,44 +101,32 @@ class NeuralNetworkTrainer(ABC):
             gen.train()
 
     def save_checkpoint(self, generators, discriminators, cell_number):
+
+        def get_individuals_information(individuals, prefix, cell_number):
+            individuals_info = dict()
+
+            if len(individuals) > 0:
+                individuals_info['iteration'] = generators[0].iteration
+                individuals_info['learning_rate'] = '{}'.format(generators[0].learning_rate)
+                individuals_info['individuals'] = []
+
+                for individual in individuals:
+                    indiv = dict()
+                    indiv['id'] = individual.id
+                    indiv['is_local'] = individual.is_local
+                    indiv['fitness'] = individual.fitness
+                    individuals_info['individuals'].append(indiv)
+
+                    if indiv['is_local']:
+                        filename = '{}{}.pkl'.format(prefix, cell_number)
+                        torch.save(individual.genome.net.state_dict(),
+                                   os.path.join(self.cc.output_dir, filename))
+            return individuals_info
+
         checkpoint = dict()
-
         checkpoint['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-        if len(generators) > 0:
-            checkpoint['generators'] = dict()
-            checkpoint['generators']['iteration'] = generators[0].iteration
-            checkpoint['generators']['learning_rate'] = '{}'.format(generators[0].learning_rate)
-            checkpoint['generators']['individuals'] = []
-
-        if len(discriminators) > 0:
-            checkpoint['discriminators'] = dict()
-            checkpoint['discriminators']['iteration'] = discriminators[0].iteration
-            checkpoint['discriminators']['learning_rate'] = '{}'.format(discriminators[0].learning_rate)
-            checkpoint['discriminators']['individuals'] = []
-
-        for generator in generators:
-            gen = dict()
-            gen['id'] = generator.id
-            gen['is_local'] = generator.is_local
-            gen['fitness'] = generator.fitness
-            checkpoint['generators']['individuals'].append(gen)
-
-            if gen['is_local']:
-                filename = '{}{}.pkl'.format(GENERATOR_PREFIX, cell_number)
-                torch.save(generator.genome.net.state_dict(),
-                           os.path.join(self.cc.output_dir, filename))
-        for discriminator in discriminators:
-            disc = dict()
-            disc['id'] = discriminator.id
-            disc['is_local'] = discriminator.is_local
-            disc['fitness'] = discriminator.fitness
-            checkpoint['discriminators']['individuals'].append(disc)
-
-            if disc['is_local']:
-                filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, cell_number)
-                torch.save(discriminator.genome.net.state_dict(),
-                       os.path.join(self.cc.output_dir, filename))
+        checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number)
+        checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number)
 
         path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}.yml'.format(cell_number))
         with open(path_checkpoint, 'w') as file:

@@ -24,7 +24,7 @@ trainer:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
     optimize_mixture:
-      es_generations: 50
+      es_generations: 200
       es_score_sample_size: 10000
       es_random_init: False
       mixture_sigma: 0.01
