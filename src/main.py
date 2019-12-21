@@ -392,12 +392,11 @@ def optimize_ga(args, cc):
         sum2 = sum(x * x for x in fits)
         std = abs(sum2 / length - mean ** 2) ** 0.5
 
-        print("FIT  Min %s" % min(fids))
-        print("FIT  Max %s" % max(fids))
+        print("FIT  Min %s" % min(fits))
+        print("FIT  Max %s" % max(fits))
         print("FIT  Avg %s" % mean)
         print("FIT  Std %s" % std)
 
-        length = len(pop)
         mean = sum(fids) / length
         sum2 = sum(x * x for x in fids)
         std = abs(sum2 / length - mean ** 2) ** 0.5

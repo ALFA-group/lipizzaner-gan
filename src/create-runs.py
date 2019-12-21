@@ -16,19 +16,19 @@ algorithm_random = 'optimize-random-search'
 
 for size in range(5,10):
     for i in range (0,6):
-        text = 'time CUDA_VISIBLE_DEVICES=1  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{:03d}.txt -e {} --generations {} --n_samples {} > screen-{}-{}-{:03d}.txt'.format(
+        text = 'time CUDA_VISIBLE_DEVICES=0  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{:03d}.txt -e {} --generations {} --n_samples {} > screen-{}-{}-{:03d}.txt'.format(
             algorithm_random, output_path, algorithm_random, size, i, size, generations,  n_samples, algorithm_random, size, i)
         print(text + ' ')
-        text = 'time CUDA_VISIBLE_DEVICES=1  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{}-{:03d}.txt -e {} --n_samples {} --mode {} > screen-{}-{}-{:03d}.txt'.format(
+        text = 'time CUDA_VISIBLE_DEVICES=0  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{}-{:03d}.txt -e {} --n_samples {} --mode {} > screen-{}-{}-{:03d}.txt'.format(
             algorithm_greddy, output_path, algorithm_greddy, mode1, size, i, size, n_samples, mode1, algorithm_greddy, size,
             i)
         print(text + ' ')
-        text = 'time CUDA_VISIBLE_DEVICES=1  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{}-{:03d}.txt -e {} --n_samples {} --mode {} > screen-{}-{}-{:03d}.txt'.format(
+        text = 'time CUDA_VISIBLE_DEVICES=0  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{}-{:03d}.txt -e {} --n_samples {} --mode {} > screen-{}-{}-{:03d}.txt'.format(
             algorithm_greddy, output_path, algorithm_greddy, mode2, size, i, size, n_samples, mode2, algorithm_greddy, size,
             i)
         print(text + ' ')
 
-        text = 'time CUDA_VISIBLE_DEVICES=1  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{:03d}.txt -e {} --generations {} --n_samples {} --population_size {} -mp {} -cp {} > screen-{}-{}-{:03d}.txt'.format(
+        text = 'time CUDA_VISIBLE_DEVICES=0  python main.py {} -f configuration/quickstart/mnist.yml -o {}/output-{}-{}-{:03d}.txt -e {} --generations {} --n_samples {} --population_size {} -mp {} -cp {} > screen-{}-{}-{:03d}.txt'.format(
             algorithm_ga, output_path, algorithm_greddy, size, i, size, generations, n_samples,
             pop_size, mutation_prob, crossover_prob,
             algorithm_greddy, size,
