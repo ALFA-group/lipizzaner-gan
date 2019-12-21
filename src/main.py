@@ -147,6 +147,13 @@ def create_parser():
         dest='ensemble_max_size',
         required=True,
         help='Max size of the ensemble.')
+    group_optimize_greedy.add_argument(
+        '--n_samples',
+        '-ns',
+        type=int,
+        dest='n_samples',
+        required=True,
+        help='Max size of the ensemble.')
     add_config_file(group_optimize_greedy, True)
 
     group_optimize_random = subparsers.add_parser('optimize-random-search')
@@ -167,6 +174,13 @@ def create_parser():
         '-e',
         type=int,
         dest='ensemble_max_size',
+        required=True,
+        help='Max size of the ensemble.')
+    group_optimize_random.add_argument(
+        '--n_samples',
+        '-ns',
+        type=int,
+        dest='n_samples',
         required=True,
         help='Max size of the ensemble.')
     add_config_file(group_optimize_random, True)
@@ -208,6 +222,13 @@ def create_parser():
         dest='ensemble_max_size',
         required=True,
         help='Max size of the ensemble.')
+    group_optimize_ga.add_argument(
+        '--n_samples',
+        '-ns',
+        type=int,
+        dest='n_samples',
+        required=True,
+        help='Max size of the ensemble.')
     add_config_file(group_optimize_ga, True)
 
     return parser
@@ -226,7 +247,7 @@ def initialize_settings(args):
 
 def optimize_ga(args, cc):
 #def optimize_random_search(args, cc):
-    def evalOneMax(individual, network_factory, mixture_generator_samples_mode='exact_proportion', fitness_type='TVD'):
+    def evalOneMax(individual, network_factory, mixture_generator_samples_mode='exact_proportion', n_samples=5000):
         population = Population(individuals=[], default_fitness=0)
         weight_and_generator_indices = [math.modf(gen) for gen in individual]
         generators_paths, sources = ga.get_genarators_for_ensemble(weight_and_generator_indices)
@@ -240,7 +261,7 @@ def optimize_ga(args, cc):
 
         dataset = MixedGeneratorDataset(population,
                                         mixture_definition,
-                                        50000,
+                                        n_samples,
                                         mixture_generator_samples_mode)
         fid, tvd = score_calc.calculate(dataset)
         return fid, tvd,
@@ -252,6 +273,7 @@ def optimize_ga(args, cc):
     population_size = args.population_size
     mutation_probability = args.mutation_probability
     crossover_probability = args.crossover_probability
+    n_samples = args.n_samples
     max_generators_index = 218
     ensemble_size = ensemble_max_size
 
@@ -282,7 +304,7 @@ def optimize_ga(args, cc):
                      max_generators_index=max_generators_index)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
     toolbox.register("evaluate", evalOneMax, network_factory=network_factory,
-                     mixture_generator_samples_mode=mixture_generator_samples_mode, fitness_type=fitness_type)
+                     mixture_generator_samples_mode=mixture_generator_samples_mode, n_samples=n_samples)
     toolbox.register("mate", tools.cxTwoPoint)
     toolbox.register("mutate", ga.mutate, low=0, up=max_generators_index, indpb=1 / ensemble_size)
     toolbox.register('crossoverGAN', ga.cxTwoPointGAN)
@@ -301,14 +323,14 @@ def optimize_ga(args, cc):
         elif fitness_type == 'FID':
             ind.fitness.values = fid,
         elif fitness_type == 'FID-TVD':
-            ind.fitness.values = fid,
+            ind.fitness.values = fid, tvd
         tvds.append(tvd)
         fids.append(fid)
 
     for gen, fid, tvd in zip(pop, fids, tvds):
         print(
-            'Generators examined={} - Mixture: {} - FID={}, TVD={}'.format( \
-                generators_examined, gen, fid, tvd))
+            'Generators examined={} - Mixture: {} - FID={}, TVD={}, FIT={}'.format( \
+                generators_examined, gen, fid, tvd, gen.fitness.values))
 
     # Extracting all the fitnesses of
     fits = [ind.fitness.values[0] for ind in pop]
@@ -362,11 +384,18 @@ def optimize_ga(args, cc):
 
         pop[:] = offspring
 
-        tvd = [ind.fitness.values[0] for ind in pop]
-
-
         # Gather all the fitnesses in one list and print the stats
         fits = [ind.fitness.values[0] for ind in pop]
+
+        length = len(pop)
+        mean = sum(fits) / length
+        sum2 = sum(x * x for x in fits)
+        std = abs(sum2 / length - mean ** 2) ** 0.5
+
+        print("FIT  Min %s" % min(fids))
+        print("FIT  Max %s" % max(fids))
+        print("FIT  Avg %s" % mean)
+        print("FIT  Std %s" % std)
 
         length = len(pop)
         mean = sum(fids) / length
@@ -404,6 +433,8 @@ def optimize_random_search(args, cc):
     output_file = args.output_file
     ensemble_max_size = args.ensemble_max_size
     generations=args.generations
+    n_samples = args.n_samples
+    mixture_generator_samples_mode = 'exact_proportion'
 
     generators_path = './generators/'
     precision = 10
@@ -432,8 +463,8 @@ def optimize_random_search(args, cc):
 
         dataset = MixedGeneratorDataset(population,
                                         mixture_definition,
-                                        50000,
-                                        cc.settings['trainer']['mixture_generator_samples_mode'])
+                                        n_samples,
+                                        mixture_generator_samples_mode)
         fid, tvd = score_calc.calculate(dataset)
         if tvd < current_tvd:
             current_tvd = tvd
@@ -463,7 +494,9 @@ def optimize_random_search(args, cc):
 def optimize_greedy(args, cc):
     output_file = args.output_file
     ensemble_max_size = args.ensemble_max_size
-    mode=args.mode
+    mode = args.mode
+    n_samples = args.n_samples
+    mixture_generator_samples_mode = 'exact_proportion'
     max_time_without_improvements = 3
 
     generators_path = './generators/'
@@ -503,8 +536,8 @@ def optimize_greedy(args, cc):
             mixture_definition = dict(zip(sources, tentative_mixture_definition))
             dataset = MixedGeneratorDataset(population,
                                             mixture_definition,
-                                            50000,
-                                            cc.settings['trainer']['mixture_generator_samples_mode'])
+                                            n_samples,
+                                            mixture_generator_samples_mode)
             fid, tvd = score_calc.calculate(dataset)
             if tvd < tvd_tentative:
                 tvd_tentative = tvd
