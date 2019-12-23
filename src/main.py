@@ -418,7 +418,41 @@ def optimize_ga(args, cc):
         print('Execution time={}'.format(time.time() - start_time))
 
 
+
     print('Finishing execution....')
+
+
+    # Evaluate the entire population
+    fitnesses = list(map(toolbox.evaluate, pop))
+    tvds = []
+    fids = []
+    for ind, (fid, tvd) in zip(pop, fitnesses):
+        print('Mixture: {} - FID = {}, TVD = {}'.format(ind, fid, tvd))
+        tvds.append(tvd)
+        fids.append(fid)
+
+
+    length = len(pop)
+    mean = sum(fids) / length
+    sum2 = sum(x * x for x in fids)
+    std = abs(sum2 / length - mean ** 2) ** 0.5
+
+    print("FID  Min %s" % min(fids))
+    print("FID  Max %s" % max(fids))
+    print("FID  Avg %s" % mean)
+    print("FID  Std %s" % std)
+
+    mean = sum(tvds) / length
+    sum2 = sum(x * x for x in tvds)
+    std = abs(sum2 / length - mean ** 2) ** 0.5
+
+    print("TVD  Min %s" % min(tvds))
+    print("TVD  Max %s" % max(tvds))
+    print("TVD  Avg %s" % mean)
+    print("TVD  Std %s" % std)
+    print('Generators examined={}'.format(generators_examined))
+    print('Execution time={}'.format(time.time() - start_time))
+
     # print('FID={}'.format(current_fid))
     # print('TVD={}'.format(current_tvd))
     print('Generators examined={}'.format(generators_examined))
