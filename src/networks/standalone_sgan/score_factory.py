@@ -10,7 +10,12 @@ class ScoreCalculatorFactory:
 
     @staticmethod
     def create_instance(*args):
-        module_name, class_name = ('standalone_sgan.mnist_data_loader', 'MNISTDataLoader')
+        # MNIST
+        # module_name, class_name = ('networks.standalone_sgan.mnist_data_loader', 'MNISTDataLoader')
+
+        # CIFAR
+        module_name, class_name = ('networks.standalone_sgan.cifar10_data_loader', 'CIFAR10DataLoader')
+
         cls = getattr(importlib.import_module(module_name), class_name)
         return cls(*args)
 
@@ -22,7 +27,10 @@ class ScoreCalculatorFactory:
 
         transforms_op = [transforms.ToTensor(),
                          transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
-        dataset = dataloader.dataset(root=os.path.join("./standalone_sgan/output", 'data'), train=True,
+        # CIFAR
+        transforms_op = [transforms.Resize([64, 64])] + transforms_op
+
+        dataset = dataloader.dataset(root=os.path.join("./networks/standalone_sgan/output", 'data'), train=True,
                                      transform=transforms.Compose(transforms_op))
 
         return FIDCalculator(IgnoreLabelDataset(dataset), cuda=cuda, n_samples=score_sample_size)

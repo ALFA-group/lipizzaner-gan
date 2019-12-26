@@ -19,6 +19,7 @@ logging.basicConfig(filename=f'networks/standalone_sgan/logs/log{directory_or_fi
                     format='%(asctime)s %(message)s')
 os.makedirs("networks/standalone_sgan/images", exist_ok=True)
 os.makedirs(f"networks/standalone_sgan/images/output/{directory_or_file_name}", exist_ok=True)
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=100, help="size of the batches")
@@ -36,23 +37,30 @@ opt = parser.parse_args()
 cuda = True if torch.cuda.is_available() else False
 
 
+def init_weights(m):
+    if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
+        m.weight.data.normal_(0, 0.02)
+        m.bias.data.zero_()
+
+
 class Generator(nn.Module):
     def __init__(self):
         super(Generator, self).__init__()
-        layer_1 = (128, 128)
-        layer_2 = (layer_1[1], 256)
-        layer_3 = (layer_2[1], 512)
-        layer_4 = (layer_3[1], 784)
-
-        logging.info(f"Generator Architecture: [{layer_1[0]}, {layer_2[0]}, {layer_3[0]}, {layer_4[0]}, {layer_4[1]}]")
+        self.complexity = 64
         self.conv_blocks = nn.Sequential(
-            nn.Linear(layer_1[0], layer_1[1]),
-            nn.LeakyReLU(0.2),
-            nn.Linear(layer_2[0], layer_2[1]),
-            nn.LeakyReLU(0.2),
-            nn.Linear(layer_3[0], layer_3[1]),
-            nn.LeakyReLU(0.2),
-            nn.Linear(layer_4[0], layer_4[1]),
+            nn.ConvTranspose2d(100, self.complexity * 8, 4, 1, 0),
+            nn.BatchNorm2d(self.complexity * 8),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(self.complexity * 8, self.complexity * 4, 4, 2, 1),
+            nn.BatchNorm2d(self.complexity * 4),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(self.complexity * 4, self.complexity * 2, 4, 2, 1),
+            nn.BatchNorm2d(self.complexity * 2),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(self.complexity * 2, self.complexity, 4, 2, 1),
+            nn.BatchNorm2d(self.complexity),
+            nn.ReLU(True),
+            nn.ConvTranspose2d(self.complexity, 3, 4, 2, 1),
             nn.Tanh()
         )
 
@@ -64,32 +72,37 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     def __init__(self):
         super(Discriminator, self).__init__()
-        layer_1 = (784, 256)
-        layer_2 = (layer_1[1], 256)
-        layer_3 = (layer_2[1], 512)
-        logging.info(f"Discriminator Architecture: [{layer_1[0]}, {layer_2[0]}, {layer_3[0]}, {layer_3[1]}, (1, 11)]")
+        self.complexity = 64
         self.conv_blocks = nn.Sequential(
-            nn.Linear(layer_1[0], layer_1[1]),
-            nn.LeakyReLU(0.2),
-            nn.Linear(layer_2[0], layer_2[1]),
-            nn.LeakyReLU(0.2),
-            nn.Linear(layer_3[0], layer_3[1]),
-            nn.LeakyReLU(0.2)
+            nn.Conv2d(3, self.complexity, 4, 2, 1),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(self.complexity, self.complexity * 2, 4, 2, 1),
+            nn.BatchNorm2d(self.complexity * 2),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(self.complexity * 2, self.complexity * 4, 4, 2, 1),
+            nn.BatchNorm2d(self.complexity * 4),
+            nn.LeakyReLU(0.2, inplace=True),
+            nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
+            nn.BatchNorm2d(self.complexity * 8),
+            nn.LeakyReLU(0.2, inplace=True),
         )
 
         # Output layers
 
-        self.adv_layer = nn.Sequential(nn.Linear(512, 1),
-                                       nn.Sigmoid())
+        self.adv_layer = nn.Sequential(
+                            nn.Conv2d(self.complexity * 8, 1, 4, 1, 0),
+                            nn.Sigmoid()
+                        )
 
-        self.aux_layer = nn.Sequential(nn.Linear(512, opt.num_classes + 1),
-                                       nn.Softmax())
+        self.aux_layer = nn.Sequential(
+            nn.Conv2d(self.complexity * 8, opt.num_classes + 1, 4, 1, 0),
+            nn.Softmax()
+        )
 
     def forward(self, img):
         out = self.conv_blocks(img)
-        out = out.view(out.shape[0], -1)
-        validity = self.adv_layer(out)
-        label = self.aux_layer(out)
+        validity = self.adv_layer(out).view(-1)
+        label = self.aux_layer(out).view(-1, 11)
         return validity, label
 
 
@@ -100,7 +113,7 @@ def to_pytorch_variable(x):
 
 
 def transpose_data(data):
-    return data.view(opt.batch_size, -1)
+    return data
 
 
 def noise(batch_size, data_size):
@@ -126,16 +139,23 @@ if cuda:
     adversarial_loss.cuda()
     auxiliary_loss.cuda()
 
+
+# Initialize weights
+generator.apply(init_weights)
+discriminator.apply(init_weights)
+
+
 # Configure data loader
-os.makedirs("../../data/mnist", exist_ok=True)
+# os.makedirs("../../data/mnist", exist_ok=True)
+os.makedirs("../../data/cifar", exist_ok=True)
 
 
 def load():
     # Image processing
 
     # Dataset
-    dataset = datasets.MNIST(
-        root=os.path.join('./images'),
+    dataset = datasets.CIFAR10(
+        root=os.path.join('./networks/standalone_sgan/images'),
         train=True,
         transform=transform(),
         download=True)
@@ -147,8 +167,16 @@ def load():
 
 def transform():
     return transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5),
-                                                     std=(0.5, 0.5, 0.5))])
+        [
+            transforms.Resize(64),
+            transforms.ToTensor(),
+            transforms.Normalize(
+                (0.5, 0.5, 0.5),
+                (0.5, 0.5, 0.5)
+            )
+        ]
+    )
+
 
 def denorm(x):
     out = (x + 1) / 2
@@ -156,11 +184,7 @@ def denorm(x):
 
 
 def save_images(images, shape, filename):
-    # Additional dimensions are only passed to the shape instance when > 1
-    dimensions = 1 if len(shape) == 3 else shape[3]
-
-    img_view = images.view(images.size(0), dimensions, shape[1], shape[2])
-    save_image(denorm(img_view.data), filename)
+    save_image(denorm(images.data), filename)
 
 
 dataloader = load()
@@ -179,7 +203,7 @@ LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
 for epoch in range(opt.n_epochs):
     for i, (imgs, labels) in enumerate(dataloader):
         batch_size = imgs.shape[0]
-        imgs = to_pytorch_variable(transpose_data(imgs))
+        imgs = to_pytorch_variable(imgs)
         labels = to_pytorch_variable(transpose_data(labels))
         labels = torch.squeeze(labels)
 
@@ -199,12 +223,9 @@ for epoch in range(opt.n_epochs):
         optimizer_G.zero_grad()
 
         # Sample noise and labels as generator input
-        # z = noise(batch_size, 64)
-        z = noise(batch_size, 128)
-
+        z = noise(batch_size, (100, 1, 1))
         # Generate a batch of images
         gen_imgs = generator(z)
-
         # Loss measures generator's ability to fool the discriminator
         validity, _ = discriminator(gen_imgs)
         g_loss = adversarial_loss(validity, valid)
@@ -232,8 +253,6 @@ for epoch in range(opt.n_epochs):
         d_loss = d_real_loss + d_fake_loss
 
         # Calculate discriminator accuracy
-        # pred = np.concatenate([real_aux.data.cpu().numpy(), fake_aux.data.cpu().numpy()], axis=0)
-        # gt = np.concatenate([labels.data.cpu().numpy(), fake_aux_gt.data.cpu().numpy()], axis=0)
         pred = real_aux.data.cpu().numpy()
         gt = labels.data.cpu().numpy()
         d_acc = np.mean(np.argmax(pred, axis=1) == gt)
@@ -246,7 +265,6 @@ for epoch in range(opt.n_epochs):
             % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), 100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc), g_loss.item())
         )
 
-        batches_done = epoch * len(dataloader) + i
     save_images(Variable(gen_imgs), (1, 28, 28), f"networks/standalone_sgan/images/output/{directory_or_file_name}/{epoch}.png")
     logging.info("[Epoch %d/%d] [D loss: %f, acc_class: %d%%, acc_real: %d%%, acc_fake: %d%%] [G loss: %f]"
                  % (epoch, opt.n_epochs, d_loss.item(), 100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc), g_loss.item()))

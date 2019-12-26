@@ -23,7 +23,10 @@ import numpy as np
 import torch
 from scipy import linalg
 from torch.autograd import Variable
+from torch.nn.functional import adaptive_avg_pool2d
+
 from training.mixture.fid_mnist import MNISTCnn
+from training.mixture.fid_inception import InceptionV3
 from training.mixture.score_calculator import ScoreCalculator
 
 
@@ -45,7 +48,11 @@ class FIDCalculator(ScoreCalculator):
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
-        self.dims = 10    # For MNIST the dimension of feature map is 10
+        # For MNIST
+        # self.dims = 10
+
+        # For CIFAR
+        self.dims = 2048
 
     def calculate(self, imgs, exact=True):
         """
@@ -54,8 +61,14 @@ class FIDCalculator(ScoreCalculator):
         :param imgs: PyTorch dataset containing the generated images. (Could be both grey or RGB images)
         :param exact: Currently has no effect for FID.
         """
-        model = MNISTCnn()
-        model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+        # For MNIST
+        # model = MNISTCnn()
+        # model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+
+        # For CIFAR
+        block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
+        model = InceptionV3([block_idx])
+
         if self.cuda:
             model.cuda()
         m1, s1 = self._compute_statistics_of_path(self.imgs_original, model)
@@ -110,6 +123,11 @@ class FIDCalculator(ScoreCalculator):
                 batch = batch.cpu()
 
             pred = model(batch)[0]
+
+            # For CIFAR
+            if pred.shape[2] != 1 or pred.shape[3] != 1:
+                pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
+
             pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
         if self.verbose:
@@ -207,7 +225,10 @@ class FIDCalculator(ScoreCalculator):
 
         for i in range(self.n_samples):
             img = dataset[i]
-            img = img.view(-1, 28, 28)
+
+            # For MNIST
+            # img = img.view(-1, 28, 28)
+
             imgs.append(img)
 
         return self.calculate_activation_statistics(imgs, model)

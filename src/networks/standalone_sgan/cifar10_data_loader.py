@@ -1,11 +1,7 @@
-import os
-
+from networks.standalone_sgan.data_loader import DataLoader
+from helpers.pytorch_helpers import denorm
 from torchvision import datasets, transforms
 from torchvision.utils import save_image
-
-from data.data_loader import DataLoader
-from helpers.configuration_container import ConfigurationContainer
-from helpers.pytorch_helpers import denorm
 
 
 class CIFAR10DataLoader(DataLoader):

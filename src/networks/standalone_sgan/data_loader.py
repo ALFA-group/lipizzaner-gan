@@ -33,7 +33,7 @@ class DataLoader(ABC):
         # Image processing
 
         # Dataset
-        dataset = self.dataset(root=os.path.join("./standalone_sgan/output", 'data'),
+        dataset = self.dataset(root=os.path.join("./networks/standalone_sgan/output", 'data'),
                                train=True,
                                transform=self.transform(),
                                download=True)

@@ -244,12 +244,13 @@ class DiscriminatorNetSequential(CompetetiveNet):
 class SSDiscriminatorNet(DiscriminatorNet):
 
     def __init__(self, adv_loss, label_pred_loss, num_classes, net, data_size,
-                 adv_layer, label_pred_layer, optimize_bias=True):
+                 adv_layer, label_pred_layer, optimize_bias=True, conv=False):
         DiscriminatorNet.__init__(self, adv_loss, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
         self.adv_layer = adv_layer
         self.label_pred_layer = label_pred_layer
         self.label_pred_loss = label_pred_loss
+        self.conv = conv
 
     @property
     def name(self):
@@ -285,7 +286,9 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Real Loss
         network_output = self.net(input)
-        network_output = network_output.view(network_output.shape[0], -1)
+        if not self.conv:
+            network_output = network_output.view(network_output.shape[0], -1)
+
         label_prediction = self.label_pred_layer(network_output).view(-1, self.num_classes + 1)
         label_prediction_loss = self.label_pred_loss(label_prediction, labels)
         outputs = self.adv_layer(network_output).view(-1)
@@ -302,7 +305,9 @@ class SSDiscriminatorNet(DiscriminatorNet):
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
         network_output = self.net(fake_images)
-        network_output = network_output.view(network_output.shape[0], -1)
+        if not self.conv:
+            network_output = network_output.view(network_output.shape[0], -1)
+
         label_prediction = self.label_pred_layer(network_output).view(-1, self.num_classes + 1)
         label_prediction_loss = self.label_pred_loss(label_prediction, fake_labels)
         outputs = self.adv_layer(network_output).view(-1)
