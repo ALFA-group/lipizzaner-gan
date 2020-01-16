@@ -23,7 +23,7 @@ class TVDBasedConstructor:
         return np.arange(min_value, max_value, step_size)
 
     def get_next_generator_path(self):
-        if self.mode=='iterative':
+        if self.mode=='greddyiterative':
             path = '{}mnist-generator-{:03d}.pkl'.format(self.generators_path, self.generator_index)
             source = '{:03d}'.format(self.generator_index)
             self.generator_index += 1

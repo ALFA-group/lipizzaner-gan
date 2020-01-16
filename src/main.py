@@ -470,7 +470,7 @@ def optimize_random_search(args, cc):
     mixture_generator_samples_mode = 'exact_proportion'
 
     generators_path = './generators/'
-    precision = 10
+    precision = 100
 
     constructor = TVDBasedRandomSearch(precision=precision, generators_path=generators_path)
     score_calc = ScoreCalculatorFactory.create()

@@ -47,7 +47,7 @@ class GAGeneratorIndividual(list):
 
 
 class TVDBasedGA:
-    def __init__(self, precision=10, generators_path='./generators/', mode='iterative'):
+    def __init__(self, precision=100, generators_path='./generators/', mode='iterative'):
         self.precision = precision
         self.possible_weights = self.create_weights_list(0, self.precision+1, 1)
         self.generators_path = generators_path
@@ -55,9 +55,9 @@ class TVDBasedGA:
 
     def mutate(self, individual, low, up, indpb):
         prob = random.random()
-        if prob < 0.33:
+        if prob < 0.333:
             mutation_type = 'just-weight-probabilty'
-        elif prob < 0.6:
+        elif prob < 0.666:
             mutation_type = 'just-generator-index'
         else:
             mutation_type = 'generator-and-weight'
@@ -77,6 +77,7 @@ class TVDBasedGA:
         :param indpb: Independent probability for each attribute to be mutated.
         :returns: A tuple of one individual.
         """
+        decimals_precision = 2
         size = len(individual)
         if not isinstance(low, Sequence):
             low = repeat(low, size)
@@ -97,16 +98,16 @@ class TVDBasedGA:
                             break
                     weight_j, generator_index_j = math.modf(individual[genome_j])
                     weight, generator_index = math.modf(individual[i])
-                    sum_weights = round(weight + weight_j, 1)
-                    weight = round(random.uniform(0, sum_weights), 1)
+                    sum_weights = round(weight + weight_j, decimals_precision)
+                    weight = round(random.uniform(0, sum_weights), decimals_precision)
                     weight_j = sum_weights - weight
-                    individual[i] = round(generator_index + weight, 1)
-                    individual[genome_j] = round(generator_index_j + weight_j, 1)
+                    individual[i] = round(generator_index + weight, decimals_precision)
+                    individual[genome_j] = round(generator_index_j + weight_j, decimals_precision)
         elif mutation_type == 'just-generator-index':
             for i, xl, xu in zip(range(size), low, up):
                 if random.random() < indpb:
                     weight, generator_index = math.modf(individual[i])
-                    individual[i] = round(float(abs(generator_index + random.randint(xl, xu - 1) - xu) + weight), 1)
+                    individual[i] = round(float(abs(generator_index + random.randint(xl, xu - 1) - xu) + weight), decimals_precision)
         elif mutation_type == 'generator-and-weight':
             for i, xl, xu in zip(range(size), low, up):
                 if random.random() < indpb:
@@ -117,11 +118,11 @@ class TVDBasedGA:
                             break
                     weight_j, generator_index_j = math.modf(individual[genome_j])
                     weight, generator_index = math.modf(individual[i])
-                    sum_weights = round(weight + weight_j, 1)
-                    weight = round(random.uniform(0, sum_weights), 1)
+                    sum_weights = round(weight + weight_j, decimals_precision)
+                    weight = round(random.uniform(0, sum_weights), decimals_precision)
                     weight_j = sum_weights - weight
-                    individual[i] = round(float(abs(generator_index + random.randint(xl, xu - 1) - xu) + weight), 1)
-                    individual[genome_j] = round(generator_index_j + weight_j, 1)
+                    individual[i] = round(float(abs(generator_index + random.randint(xl, xu - 1) - xu) + weight), decimals_precision)
+                    individual[genome_j] = round(generator_index_j + weight_j, decimals_precision)
         return individual,
 
     def cxTwoPointGAN(self, ind1, ind2, method='average-weights'):
@@ -135,6 +136,7 @@ class TVDBasedGA:
         base :mod:`random` module.
         """
 
+        decimals_precision = 2
         size = min(len(ind1), len(ind2))
         cxpoint1 = random.randint(1, size)
         cxpoint2 = random.randint(1, size - 1)
@@ -151,28 +153,28 @@ class TVDBasedGA:
             for i in range(cxpoint1, cxpoint2):
                 weight_1, generators_index1 = math.modf(ind1[i])
                 weight_2, generators_index2 = math.modf(ind2[i])
-                ind1[i] = generators_index1 + round(weight_2, 1)
-                ind2[i] = generators_index2 + round(weight_1, 1)
+                ind1[i] = generators_index1 + round(weight_2, decimals_precision)
+                ind2[i] = generators_index2 + round(weight_1, decimals_precision)
         elif method == 'average-weights':
             first = True
             for i in range(len(ind1)):
                 weight_1, generators_index1 = math.modf(ind1[i])
                 weight_2, generators_index2 = math.modf(ind2[i])
-                sum_weights = round(weight_1 + weight_2, 1)
-                digit_control = int(round(10 * sum_weights, 1))
+                sum_weights = round(weight_1 + weight_2, decimals_precision)
+                digit_control = int(round(self.precision * sum_weights))
                 if digit_control % 2 == 1 and first:
-                    weight_1 = round((sum_weights - 0.1) / 2 + 0.1, 1)
-                    weight_2 = round(sum_weights - weight_1, 1)
+                    weight_1 = round((sum_weights - 1/self.precision) / 2 + 1/self.precision, decimals_precision)
+                    weight_2 = round(sum_weights - weight_1, decimals_precision)
                     first = False
                 elif digit_control % 2 == 1 and not first:
-                    weight_2 = round((sum_weights - 0.1) / 2 + 0.1, 1)
-                    weight_1 = round(sum_weights - weight_2, 1)
+                    weight_2 = round((sum_weights - 1/self.precision) / 2 + 1/self.precision, decimals_precision)
+                    weight_1 = round(sum_weights - weight_2, decimals_precision)
                     first = True
                 else:
-                    weight_1 = round(sum_weights / 2, 1)
-                    weight_2 = round(sum_weights - weight_1, 1)
-                ind1[i] = generators_index1 + round(weight_1, 1)
-                ind2[i] = generators_index2 + round(weight_2, 1)
+                    weight_1 = round(sum_weights / 2, decimals_precision)
+                    weight_2 = round(sum_weights - weight_1, decimals_precision)
+                ind1[i] = generators_index1 + round(weight_1, decimals_precision)
+                ind2[i] = generators_index2 + round(weight_2, decimals_precision)
 
         return ind1, ind2
 
@@ -216,6 +218,16 @@ class TVDBasedGA:
             result.append(random.choice(possible_weights))
             i += 1
         return np.array(result) / self.precision, len(result)
+
+# weights2 = ga.get_weights_tentative(5)[0]
+# print(weights)
+# print(sum(weights))
+# mut = ga.mutations(weights, 0, 1, 0.2, mutation_type='just-weight-probabilty')
+# for i in range(500):
+#     weights = ga.get_weights_tentative(5)[0]
+#     mut = ga.mutations(weights, 0, 1, 0.2, mutation_type='generator-and-weight')
+#     print(mut[0])
+#     print(sum(mut[0]))
 
 #
 #

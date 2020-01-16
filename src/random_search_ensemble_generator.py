@@ -4,7 +4,7 @@ import glob
 import random
 
 class TVDBasedRandomSearch:
-    def __init__(self, precision=10, generators_path='./generators/', mode='iterative'):
+    def __init__(self, precision=100, generators_path='./generators/', mode='iterative'):
         self.precision = precision
         self.possible_weights = self.create_weights_list(0, self.precision+1, 1)
         self.generators_path = generators_path
@@ -27,7 +27,7 @@ class TVDBasedRandomSearch:
         if number_of_following_weights==1:
             return [max_prob - current_prob]
         else:
-            max_probability = (max_prob - current_prob) / number_of_following_weights
+            max_probability = (max_prob - current_prob) #/ number_of_following_weights
             return self.possible_weights[self.possible_weights <= max_probability]
 
     def get_weights_tentative(self, size):
