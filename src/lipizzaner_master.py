@@ -47,7 +47,6 @@ class LipizzanerMaster:
             # Expand port ranges to multiple client entries
             self.expand_clients()
             clients = self.cc.settings['general']['distribution']['client_nodes']
-
         accessible_clients = self._accessible_clients(clients)
 
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
@@ -127,8 +126,10 @@ class LipizzanerMaster:
             self.experiment_id = db_logger.create_experiment(self.cc.settings)
             self.cc.settings['general']['logging']['experiment_id'] = self.experiment_id
 
-        for client in self.cc.settings['general']['distribution']['client_nodes']:
+
+        for client_id, client in enumerate(self.cc.settings['general']['distribution']['client_nodes']):
             address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
+            self.cc.settings['general']['distribution']['client_id'] = client_id
             try:
                 resp = requests.post(address, json=self.cc.settings)
                 assert resp.status_code == 200, resp.text
