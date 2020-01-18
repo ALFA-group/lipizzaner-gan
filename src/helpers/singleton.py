@@ -6,7 +6,9 @@ class Singleton:
     def instance(self):
         try:
             return self._instance
-        except AttributeError:
+        except AttributeError as e:
+            print(e)
+            print("Instansiate")
             self._instance = self._decorated()
             return self._instance
 

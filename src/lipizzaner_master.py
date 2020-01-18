@@ -96,7 +96,9 @@ class LipizzanerMaster:
             assert client['address'] is not None
             address = 'http://{}:{}/status'.format(client['address'], client['port'])
             try:
+                print(f'{address}')
                 resp = requests.get(address)
+                print(f'{resp}')
                 assert resp.status_code == 200
                 assert not resp.json()['busy']
                 accessible_clients.append(client)

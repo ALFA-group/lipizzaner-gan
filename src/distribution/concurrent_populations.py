@@ -15,7 +15,10 @@ class ConcurrentPopulations:
         self._lock.acquire()
 
     def unlock(self):
-        self._lock.release()
+        try:
+            self._lock.release()
+        except RuntimeError:
+            pass
 
     @property
     def generator(self):

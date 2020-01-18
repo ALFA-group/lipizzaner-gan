@@ -357,6 +357,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         def get_next_batch(iterator, loaded):
             # Handle if the end of iterator is reached
             try:
+                print(f'Iterator: {iterator}')
                 return next(iterator)[0], iterator
             except StopIteration:
                 # Use a new iterator

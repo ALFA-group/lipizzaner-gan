@@ -15,8 +15,7 @@ distribution:
   master_node:
     exit_clients_on_disconnect: True
   client_nodes:
-    - address: a05n08
-      port: 5000-5007
-    - address: d07n14
-      port: 5000-5007
-
+    - address: 127.0.0.1
+      port: 5000-5003
+      # Non-distributed
+      #port: 0

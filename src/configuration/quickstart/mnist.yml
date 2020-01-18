@@ -6,7 +6,7 @@ trainer:
   mixture_generator_samples_mode: exact_proportion
   params:
     population_size: 1
-    tournament_size: 2
+    tournament_size: 1
     n_replacements: 1
     default_adam_learning_rate: 0.0002
     # Hyperparameter mutation
