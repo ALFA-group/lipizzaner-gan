@@ -24,6 +24,7 @@ import time
 from tvd_based_constructor import TVDBasedConstructor
 from random_search_ensemble_generator import TVDBasedRandomSearch
 from ga_ensemble_generator import TVDBasedGA
+from ga_ensemble_generator_free_ensemble_size import TVDBasedSizeFreeGA
 
 from deap import base
 from deap import creator
@@ -266,6 +267,27 @@ def optimize_ga(args, cc):
         fid, tvd = score_calc.calculate(dataset)
         return fid, tvd,
 
+    def evalOneMax_no_size(individual, network_factory, mixture_generator_samples_mode='exact_proportion', n_samples=5000):
+        population = Population(individuals=[], default_fitness=0)
+        generators = ga.get_considered_generators(individual)
+        weights = ga.get_considered_weights(individual)
+        generators_paths, sources = ga.get_genarators_for_ensemble(generators)
+        tentative_weights = ga.extract_weights(weights)
+        print('Evaluating: ' + str(ga.show_mixture(individual)))
+        mixture_definition = dict(zip(sources, tentative_weights))
+        for path, source in zip(generators_paths, sources):
+            generator = network_factory.create_generator()
+            generator.net.load_state_dict(torch.load(path))
+            generator.net.eval()
+            population.individuals.append(Individual(genome=generator, fitness=0, source=source))
+
+        dataset = MixedGeneratorDataset(population,
+                                        mixture_definition,
+                                        n_samples,
+                                        mixture_generator_samples_mode)
+        fid, tvd = score_calc.calculate(dataset)
+        return fid, tvd,
+
 
     output_file = args.output_file
     ensemble_max_size = args.ensemble_max_size
@@ -285,7 +307,11 @@ def optimize_ga(args, cc):
     print('Max generators={}'.format(max_generators_index))
 
 
-    ga = TVDBasedGA()
+    #ga = TVDBasedGA()
+    min_ensmbe_size = 3
+    max_ensmbe_size = ensemble_size
+    ga = TVDBasedSizeFreeGA(min_ensmbe_size=min_ensmbe_size, max_ensmbe_size=max_ensmbe_size)
+
     fitness_type = 'TVD'
     score_calc = ScoreCalculatorFactory.create()
 #    dataloader = 'mnist'
@@ -300,10 +326,11 @@ def optimize_ga(args, cc):
     creator.create("Individual", list, fitness=creator.FitnessMin)
     toolbox = base.Toolbox()
     toolbox.register("attr_rand", random.uniform, 0, max_generators_index)
-    toolbox.register('individual', ga.create_individual, creator.Individual, size=ensemble_size,
-                     max_generators_index=max_generators_index)
+    toolbox.register('individual', ga.create_individual, creator.Individual)
+    # toolbox.register('individual', ga.create_individual, creator.Individual, size=ensemble_size,
+    #                  max_generators_index=max_generators_index)
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("evaluate", evalOneMax, network_factory=network_factory,
+    toolbox.register("evaluate", evalOneMax_no_size, network_factory=network_factory,
                      mixture_generator_samples_mode=mixture_generator_samples_mode, n_samples=n_samples)
     toolbox.register("mate", tools.cxTwoPoint)
     toolbox.register("mutate", ga.mutate, low=0, up=max_generators_index, indpb=1 / ensemble_size)
@@ -330,7 +357,7 @@ def optimize_ga(args, cc):
     for gen, fid, tvd in zip(pop, fids, tvds):
         print(
             'Generators examined={} - Mixture: {} - FID={}, TVD={}, FIT={}'.format( \
-                generators_examined, gen, fid, tvd, gen.fitness.values))
+                generators_examined, ga.show_mixture(gen), fid, tvd, gen.fitness.values))
 
     # Extracting all the fitnesses of
     fits = [ind.fitness.values[0] for ind in pop]
@@ -380,7 +407,7 @@ def optimize_ga(args, cc):
         for gen, fid, tvd in zip(invalid_ind, fids, tvds):
             print(
                 'Generators examined={} - Mixture: {} - FID={}, TVD={}'.format( \
-                    generators_examined, gen, fid, tvd))
+                    generators_examined, ga.show_mixture(gen), fid, tvd))
 
         pop[:] = offspring
 
