@@ -9,7 +9,7 @@ from torchvision.utils import save_image
 from helpers.configuration_container import ConfigurationContainer
 from helpers.pytorch_helpers import denorm
 
-from torch.utils.data import Sampler, SubsetRandomSampler
+from torch.utils.data.sampler import Sampler, SubsetRandomSampler
 from helpers.reproducible_helpers import set_random_seed
 import random
 
