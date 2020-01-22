@@ -8,14 +8,14 @@ import os
 
 class MNISTLabelsDataLoader(DataLoader):
 
-    def __init__(self, labels, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
+    def __init__(self, labels, num_labels_per_cell, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
         # start by just choosing one label randomly from the list
         if labels:
-            self.label = random.choice(labels)
+            self.labels = random.sample(labels, min(num_labels_per_cell, len(labels)))
         else:
-            self.label = random.choice(range(9))
+            self.labels = random.sample(range(9))
         # get indices corresponding to chosen label and sample with those
-        self.indices = [i for (i, x) in  enumerate(datasets.MNIST('mnist_dataset', download=True).train_labels) if x == self.label]
+        self.indices = [i for (i, x) in  enumerate(datasets.MNIST('mnist_dataset', download=True).train_labels) if x in self.labels]
         self.dataset = datasets.MNIST
         super().__init__(datasets.MNIST, use_batch, batch_size, n_batches, shuffle)
 

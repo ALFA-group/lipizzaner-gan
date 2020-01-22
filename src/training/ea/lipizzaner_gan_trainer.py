@@ -97,6 +97,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             # Log the name of individuals in entire neighborhood for every iteration
             # (to help tracing because individuals from adjacent cells might be from different iterations)
+            self._logger.info('Neighborhood located in possition {} of the grid'.format(self.neighbourhood.grid_position))
+            if self.cc.settings['dataloader']['dataset_name'] == 'mnist_labels':
+                self._logger.info('Labels available to cell: {}'.format(self.neighbourhood.avail_labels))
+                self._logger.info('Labels chosen: {}'.format(self.neighbourhood.chosen_labels))
             self._logger.info('Generators in current neighborhood are {}'.format([
                 individual.name for individual in all_generators.individuals
             ]))

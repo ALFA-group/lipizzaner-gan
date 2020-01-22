@@ -41,7 +41,11 @@ class Lipizzaner:
             self.trainer = trainer
         else:
             self.cc = ConfigurationContainer.instance()
-            dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
+            dataset_name = self.cc.settings['dataloader']['dataset_name']
+            if dataset_name == 'mnist_labels':
+                dataloader = self.cc.create_instance(dataset_name, self.cc.settings['dataloader']['labels'], self.cc.settings['dataloader']['labels_per_cell'])
+            else:
+                dataloader = self.cc.create_instance(dataset_name)
             network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
             self.trainer = self.cc.create_instance(self.cc.settings['trainer']['name'], dataloader, network_factory)
 

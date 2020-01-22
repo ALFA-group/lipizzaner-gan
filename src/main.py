@@ -140,7 +140,11 @@ def generate_samples(args, cc):
     output_dir = args.output_dir
     sample_size = args.sample_size
 
-    dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
+    dataset_name = cc.settings['dataloader']['dataset_name']
+    if dataset_name == 'mnist_labels':
+        dataloader = cc.create_instance(dataset_name, cc.settings['dataloader']['labels'], cc.settings['dataloader']['labels_per_cell'])
+    else:
+        dataloader = cc.create_instance(dataset_name)
     network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
 
     population = Population(individuals=[], default_fitness=0)

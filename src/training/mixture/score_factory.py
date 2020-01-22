@@ -20,14 +20,19 @@ class ScoreCalculatorFactory:
             return None
 
         score_type = settings['score'].get('type', None)
-        dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
+        dataset_name = cc.settings['dataloader']['dataset_name']
+        if dataset_name == 'mnist_labels':
+            dataloader = cc.create_instance(dataset_name, cc.settings['dataloader']['labels'], cc.settings['dataloader']['labels_per_cell'])
+        else:
+            dataloader = cc.create_instance(dataset_name)
+
         # Downloads dataset if its not yet available
         dataloader.load()
 
         if score_type == 'fid':
             transforms_op = [transforms.ToTensor(),
                              transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
-            if cc.settings['dataloader']['dataset_name'] != 'mnist':
+            if cc.settings['dataloader']['dataset_name'] != 'mnist' and cc.settings['dataloader']['dataset_name'] != 'mnist_labels':
                 # Need to reshape for RGB dataset as required by pre-trained InceptionV3
                 transforms_op = [transforms.Resize([64, 64])] + transforms_op
             dataset = dataloader.dataset(root=os.path.join(cc.settings['general']['output_dir'], 'data'), train=True,
