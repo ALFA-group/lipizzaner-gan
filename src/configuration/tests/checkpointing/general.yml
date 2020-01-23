@@ -1,0 +1,20 @@
+logging:
+  enabled: True
+  log_level: INFO
+  log_server: # Fill in connection string with read/write access here
+  image_format: jpg
+  print_discriminator: False
+losswise:
+  enabled: False
+  api_key: # Fill in API key 
+output_dir: ./output
+distribution:
+  auto_discover: False
+  master_node:
+    exit_clients_on_disconnect: True
+  client_nodes:
+    - address: 127.0.0.1 # Fill in IP address here 
+      port: 5000-5003
+seed: 1
+num_workers: 0    # How many subprocesses to use for data loading
+checkpoint_period: 2 # Number of iterations to be performed between the checkpoint (0 no check points are stored)

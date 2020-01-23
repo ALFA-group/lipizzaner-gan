@@ -20,8 +20,6 @@ SEQUENCE_LENGTH = 30
 N_VALUES_PER_RECORD = 4
 
 
-#flow_data = np.load("./data/network_data/network_capture.npy")
-
 def generate_random_sequences(num_sequences):
     sequences = []
     for i in range(num_sequences):
@@ -60,6 +58,7 @@ class NetworkDataLoader(DataLoader):
 class NetworkDataSet(Dataset):
 
     def __init__(self, **kwargs):
+        flow_data = np.load("./data/network_data/network_capture.npy")
         self.data = flow_data
         print("Packets Array Size: ", self.data.shape)
 

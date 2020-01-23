@@ -8,13 +8,16 @@ from helpers.pytorch_helpers import noise
 
 class MixedGeneratorDataset(torch.utils.data.Dataset):
 
-    def __init__(self, generator_population, weights, n_samples, mixture_generator_samples_mode):
+    def __init__(self, generator_population, weights, n_samples, mixture_generator_samples_mode, z=None):
         """
-        Creates samples from a mixture of generators, with sample probability defined by a weights vector
+        Creates samples from a mixture of generators, with sample probability defined given a random noise vector
+        sampled from the latent space by a weights vector
 
         :param generator_population: Population of generators that will be used to create the images
         :param weights: Dictionary that maps generator IDs to weights, e.g. {'127.0.0.1:5000': 0.8, '127.0.0.1:5001': 0.2}
         :param n_samples: Number of samples that will be generated
+        :param mixture_generator_samples_mode:
+        :param z: Noise vector from latent space. If it is not given it generates a new one
         """
         self.n_samples = n_samples
         self.individuals = sorted(generator_population.individuals, key=lambda x: x.source)
@@ -25,8 +28,9 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
         weights = collections.OrderedDict(sorted(weights.items()))
         weights = {k: v for k, v in weights.items() if any([i for i in self.individuals if i.source == k])}
         weights_np = np.asarray(list(weights.values()))
+
         if np.sum(weights_np) != 1:
-            weights_np = weights_np / np.sum(weights_np).astype(float)    # Abit of patching, but normalize it again
+            weights_np = weights_np / np.sum(weights_np).astype(float)    # A bit of patching, but normalize it again
 
         if mixture_generator_samples_mode == 'independent_probability':
             self.gen_indices = np.random.choice(len(self.individuals), n_samples, p=weights_np.tolist())
@@ -42,8 +46,10 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
             raise NotImplementedError(
                 "Invalid argument for mixture_generator_samples_mode: {}".format(mixture_generator_samples_mode)
             )
-
-        self.z = noise(n_samples, self.individuals[0].genome.data_size)
+        if z is None:
+            self.z = noise(n_samples, self.individuals[0].genome.data_size)
+        else:
+            self.z = z
 
         #HACK: If it's a sequential model, add another dimension to the noise input
         # Also we're currently just using a fixed sequence length for sequence generation; make this

@@ -1,5 +1,4 @@
 from abc import abstractmethod, ABC
-from enum import Enum
 
 import copy
 
@@ -10,16 +9,16 @@ from torch.nn import Softmax
 from distribution.state_encoder import StateEncoder
 from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_splits, noise
 
-
-# def fake_loss(**args, **kwargs):
-#     return 0
-
 class CompetetiveNet(ABC):
     def __init__(self, loss_function, net, data_size, optimize_bias=True):
         self.data_size = data_size
-        self.loss_function = loss_function
         self.net = net.cuda() if is_cuda_enabled() else net
         self.optimize_bias = optimize_bias
+
+        self.loss_function = loss_function
+        if self.loss_function.__class__.__name__ == 'MustangsLoss':
+            self.loss_function.set_network_name(self.name)
+
         try:
             self.n_weights = np.sum([l.weight.numel() for l in self.net if hasattr(l, 'weight')])
             # Calculate split positions; cumulative sum needed because split() expects positions, not chunk sizes
@@ -128,8 +127,8 @@ class GeneratorNet(CompetetiveNet):
         fake_images = self.net(z)
         outputs = opponent.net(fake_images).view(-1)
 
-        # Compute BCELoss using D(G(z))
         return self.loss_function(outputs, real_labels), fake_images
+
 
 
 class DiscriminatorNet(CompetetiveNet):
@@ -142,7 +141,13 @@ class DiscriminatorNet(CompetetiveNet):
         return float('-inf')
 
     def compute_loss_against(self, opponent, input):
-        # Compute BCE_Loss using real images where BCE_Loss(x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
+
+        # If HeuristicLoss is applied in the Generator, the Discriminator applies BCELoss
+        if self.loss_function.__class__.__name__ == 'MustangsLoss':
+            if 'HeuristicLoss' in self.loss_function.get_applied_loss_name():
+                self.loss_function.set_applied_loss(torch.nn.BCELoss())
+
+        # Compute loss using real images
         # Second term of the loss is always zero since real_labels == 1
         batch_size = input.size(0)
 
@@ -152,7 +157,7 @@ class DiscriminatorNet(CompetetiveNet):
         outputs = self.net(input).view(-1)
         d_loss_real = self.loss_function(outputs, real_labels)
 
-        # Compute BCELoss using fake images
+        # Compute loss using fake images
         # First term of the loss is always zero since fake_labels == 0
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
