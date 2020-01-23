@@ -19,7 +19,7 @@ trainer:
       enabled: True
       type: fid
       score_sample_size: 1000
-      cuda: False
+      cuda: True
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
@@ -35,5 +35,5 @@ network:
 master:
   calculate_score: True
   score_sample_size: 50000
-  cuda: False
+  cuda: True
 general: !include general.yml
