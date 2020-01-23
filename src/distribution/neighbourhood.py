@@ -19,8 +19,15 @@ class Neighbourhood:
     def __init__(self):
         self.cc = ConfigurationContainer.instance()
         self.concurrent_populations = ConcurrentPopulations.instance()
-
-        dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
+        dataset_name = self.cc.settings['dataloader']['dataset_name']
+        if dataset_name == 'mnist_labels':
+            self.avail_labels = self.cc.settings['dataloader']['labels']
+            dataloader = self.cc.create_instance(dataset_name, self.avail_labels, self.cc.settings['dataloader']['labels_per_cell'])
+            self.chosen_labels = dataloader.labels
+        else:
+            dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
+            self.avail_labels = range(9)
+            self.chosen_labels = range(9)
         network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
         self.node_client = NodeClient(network_factory)
 

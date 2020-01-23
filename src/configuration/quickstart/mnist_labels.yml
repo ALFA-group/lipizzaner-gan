@@ -33,6 +33,9 @@ dataloader:
     - 1
     - 2
     - 3
+    - 4
+    - 5
+  labels_per_cell: 3
 network:
   name: four_layer_perceptron
   loss: bceloss
