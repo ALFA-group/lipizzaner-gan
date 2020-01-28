@@ -2,6 +2,7 @@ from torchvision import datasets
 from data.data_loader import DataLoader
 import random
 from torch.utils.data.sampler import SubsetRandomSampler
+from torchvision.transforms import transforms
 import torch.utils.data
 import os
 
@@ -39,3 +40,10 @@ class MNISTLabelsDataLoader(DataLoader):
     @property
     def n_input_neurons(self):
         return 784
+
+    def transform(self):
+        return transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.1307,), (0.3081,))
+        ])
+
