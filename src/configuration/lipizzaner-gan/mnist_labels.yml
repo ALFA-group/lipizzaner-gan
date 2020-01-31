@@ -43,5 +43,5 @@ master:
   calculate_score: True
   # Same amount of data as original CIFAR contains
   score_sample_size: 50000
-  cuda: False
+  cuda: True
 general: !include ../general.yml

@@ -4,6 +4,7 @@ import signal
 import time
 import traceback
 from multiprocessing import Event
+from math import sqrt
 
 import requests
 import torch
@@ -49,10 +50,21 @@ class LipizzanerMaster:
             clients = self.cc.settings['general']['distribution']['client_nodes']
         accessible_clients = self._accessible_clients(clients)
 
-        if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
+        num_clients = len(accessible_clients)
+        if not is_square(num_clients):
+            next_smallest_square = int(sqrt(num_clients))**2
+            accessible_clients = accessible_clients[:next_smallest_square]
+            self.cc.settings['general']['distribution']['client_nodes'] = self.cc.settings['general']['distribution']['client_nodes'][:next_smallest_square]
+            self._logger.info('Stopping some clients...')
+            node_client = NodeClient(None)
+            node_client.stop_running_experiments(accessible_clients)
+            self._logger.info("Remaining clients:" + str(self.cc.settings['general']['distribution']['client_nodes']))
+
+        if len(accessible_clients) == 0:
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
                                   .format(len(accessible_clients)))
             self._terminate(stop_clients=False)
+        
 
         ### THIS WAS NOT COMMENTED BEFORE
         # if len(accessible_clients) != len(clients):
@@ -129,6 +141,7 @@ class LipizzanerMaster:
             self.cc.settings['general']['logging']['experiment_id'] = self.experiment_id
 
 
+        self._logger.info(str(self.cc.settings['general']['distribution']['client_nodes']))
         for client_id, client in enumerate(self.cc.settings['general']['distribution']['client_nodes']):
             address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
             self.cc.settings['general']['distribution']['client_id'] = client_id

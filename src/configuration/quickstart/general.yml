@@ -16,6 +16,6 @@ distribution:
     exit_clients_on_disconnect: True
   client_nodes:
     - address: 127.0.0.1
-      #port: 5000-5003
+      port: 5000-5003
       # Non-distributed
-      port: 0
+      #port: 0
