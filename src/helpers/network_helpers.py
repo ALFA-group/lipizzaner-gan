@@ -41,7 +41,8 @@ def is_local_host(address):
     # For servers like AWS, public IP is required for communciation between
     # different instances
     return address == 'localhost' or address == '127.0.0.1' \
-            or address == local_private_ip() or address == local_public_ip()
+            or address == local_private_ip() or address == local_public_ip() \
+            or address == socket.gethostname()
 
 
 def is_port_open(port):
