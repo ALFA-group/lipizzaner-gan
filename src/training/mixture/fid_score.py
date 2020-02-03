@@ -50,7 +50,7 @@ class FIDCalculator(ScoreCalculator):
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+        if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
             self.dims = 10    # For MNIST the dimension of feature map is 10
         else:
             self.dims = dims
@@ -66,6 +66,9 @@ class FIDCalculator(ScoreCalculator):
         if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
             model = MNISTCnn()
             model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+        elif self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
+            model = MNISTCnn()
+            model.load_state_dict(torch.load('./output/networks/fashion_mnist_cnn.pt'))
         else:    # Other RGB dataset
             block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
             model = InceptionV3([block_idx])
@@ -124,7 +127,7 @@ class FIDCalculator(ScoreCalculator):
 
             pred = model(batch)[0]
 
-            if self.cc.settings['dataloader']['dataset_name'] != 'mnist':
+            if self.cc.settings['dataloader']['dataset_name'] != 'mnist' and self.cc.settings['dataloader']['dataset_name'] != 'mnist_fashion':
                 # If model output is not scalar, apply global spatial average pooling.
                 # This happens if you choose a dimensionality not equal 2048.
                 if pred.shape[2] != 1 or pred.shape[3] != 1:
@@ -227,7 +230,7 @@ class FIDCalculator(ScoreCalculator):
 
         for i in range(self.n_samples):
             img = dataset[i]
-            if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+            if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
                 # Reshape to 2D images as required by MNISTCnn class
                 img = img.view(-1, 28, 28)
 

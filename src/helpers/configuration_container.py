@@ -15,6 +15,7 @@ class ConfigurationContainer:
         'heuristicloss': ('networks.customized_loss.heuristic_loss', 'HeuristicLoss'),
         'mustangs': ('networks.customized_loss.mustangs_loss', 'MustangsLoss'),
         'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
+        'mnist_fashion': ('data.mnist_fashion_data_loader', 'MNISTFashionDataLoader'),
         'cifar': ('data.cifar10_data_loader', 'CIFAR10DataLoader'),
         'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
         'network_traffic': ('data.network_data_loader', 'NetworkDataLoader'),

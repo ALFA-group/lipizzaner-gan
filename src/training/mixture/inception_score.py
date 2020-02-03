@@ -59,7 +59,7 @@ class InceptionCalculator(ScoreCalculator):
 
         for i, batch in enumerate(dataloader, 0):
             batch = batch.type(self.dtype)
-            if cc.settings['dataloader']['dataset_name'] == 'mnist':
+            if cc.settings['dataloader']['dataset_name'] == 'mnist' or cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
                 rgb_batch = self._convert_grey_to_square_rgb(batch)
             else:
                 rgb_batch = batch
@@ -89,7 +89,7 @@ class InceptionCalculator(ScoreCalculator):
         # grey_img here is of shape(batch_size, 784)
         cc = ConfigurationContainer.instance()
         # This function is only available for mnist dataset
-        assert cc.settings['dataloader']['dataset_name'] == 'mnist'
+        assert cc.settings['dataloader']['dataset_name'] == 'mnist' or cc.settings['dataloader']['dataset_name'] == 'mnist_fashion'
         # Pad the same data in all 3 dimensions
         return grey_img.reshape(-1, 28, 28).unsqueeze(1).repeat(1, 3, 1, 1)
 
