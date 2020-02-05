@@ -1,24 +1,34 @@
 #!/bin/bash
 # Begin BSUB Options
-#BSUB -P csc292
-#BSUB -W 02:00
+#BSUB -P csc363
+#BSUB -W 01:00
 #BSUB -nnodes 2
 #BSUB -alloc_flags "gpumps"
 #BSUB -J ganwork
 #BSUB -o ganwork.%J
 #BSUB -e ganwork.%J
 
+# Load Modules
+module load cuda/10.1.243
+module load python/3.6.6-anaconda3-5.3.0
+module load gcc/6.4.0
+module load magma/2.3.0
+module load netlib-lapack/3.8.0
+
+# Experiment Paths/Parameters
+RUNID=ganrun_000
 NODES=2
+export PYTHON_EGG_CACHE=$PWD/.cache
 export NUM_CLIENTS_PER_NODE=8
 export PORT_UPPER_LIMIT=5007
+cd $PROJWORK/csc363/floresd/lipizzaner-gan
 
-cd $PROJWORK/csc292/ganwork/lipizzaner-gan
-source bashsetup.sh
+# Load/Setup Conda Environment
+CONDA_ENV=/ccs/proj/csc363/path/to/your/conda_env
 source deactivate
-source activate /autofs/nccs-svm1_proj/csc292/xsy/summit/pytorch-env
+source activate $CONDA_ENV
+export LD_LIBRARY_PATH=$CONDA_ENV/lib:$LD_LIBRARY_PATH
 
-RUNID=ganrun_000
-
+# Run Code
+cp src/configuration/quickstart/general.yml.bak src/configuration/quickstart/general.yml
 jsrun -n $NODES -g 6 -c 42 -r 1 -a 1  bash gpu-script.sh
-#jsrun -n 12 -a 1 -c 7 -g 1 -r 6 -l CPU-CPU -d packed -b packed:7 which python
-
