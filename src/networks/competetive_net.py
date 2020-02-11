@@ -348,24 +348,3 @@ class SSGeneratorNet(GeneratorNet):
 
         # Compute BCELoss using D(G(z))
         return self.loss_function(outputs, real_labels), fake_images, None
-
-class GeneratorNet(CompetetiveNet):
-    @property
-    def name(self):
-        return 'Generator'
-
-    @property
-    def default_fitness(self):
-        return float('-inf')
-
-    def compute_loss_against(self, opponent, input, labels=None):
-        batch_size = input.size(0)
-
-        real_labels = to_pytorch_variable(torch.ones(batch_size))
-
-        z = noise(batch_size, self.data_size)
-
-        fake_images = self.net(z)
-        outputs = opponent.net(fake_images).view(-1)
-
-        return self.loss_function(outputs, real_labels), fake_images, None
