@@ -277,12 +277,16 @@ class SSDiscriminatorNet(DiscriminatorNet):
         """
         # Compute CrossEntropyLoss using real images
         batch_size = input.size(0)
-        tensor = torch.Tensor(batch_size)
+        cuda = is_cuda_enabled()
+        tensor = torch.Tensor(batch_size) if cuda else torch.Tensor(batch_size).cuda()
         tensor.fill_(self.num_classes)
         tensor = tensor.long()
         fake_labels = to_pytorch_variable(tensor)
-        real = to_pytorch_variable(torch.ones(batch_size))
-        fake = to_pytorch_variable(torch.zeros(batch_size))
+
+        ones = torch.ones(batch_size) if cuda else torch.ones(batch_size).cuda()
+        real = to_pytorch_variable(ones)
+        zeros = torch.zeros(batch_size) if cuda else torch.zeros(batch_size).cuda()
+        fake = to_pytorch_variable(zeros)
 
         # Real Loss
         network_output = self.net(input)
@@ -338,7 +342,8 @@ class SSGeneratorNet(GeneratorNet):
     def compute_loss_against(self, opponent: SSDiscriminatorNet, input, labels=None):
         batch_size = input.size(0)
 
-        real_labels = to_pytorch_variable(torch.ones(batch_size))
+        ones = torch.ones(batch_size) if is_cuda_enabled() else torch.ones(batch_size)
+        real_labels = to_pytorch_variable(ones)
 
         z = noise(batch_size, self.data_size)
 
