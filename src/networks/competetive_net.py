@@ -268,7 +268,8 @@ class SSDiscriminatorNet(DiscriminatorNet):
                                   self.data_size,
                                   self.adv_layer,
                                   self.label_pred_layer,
-                                  self.optimize_bias)
+                                  self.optimize_bias,
+                                  conv=self.conv)
 
     def compute_loss_against(self, opponent, input, labels=None):
         """
@@ -331,10 +332,10 @@ class SSGeneratorNet(GeneratorNet):
 
     def clone(self):
         return SSGeneratorNet(self.loss_function,
-                                  self.num_classes,
-                                  copy.deepcopy(self.net),
-                                  self.data_size,
-                                  self.optimize_bias)
+                              self.num_classes,
+                              copy.deepcopy(self.net),
+                              self.data_size,
+                              self.optimize_bias)
 
     def compute_loss_against(self, opponent: SSDiscriminatorNet, input, labels=None):
         batch_size = input.size(0)
