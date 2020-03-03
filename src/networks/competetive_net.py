@@ -30,7 +30,7 @@ class CompetetiveNet(ABC):
             print(e)
 
     @abstractmethod
-    def compute_loss_against(self, opponent, input, labels=None):
+    def compute_loss_against(self, opponent, input, labels=None, alpha=None, beta=None):
         """
         :return: (computed_loss, output_data -> (optional), accuracy(s) -> (optional))
         """
@@ -117,7 +117,7 @@ class GeneratorNet(CompetetiveNet):
     def default_fitness(self):
         return float('-inf')
 
-    def compute_loss_against(self, opponent, input, labels=None):
+    def compute_loss_against(self, opponent, input, labels=None, alpha=None, beta=None):
         batch_size = input.size(0)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
@@ -140,7 +140,7 @@ class DiscriminatorNet(CompetetiveNet):
     def default_fitness(self):
         return float('-inf')
 
-    def compute_loss_against(self, opponent, input, labels=None):
+    def compute_loss_against(self, opponent, input, labels=None, alpha=None, beta=None):
 
         # If HeuristicLoss is applied in the Generator, the Discriminator applies BCELoss
         if self.loss_function.__class__.__name__ == 'MustangsLoss':
@@ -176,7 +176,7 @@ class GeneratorNetSequential(CompetetiveNet):
     def default_fitness(self):
         return float('-inf')
 
-    def compute_loss_against(self, opponent, input, labels=None):
+    def compute_loss_against(self, opponent, input, labels=None, alpha=None, beta=None):
         batch_size = input.size(0)
         sequence_length = input.size(1)
         num_inputs = input.size(2)
@@ -209,7 +209,7 @@ class DiscriminatorNetSequential(CompetetiveNet):
     def default_fitness(self):
         return float('-inf')
 
-    def compute_loss_against(self, opponent, input, labels=None):
+    def compute_loss_against(self, opponent, input, labels=None, alpha=None, beta=None):
         # Compute BCE_Loss using real images where BCE_Loss(x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
         # Second term of the loss is always zero since real_labels == 1
 
@@ -271,7 +271,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
                                   self.optimize_bias,
                                   conv=self.conv)
 
-    def compute_loss_against(self, opponent, input, labels=None):
+    def compute_loss_against(self, opponent, input, labels=None, alpha=None, beta=None):
         """
         Assumes input is provided as a list and that the last column is an
         integer column representing the class of the corresponding input
@@ -296,7 +296,11 @@ class SSDiscriminatorNet(DiscriminatorNet):
         outputs = self.adv_layer(network_output).view(-1)
         validity = self.loss_function(outputs, real)
         real_acc = np.mean(outputs.data.cpu().numpy())
-        d_loss_real = (label_prediction_loss + validity) / 2
+
+        if alpha is not None:
+            d_loss_real = (beta * label_prediction_loss + alpha * validity) / 2
+        else:
+            d_loss_real = (label_prediction_loss + validity) / 2
 
         pred = label_prediction.data.cpu().numpy()
         gt = labels.data.cpu().numpy()
@@ -315,7 +319,11 @@ class SSDiscriminatorNet(DiscriminatorNet):
         outputs = self.adv_layer(network_output).view(-1)
         validity = self.loss_function(outputs, fake)
         fake_acc = np.mean(outputs.data.cpu().numpy())
-        d_loss_fake = (label_prediction_loss + validity) / 2
+
+        if alpha is not None:
+            d_loss_fake = (beta * label_prediction_loss + alpha * validity) / 2
+        else:
+            d_loss_fake = (label_prediction_loss + validity) / 2
 
         return d_loss_real + d_loss_fake, None, (d_acc, real_acc, fake_acc)
 
@@ -337,7 +345,7 @@ class SSGeneratorNet(GeneratorNet):
                               self.data_size,
                               self.optimize_bias)
 
-    def compute_loss_against(self, opponent: SSDiscriminatorNet, input, labels=None):
+    def compute_loss_against(self, opponent: SSDiscriminatorNet, input, labels=None, alpha=None, beta=None):
         batch_size = input.size(0)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
