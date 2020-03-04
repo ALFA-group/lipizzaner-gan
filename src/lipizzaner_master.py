@@ -52,9 +52,10 @@ class LipizzanerMaster:
 
         num_clients = len(accessible_clients)
         if not is_square(num_clients):
-            next_smallest_square = int(sqrt(num_clients))**2
-            accessible_clients = accessible_clients[:next_smallest_square]
-            self.cc.settings['general']['distribution']['client_nodes'] = self.cc.settings['general']['distribution']['client_nodes'][:next_smallest_square]
+            width = int(sqrt(num_clients))
+            height = num_clients//width
+            accessible_clients = accessible_clients[:width*height]
+            self.cc.settings['general']['distribution']['client_nodes'] = accessible_clients
             self._logger.info('Stopping some clients...')
             node_client = NodeClient(None)
             node_client.stop_running_experiments(accessible_clients)
