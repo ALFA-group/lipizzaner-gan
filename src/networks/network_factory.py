@@ -367,7 +367,6 @@ class SSGANPerceptronFactory(NetworkFactory):
             ),
             Sequential(
                 nn.Linear(512, self.num_classes + 1),
-                nn.Softmax()
             ),
         )
 
@@ -443,7 +442,6 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
             ),
             Sequential(
                 nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0),
-                nn.Softmax()
             ),
             conv=True
         )
