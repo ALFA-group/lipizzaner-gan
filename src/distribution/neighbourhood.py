@@ -31,8 +31,12 @@ class Neighbourhood:
         self.alpha = None
         self.beta = None
         if num_clients is not None:
-            self.alpha = self.cell_number / (num_clients - 1)
-            self.beta = 1 - self.cell_number / (num_clients - 1)
+            if num_clients == 1:
+                self.alpha = 0.5
+                self.beta = 0.5
+            else:
+                self.alpha = self.cell_number / (num_clients - 1)
+                self.beta = 1 - self.alpha
 
         self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]
