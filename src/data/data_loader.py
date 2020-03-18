@@ -35,7 +35,7 @@ class DataLoader(ABC):
         self.n_batches = settings.get('n_batches', n_batches)
         self.shuffle = settings.get('shuffle', shuffle)
         self.sampling_ratio = settings.get('sampling_ratio', sampling_ratio)
-        self.cell_number = self.cc.settings['general']['distribution']['client_id']
+        # self.cell_number = self.cc.settings['general']['distribution']['client_id']
 
     def load(self):
         # Image processing
@@ -49,7 +49,9 @@ class DataLoader(ABC):
         if self.sampling_ratio >= 1:
             self.sampler = None
         else:
-            set_random_seed(self.cc.settings['general']['seed'] + self.cell_number,
+            # set_random_seed(self.cc.settings['general']['seed'] + self.cell_number,
+            #                 self.cc.settings['trainer']['params']['score']['cuda'])
+            set_random_seed(self.cc.settings['general']['seed'],
                             self.cc.settings['trainer']['params']['score']['cuda'])
             dataset_size = len(dataset)
             sample_size = int(dataset_size * self.sampling_ratio)

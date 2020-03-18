@@ -74,7 +74,7 @@ class FIDCalculator(ScoreCalculator):
         else:    # Other RGB dataset
             block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
             model = InceptionV3([block_idx])
-            compute_label_freqs = False
+            compute_label_freqs = True
 
         if self.cuda:
             model.cuda()
