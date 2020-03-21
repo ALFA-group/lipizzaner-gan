@@ -328,7 +328,6 @@ class SSGANPerceptronFactory(NetworkFactory):
     def create_discriminator(self, parameters=None, encoded_parameters=None):
         net = SSDiscriminatorNet(
             self.loss_function,
-            nn.CrossEntropyLoss(),
             self.num_classes,
             Sequential(
                 nn.Linear(self.input_data_size, 256),
@@ -336,15 +335,9 @@ class SSGANPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 256),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 512),
-                nn.LeakyReLU(0.2)),
+                nn.LeakyReLU(0.2),
+                nn.Linear(512, self.num_classes + 1)),
             self.gen_input_size,
-            Sequential(
-                nn.Linear(512, 1),
-                nn.Sigmoid()
-            ),
-            Sequential(
-                nn.Linear(512, self.num_classes + 1),
-            ),
         )
 
         if parameters is not None:
@@ -411,15 +404,9 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
                 nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 8),
                 nn.LeakyReLU(0.2, inplace=True),
-            ),
-            self.gen_input_size,
-            Sequential(
-                nn.Conv2d(self.complexity * 8, 1, 4, 1, 0),
-                nn.Sigmoid()
-            ),
-            Sequential(
                 nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0),
             ),
+            self.gen_input_size,
             conv=True
         )
 

@@ -19,7 +19,7 @@ trainer:
       enabled: True
       type: fid
       score_sample_size: 1000
-      cuda: True
+      cuda: False
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
@@ -32,9 +32,9 @@ dataloader:
 network:
   name: ssgan_perceptron 
   # name: four_layer_perceptron 
-  loss: bceloss
+  loss: celoss
 master:
   calculate_score: True
   score_sample_size: 50000
-  cuda: True
+  cuda: False
 general: !include general.yml

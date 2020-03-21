@@ -12,6 +12,7 @@ class ConfigurationContainer:
     class_maps = {
         'bceloss': ('torch.nn', 'BCELoss'),
         'mseloss': ('torch.nn', 'MSELoss'),
+        'celoss': ('torch.nn', 'CrossEntropyLoss'),
         'heuristicloss': ('networks.customized_loss.heuristic_loss', 'HeuristicLoss'),
         'mustangs': ('networks.customized_loss.mustangs_loss', 'MustangsLoss'),
         'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
