@@ -32,7 +32,8 @@ dataloader:
 network:
   name: ssgan_perceptron 
   # name: four_layer_perceptron 
-  loss: bceloss
+  # loss: bceloss
+  loss: celoss
 master:
   calculate_score: True
   score_sample_size: 50000
