@@ -128,6 +128,28 @@ class NodeClient:
             address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
             requests.delete(address)
 
+    # will kill up to num_clients_to_kill if they exist
+    def kill_clients(self, num_clients_to_kill):
+        print("beginning of method\n")
+        clients = self.cc.settings['general']['distribution']['client_nodes']
+        print("a\n")
+        active_clients = [c for c in clients]
+        print("b\n")
+        killed = 0 
+        print(f"starting with {killed}")
+        print("clients are: " + str(clients) + "\nactive clients are: " + str(active_clients) + "\n")
+
+        for client in active_clients:
+            if killed > num_clients_to_kill:
+                break 
+            address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
+            requests.delete(address)
+            # attempt to do a request to this address to see if its alive 
+            print("deleted " + address + "\n")
+            killed += 1
+        print(f"killed " + {killed} + " clients out of " + {num_clients_to_kill})
+
+
     @staticmethod
     def _load_parameters_async(node, path, timeout_sec):
         address = 'http://{}:{}{}'.format(node['address'], node['port'], path)

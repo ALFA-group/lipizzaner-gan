@@ -52,6 +52,7 @@ class ClientAPI:
         ClientAPI._lock.acquire()
 
         if ClientAPI.is_busy:
+            # write more log messages to check if killing clients successfully 
             ClientAPI._logger.warning('Received stop signal from master, experiment will be quit.')
             ClientAPI._stop_event.set()
         else:

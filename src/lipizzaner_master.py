@@ -79,6 +79,11 @@ class LipizzanerMaster:
 
         self.heartbeat_thread.join()
 
+        # TODO set a timer here that after a certain interval will terminate X number of clients
+        print("about to call node function to kill clients")
+        self._kill_clients(1)
+        time.sleep(25)
+
         # When this is reached, the heartbeat thread has stopped.
         # This either happens when the experiments are done, or if they were terminated
         if self.heartbeat_thread.success:
@@ -157,6 +162,10 @@ class LipizzanerMaster:
 
             exit(return_code)
 
+    def _kill_clients(self, num_to_kill=1):
+        node_client = NodeClient(None)
+        node_client.kill_clients(num_to_kill)
+
     def _gather_results(self):
         self._logger.info('Collecting results from clients...')
 
@@ -167,7 +176,7 @@ class LipizzanerMaster:
         db_logger = DbLogger()
 
         results = node_client.gather_results(self.cc.settings['general']['distribution']['client_nodes'], 120)
-
+        # TODO check what the length of results is here when you kill clients 
         scores = []
         for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator) in results:
             node_name = '{}:{}'.format(node['address'], node['port'])
