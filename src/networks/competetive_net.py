@@ -283,8 +283,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         label_prediction_loss = self.loss_function(network_output, labels)
         softmax_layer = Softmax()
         probabilities = softmax_layer(network_output)
-        real_probabilities = probabilities[:, :-1].sum(1)
-        real_probabilities[real_probabilities == 1.0] = 0.999
+        real_probabilities = -probabilities[:, -1] + 1
         bce_loss = BCELoss()
         validity = bce_loss(real_probabilities, ones)
 
