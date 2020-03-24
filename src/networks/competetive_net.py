@@ -333,9 +333,6 @@ class SSGeneratorNet(GeneratorNet):
         fake_data_moments = torch.mean(network_output, 0)
         # outputs = opponent.classification_layer(fake_data_moments)
 
-        print(real_data_moments)
-        print(fake_data_moments)
-        print(torch.abs(real_data_moments - fake_data_moments))
         loss = torch.mean(torch.abs(real_data_moments - fake_data_moments))
 
         # return self.loss_function(outputs, fake_labels), fake_images, None
