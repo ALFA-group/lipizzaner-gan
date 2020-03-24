@@ -4,7 +4,7 @@ import copy
 
 import numpy as np
 import torch
-from torch.nn import Softmax
+from torch.nn import Softmax, BCELoss
 
 from distribution.state_encoder import StateEncoder
 from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_splits, noise
@@ -243,10 +243,11 @@ class DiscriminatorNetSequential(CompetetiveNet):
 
 class SSDiscriminatorNet(DiscriminatorNet):
 
-    def __init__(self, label_pred_loss, num_classes, net, data_size,
+    def __init__(self, label_pred_loss, num_classes, net, classification_layer, data_size,
                  optimize_bias=True, conv=False):
         DiscriminatorNet.__init__(self, label_pred_loss, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
+        self.classification_layer = classification_layer
         self.conv = conv
 
     @property
@@ -261,6 +262,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,
                                   copy.deepcopy(self.net),
+                                  self.classification_layer,
                                   self.data_size,
                                   self.optimize_bias,
                                   conv=self.conv)
@@ -272,10 +274,20 @@ class SSDiscriminatorNet(DiscriminatorNet):
         tensor = tensor.long()
         fake_labels = to_pytorch_variable(tensor)
 
+        ones = to_pytorch_variable(torch.ones(batch_size))
+
+        # torch.set_printoptions(profile="full")
+
         # Real Loss
-        network_output = self.net(input)
+        network_output = self.classification_layer(self.net(input))
         label_prediction_loss = self.loss_function(network_output, labels)
-        d_loss_real = label_prediction_loss / 2
+        softmax_layer = Softmax()
+        probabilities = softmax_layer(network_output)
+        real_probabilities = probabilities[:, :-1].sum(1) - 1e-3
+        bce_loss = BCELoss()
+        validity = bce_loss(real_probabilities, ones)
+
+        d_loss_real = label_prediction_loss + validity
 
         pred = network_output.data.cpu().numpy()
         gt = labels.data.cpu().numpy()
@@ -285,9 +297,9 @@ class SSDiscriminatorNet(DiscriminatorNet):
         # Fake Loss
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
-        network_output = self.net(fake_images)
+        network_output = self.classification_layer(self.net(fake_images))
         label_prediction_loss = self.loss_function(network_output, fake_labels)
-        d_loss_fake = label_prediction_loss / 2
+        d_loss_fake = label_prediction_loss
 
         return d_loss_real + d_loss_fake, None, d_acc
 
@@ -311,13 +323,21 @@ class SSGeneratorNet(GeneratorNet):
 
     def compute_loss_against(self, opponent: SSDiscriminatorNet, input, labels=None, alpha=None, beta=None):
         batch_size = input.size(0)
-        tensor = torch.Tensor(batch_size)
-        tensor.fill_(self.num_classes)
-        tensor = tensor.long()
-        fake_labels = to_pytorch_variable(tensor)
+        ones = to_pytorch_variable(torch.ones(batch_size))
+
+        real_data_moments = torch.mean(opponent.net(input), 0)
 
         z = noise(batch_size, self.data_size)
         fake_images = self.net(z)
-        outputs = opponent.net(fake_images)
+        network_output = opponent.net(fake_images)
+        fake_data_moments = torch.mean(network_output, 0)
+        # outputs = opponent.classification_layer(fake_data_moments)
 
-        return self.loss_function(outputs, fake_labels), fake_images, None
+        print(real_data_moments)
+        print(fake_data_moments)
+        print(torch.abs(real_data_moments - fake_data_moments))
+        loss = torch.mean(torch.abs(real_data_moments - fake_data_moments))
+
+        # return self.loss_function(outputs, fake_labels), fake_images, None
+        # return loss + self.loss_function(outputs, fake_labels), fake_images, None
+        return loss, fake_images, None
