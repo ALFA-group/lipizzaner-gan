@@ -130,14 +130,11 @@ class NodeClient:
 
     # will kill up to num_clients_to_kill if they exist
     def kill_clients(self, num_clients_to_kill):
-        print("beginning of method\n")
         clients = self.cc.settings['general']['distribution']['client_nodes']
-        print("a\n")
-        active_clients = [c for c in clients]
-        print("b\n")
+        active_clients = [c for c in clients if not any(d for d in except_for_clients if d['address'] == c['address']
+                                                        and d['port'] == c['port'])]
         killed = 0 
-        print(f"starting with {killed}")
-        print("clients are: " + str(clients) + "\nactive clients are: " + str(active_clients) + "\n")
+        NodeClient._logger.info("clients are: {} \nactive clients are: {}".format(clients, active_clients)) 
 
         for client in active_clients:
             if killed > num_clients_to_kill:
@@ -145,9 +142,13 @@ class NodeClient:
             address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
             requests.delete(address)
             # attempt to do a request to this address to see if its alive 
-            print("deleted " + address + "\n")
+            NodeClient._logger.info("deleted {}\n".format(address))
             killed += 1
-        print(f"killed " + {killed} + " clients out of " + {num_clients_to_kill})
+
+        active_clients_after = [c for c in clients if not any(d for d in except_for_clients if d['address'] == c['address']
+                                                        and d['port'] == c['port'])]
+        
+        NodeClient._logger.info("actually killed {} of desired killed {}, num clients is {}".format(len(active_clients_after),killed, num_clients_to_kill))
 
 
     @staticmethod
