@@ -331,8 +331,11 @@ class SSGANPerceptronFactory(NetworkFactory):
             self.num_classes,
             Sequential(
                 nn.Linear(self.input_data_size, 256),
+                nn.Dropout(0.1),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 256),
+                nn.BatchNorm1d(256),
+                nn.Dropout(0.1),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 512),
                 nn.LeakyReLU(0.2)
@@ -395,18 +398,21 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
             self.num_classes,
             Sequential(
                 nn.Conv2d(3, self.complexity, 4, 2, 1),
+                nn.Dropout(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity, self.complexity * 2, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 2),
+                nn.Dropout(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 2, self.complexity * 4, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 4),
+                nn.Dropout(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 8),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0),
+                nn.LeakyReLU(0.2, inplace=True)
             ),
+            Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
             conv=True
         )
