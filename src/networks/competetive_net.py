@@ -281,6 +281,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Adding noise to prevent Discriminator from getting too strong
         input_perturbation = torch.empty(input.shape).normal_(mean=0, std=0.1)
+        input_perturbation = to_pytorch_variable(input_perturbation)
         input = input + input_perturbation
 
         # Real Loss
