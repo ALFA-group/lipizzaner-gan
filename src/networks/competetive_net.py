@@ -286,6 +286,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Real Loss
         network_output = self.classification_layer(self.net(input))
+        network_output = network_output.view(batch_size, -1)
         label_prediction_loss = self.loss_function(network_output, labels)
         softmax_layer = Softmax()
         probabilities = softmax_layer(network_output)
@@ -305,6 +306,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
         network_output = self.classification_layer(self.net(fake_images))
+        network_output = network_output.view(batch_size, -1)
         label_prediction_loss = self.loss_function(network_output, fake_labels)
         d_loss_unsupervised = d_loss_unsupervised + label_prediction_loss
 
