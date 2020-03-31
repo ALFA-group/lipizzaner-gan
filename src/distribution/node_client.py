@@ -148,6 +148,7 @@ class NodeClient:
         active_clients_after = [c for c in clients if not any(d for d in except_for_clients if d['address'] == c['address']
                                                         and d['port'] == c['port'])]
         
+        assert(len(active_clients_after) == len(active_clients_after) - killed)
         NodeClient._logger.info("actually killed {} of desired killed {}, num clients is {}".format(len(active_clients_after),killed, num_clients_to_kill))
 
 

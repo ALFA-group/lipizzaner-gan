@@ -16,12 +16,12 @@ echo "Client PIDS:"
 cat ${PID_FILE}
 sleep 5
 
+# kill number of clients
+bash client_failure_exp.sh 4
+
 echo "Start master on GPU 4"
 # export CUDA_VISIBLE_DEVICES=4; 
 python main.py train --distributed --master -f configuration/quickstart/mnist.yml
-
-# kill number of clients
-bash client_failure_exp.sh
 
 echo "Begin kill clients"
 cat ${PID_FILE} | xargs -I {} kill -9 {}
