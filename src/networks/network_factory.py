@@ -394,7 +394,6 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
     def create_discriminator(self, parameters=None, encoded_parameters=None):
         net = SSDiscriminatorNet(
             self.loss_function,
-            nn.CrossEntropyLoss(),
             self.num_classes,
             Sequential(
                 nn.Conv2d(3, self.complexity, 4, 2, 1),
