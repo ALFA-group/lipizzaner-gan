@@ -164,7 +164,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self._logger.debug('Evaluating fitness')
             self.evaluate_fitness(all_generators, all_discriminators, fitness_input, self.fitness_mode)
             self.evaluate_fitness(all_discriminators, all_generators, fitness_input, self.fitness_mode,
-                                  labels=fitness_labels, logger=self._logger, alpha=alpha, beta=beta)
+                                  labels=fitness_labels, logger=self._logger, alpha=alpha, beta=beta, iter=iteration)
             self._logger.debug('Finished evaluating fitness')
 
             # Tournament selection
@@ -199,7 +199,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 attackers = new_populations[TYPE_GENERATOR] if self._enable_selection else local_generators
                 defenders = new_populations[TYPE_DISCRIMINATOR] if self._enable_selection else all_discriminators
                 input_data = self.step(local_generators, attackers, defenders, input_data, self.batch_number, loaded,
-                                       data_iterator)
+                                       data_iterator, iter=iteration)
 
                 if self._discriminator_skip_each_nth_step == 0 or self.batch_number % (
                         self._discriminator_skip_each_nth_step + 1) == 0:
@@ -208,7 +208,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     attackers = new_populations[TYPE_DISCRIMINATOR] if self._enable_selection else local_discriminators
                     defenders = new_populations[TYPE_GENERATOR] if self._enable_selection else all_generators
                     input_data = self.step(local_discriminators, attackers, defenders, input_data, self.batch_number,
-                                           loaded, data_iterator, labels=labels, alpha=alpha, beta=beta)
+                                           loaded, data_iterator, labels=labels, alpha=alpha, beta=beta, iter=iteration)
 
                 self._logger.info('Iteration {}, Batch {}/{}'.format(iteration + 1, self.batch_number, len(loaded)))
 
@@ -225,7 +225,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 self.evaluate_fitness(new_populations[TYPE_GENERATOR], all_discriminators, fitness_input,
                                       self.fitness_mode)
                 self.evaluate_fitness(new_populations[TYPE_DISCRIMINATOR], all_generators, fitness_input,
-                                      self.fitness_mode, labels=fitness_labels, alpha=alpha, beta=beta)
+                                      self.fitness_mode, labels=fitness_labels, alpha=alpha, beta=beta, iter=iteration)
                 self.concurrent_populations.lock()
                 local_generators.replacement(new_populations[TYPE_GENERATOR], self._n_replacements, is_logging=True)
                 local_generators.sort_population(is_logging=True)
@@ -246,7 +246,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 self.evaluate_fitness(local_generators, all_discriminators, fitness_input, self.fitness_mode)
                 self.evaluate_fitness(local_discriminators, all_generators,
                                       fitness_input, self.fitness_mode,
-                                      labels=fitness_labels, alpha=alpha, beta=beta)
+                                      labels=fitness_labels, alpha=alpha, beta=beta, iter=iteration)
 
 
             # Mutate mixture weights after selection
@@ -359,10 +359,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                                                                                         self.score))
 
     def step(self, original, attacker, defender, input_data, i, loaded,
-             data_iterator, labels=None, alpha=None, beta=None):
+             data_iterator, labels=None, alpha=None, beta=None, iter=None):
         self.mutate_hyperparams(attacker)
         return self.update_genomes(attacker, defender, input_data, loaded,
-                                   data_iterator, labels=labels, alpha=alpha, beta=beta)
+                                   data_iterator, labels=labels, alpha=alpha, beta=beta, iter=iter)
 
     def is_last_batch(self, i):
         return self.dataloader.n_batches != 0 and self.dataloader.n_batches - 1 == i
@@ -381,7 +381,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             individual.learning_rate = max(0, individual.learning_rate + deltas[i] * self._alpha)
 
     def update_genomes(self, population_attacker, population_defender, input_var,
-                       loaded, data_iterator, labels=None, alpha=None, beta=None):
+                       loaded, data_iterator, labels=None, alpha=None, beta=None, iter=None):
 
         # TODO Currently picking random opponent, introduce parameter for this
         defender = random.choice(population_defender.individuals).genome
@@ -400,7 +400,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 loss = attacker.compute_loss_against(defender, input_var)[0]
             else:
                 loss = attacker.compute_loss_against(defender, input_var,
-                                                     labels=labels, alpha=alpha, beta=beta)[0]
+                                                     labels=labels, alpha=alpha, beta=beta, iter=iter)[0]
 
             attacker.net.zero_grad()
             defender.net.zero_grad()
@@ -413,7 +413,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
     @staticmethod
     def evaluate_fitness(population_attacker, population_defender, input_var, fitness_mode,
-                         labels=None, logger=None, alpha=None, beta=None):
+                         labels=None, logger=None, alpha=None, beta=None, iter=None):
         # Single direction only: Evaluate fitness of attacker based on defender
         # TODO: Simplify and refactor this function
         def compare_fitness(curr_fitness, fitness, mode):
@@ -445,7 +445,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     fitness_attacker = float(
                         individual_attacker.genome.compute_loss_against(
                             individual_defender.genome, input_var,
-                            labels=labels, alpha=alpha, beta=beta)[0])
+                            labels=labels, alpha=alpha, beta=beta, iter=iter)[0])
 
                 individual_attacker.fitness = compare_fitness(fitness_attacker, individual_attacker.fitness,
                                                               fitness_mode)
@@ -467,7 +467,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             generator = gen.genome
             discriminator = dis.genome
             discriminator_output = discriminator.compute_loss_against(
-                generator, input_var, labels=labels, alpha=alpha, beta=beta
+                generator, input_var, labels=labels, alpha=alpha, beta=beta, iter=iter
             )
             accuracy = discriminator_output[2]
             if discriminator.name == "SemiSupervisedDiscriminator" and \
@@ -476,11 +476,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 # real_acc = accuracy[1]
                 # fake_acc = accuracy[2]
                 logger.info(
-                    "Label Prediction Accuracy: %d%%, "
+                    f"Iteration {iter},  Label Prediction Accuracy: {100 * accuracy}% "
                     # "Real Image Prediction Accuracy: %d%%, "
                     # "Fake Image Prediction Accuracy: %d%%"
                     # % (100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc))
-                    % (100 * accuracy)
                 )
 
 
