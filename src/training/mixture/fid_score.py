@@ -244,8 +244,7 @@ class FIDCalculator(ScoreCalculator):
 
         for i in range(self.n_samples):
             img = dataset[i]
-            if self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
-            # if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
+            if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
                 # Reshape to 2D images as required by MNISTCnn class
                 img = img.view(-1, 28, 28)
 
