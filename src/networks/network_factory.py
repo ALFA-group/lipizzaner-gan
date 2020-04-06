@@ -433,7 +433,7 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
 
 class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
 
-    complexity = 128
+    complexity = 56
 
     @property
     def gen_input_size(self):
