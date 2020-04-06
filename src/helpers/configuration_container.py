@@ -33,6 +33,7 @@ class ConfigurationContainer:
         'four_layer_perceptron': ('networks.network_factory', 'FourLayerPerceptronFactory'),
         'ssgan_perceptron': ('networks.network_factory', 'SSGANPerceptronFactory'),
         'ssgan_convolutional': ('networks.network_factory', 'SSGANConvolutionalNetworkFactory'),
+        'ssgan_convolutional_mnist': ('networks.network_factory', 'SSGANConvolutionalMNISTNetworkFactory'),
         'convolutional': ('networks.network_factory', 'ConvolutionalNetworkFactory'),
         'mooc_net': ('networks.mooc_net', 'MOOCFourLayerPerceptronFactory'),
         'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),

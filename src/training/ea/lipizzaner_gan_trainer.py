@@ -149,7 +149,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             # Create random dataset to evaluate fitness in each iterations
             fitness_input, fitness_labels = self.generate_random_fitness_samples(self.fitness_sample_size)
             if self.cc.settings['dataloader']['dataset_name'] == 'celeba' \
-                    or self.cc.settings['dataloader']['dataset_name'] == 'cifar':
+                    or self.cc.settings['dataloader']['dataset_name'] == 'cifar' \
+                    or self.cc.settings['dataloader']['dataset_name'] == 'mnist':
                 fitness_input = to_pytorch_variable(fitness_input)
                 fitness_labels = to_pytorch_variable(fitness_labels)
             elif self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
