@@ -7,9 +7,9 @@ from torchvision import datasets, transforms
 from torch.optim.lr_scheduler import StepLR
 
 
-class MNISTCnn(nn.Module):
+class MNISTConvCnn(nn.Module):
     def __init__(self):
-        super(MNISTCnn, self).__init__()
+        super(MNISTConvCnn, self).__init__()
         self.conv1 = nn.Conv2d(1, 8, 4)
         self.conv2 = nn.Conv2d(8, 16, 4)
         self.fc1 = nn.Linear(2704, 1028)
@@ -110,7 +110,7 @@ def main():
         datasets.MNIST('../data', train=False, transform=transform),
         batch_size=args.test_batch_size, shuffle=True, **kwargs)
 
-    model = MNISTCnn().to(device)
+    model = MNISTConvCnn().to(device)
     optimizer = optim.Adadelta(model.parameters(), lr=args.lr)
 
     scheduler = StepLR(optimizer, step_size=1, gamma=args.gamma)

@@ -27,6 +27,7 @@ from torch.nn.functional import adaptive_avg_pool2d
 
 from helpers.configuration_container import ConfigurationContainer
 from training.mixture.fid_mnist import MNISTCnn
+from training.mixture.fid_mnist_conv import MNISTConvCnn
 from training.mixture.fid_inception import InceptionV3
 from training.mixture.score_calculator import ScoreCalculator
 
@@ -64,8 +65,9 @@ class FIDCalculator(ScoreCalculator):
         """
         model = None
         if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
-            model = MNISTCnn()
+            model = MNISTConvCnn()
             model.load_state_dict(torch.load('./output/networks/mnist_conv_cnn.pt'))
+            # model = MNISTCnn()
             # model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
             compute_label_freqs = True
         elif self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
