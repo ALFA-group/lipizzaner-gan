@@ -65,7 +65,8 @@ class FIDCalculator(ScoreCalculator):
         model = None
         if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
             model = MNISTCnn()
-            model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+            model.load_state_dict(torch.load('./output/networks/mnist_conv_cnn.pt'))
+            # model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
             compute_label_freqs = True
         elif self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
             model = MNISTCnn()
@@ -244,7 +245,9 @@ class FIDCalculator(ScoreCalculator):
 
         for i in range(self.n_samples):
             img = dataset[i]
-            if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
+            if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+                img = img.view(-1, 64, 64)
+            if self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
                 # Reshape to 2D images as required by MNISTCnn class
                 img = img.view(-1, 28, 28)
 
