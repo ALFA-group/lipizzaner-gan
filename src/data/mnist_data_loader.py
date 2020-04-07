@@ -18,11 +18,38 @@ class MNISTDataLoader(DataLoader):
         return 10
 
     def transform(self):
-        return transforms.Compose([transforms.Resize(64), transforms.ToTensor(),
-                                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
+            return transforms.Compose(
+                [
+                    transforms.Resize(64),
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        (0.5, 0.5, 0.5),
+                        (0.5, 0.5, 0.5)
+                    )
+                 ]
+            )
+        else:
+            return transforms.Compose(
+                [
+                    transforms.ToTensor(),
+                    transforms.Normalize(
+                        (0.5, 0.5, 0.5),
+                        (0.5, 0.5, 0.5)
+                    )
+                ]
+            )
 
     def save_images(self, images, shape, filename):
-        save_image(denorm(images.data), filename)
+        if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
+            img_view = images
+        else:
+            dimensions = 1 if len(shape) == 3 else shape[3]
+            img_view = images.view(images.size(0), dimensions, shape[1], shape[2])
+        save_image(denorm(img_view.data), filename)
 
     def transpose_data(self, data):
-        return data
+        if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
+            return data
+        else:
+            return data.view(self.batch_size, -1)
