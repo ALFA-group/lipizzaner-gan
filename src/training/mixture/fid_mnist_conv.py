@@ -20,6 +20,7 @@ class MNISTConvCnn(nn.Module):
     def forward(self, x):
         assert (len(x.shape) == 4 and x.shape[1] == 1
                 and x.shape[2] == 64 and x.shape[3] == 64)
+        outp = []
 
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
         x = F.relu(F.max_pool2d(self.conv2(x), 2))
@@ -31,9 +32,9 @@ class MNISTConvCnn(nn.Module):
         x = F.relu(self.fc3(x))
         x = F.dropout(x, training=False)
         x = self.fc4(x)
+        outp.append(x)  # Store output of fc2
 
-
-        return F.log_softmax(x, dim=1)
+        return outp
 
 
 def train(args, model, device, train_loader, optimizer, epoch):
@@ -41,8 +42,8 @@ def train(args, model, device, train_loader, optimizer, epoch):
     for batch_idx, (data, target) in enumerate(train_loader):
         data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
-        output = model(data)
-        loss = F.nll_loss(output, target)
+        output = model(data)[0]
+        loss = F.nll_loss(F.log_softmax(output, dim=1), target)
         loss.backward()
         optimizer.step()
         if batch_idx % args.log_interval == 0:
@@ -58,8 +59,8 @@ def test(args, model, device, test_loader):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            output = model(data)
-            test_loss += F.nll_loss(output, target, reduction='sum').item()  # sum up batch loss
+            output = model(data)[0]
+            test_loss += F.nll_loss(F.log_softmax(output, dim=1), target, reduction='sum').item()  # sum up batch loss
             pred = output.argmax(dim=1, keepdim=True)  # get the index of the max log-probability
             correct += pred.eq(target.view_as(pred)).sum().item()
 
