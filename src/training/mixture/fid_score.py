@@ -51,8 +51,7 @@ class FIDCalculator(ScoreCalculator):
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
-        # if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
+        if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
             self.dims = 10    # For MNIST the dimension of feature map is 10
         else:
             self.dims = dims
