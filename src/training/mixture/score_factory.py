@@ -27,7 +27,8 @@ class ScoreCalculatorFactory:
         if score_type == 'fid':
             transforms_op = [transforms.ToTensor(),
                              transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
-            if cc.settings['dataloader']['dataset_name'] != 'mnist' and cc.settings['dataloader']['dataset_name'] != 'mnist_fashion':
+            # if cc.settings['dataloader']['dataset_name'] != 'mnist' and cc.settings['dataloader']['dataset_name'] != 'mnist_fashion':
+            if cc.settings['dataloader']['dataset_name'] != 'mnist_fashion':
                 # Need to reshape for RGB dataset as required by pre-trained InceptionV3
                 transforms_op = [transforms.Resize([64, 64])] + transforms_op
             dataset = dataloader.dataset(root=os.path.join(cc.settings['general']['output_dir'], 'data'), train=True,
