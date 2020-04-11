@@ -330,7 +330,11 @@ class SSGANPerceptronFactory(NetworkFactory):
             self.loss_function,
             self.num_classes,
             Sequential(
-                nn.Linear(self.input_data_size, 256),
+                nn.Linear(self.input_data_size, 512),
+                nn.Dropout(0.1),
+                nn.LeakyReLU(0.2),
+                nn.Linear(512, 256),
+                nn.BatchNorm1d(256),
                 nn.Dropout(0.1),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 256),
