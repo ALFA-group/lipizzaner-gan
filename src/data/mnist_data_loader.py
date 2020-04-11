@@ -30,26 +30,17 @@ class MNISTDataLoader(DataLoader):
                  ]
             )
         else:
-            return transforms.Compose(
-                [
-                    transforms.ToTensor(),
-                    transforms.Normalize(
-                        (0.5, 0.5, 0.5),
-                        (0.5, 0.5, 0.5)
-                    )
-                ]
-            )
+            return super().transform()
 
     def save_images(self, images, shape, filename):
         if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
             img_view = images
+            save_image(denorm(img_view.data), filename)
         else:
-            dimensions = 1 if len(shape) == 3 else shape[3]
-            img_view = images.view(images.size(0), dimensions, shape[1], shape[2])
-        save_image(denorm(img_view.data), filename)
+            super().save_images(images, shape, filename)
 
     def transpose_data(self, data):
         if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
             return data
         else:
-            return data.view(self.batch_size, -1)
+            return super().transpose_data(data)
