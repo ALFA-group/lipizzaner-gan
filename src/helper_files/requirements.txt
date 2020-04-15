@@ -10,3 +10,5 @@ Flask==0.12.2
 netaddr==0.7.19
 pymongo==3.6.1
 netifaces==0.10.9
+future==0.18.2
+pathlib==1.0.1

@@ -11,7 +11,8 @@ output_dir: ./output
 distribution:
   auto_discover: False
   master_node:
-    exit_clients_on_disconnect: True
+    exit_clients_on_disconnect: False 
+    restart_client_number_attempts: 1
   client_nodes:
     - address: 127.0.0.1 # Fill in IP address here 
       port: 5000-5003

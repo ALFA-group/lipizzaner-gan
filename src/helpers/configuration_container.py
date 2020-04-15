@@ -8,8 +8,8 @@ import importlib
 
 
 @Singleton
-class ConfigurationContainer:
-    class_maps = {
+class ConfigurationContainer: 
+    class_maps = { 
         'bceloss': ('torch.nn', 'BCELoss'),
         'mseloss': ('torch.nn', 'MSELoss'),
         'heuristicloss': ('networks.customized_loss.heuristic_loss', 'HeuristicLoss'),

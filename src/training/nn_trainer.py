@@ -137,3 +137,5 @@ class NeuralNetworkTrainer(ABC):
         path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}.yml'.format(cell_number))
         with open(path_checkpoint, 'w') as file:
             yaml.dump(checkpoint, file)
+
+        self._logger.info("SAVING CHECKPOINT for cell {}".format(cell_number))

@@ -16,7 +16,7 @@ from training.ea.ea_trainer import EvolutionaryAlgorithmTrainer
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
-from data.network_data_loader import generate_random_sequences
+from data.network_data_loader import generate_random_sequences 
 
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
@@ -30,7 +30,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                  mixture_sigma=0.01, score_sample_size=10000, discriminator_skip_each_nth_step=0,
                  enable_selection=True, fitness_sample_size=10000, calculate_net_weights_dist=False,
                  fitness_mode='worst',  es_generations=10, es_score_sample_size=10000, es_random_init=False,
-                 checkpoint_period=0):
+                 checkpoint_period=3):
 
         super().__init__(dataloader, network_factory, population_size, tournament_size, mutation_probability,
                          n_replacements, sigma, alpha)
@@ -252,6 +252,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                            path_real_images, path_fake_images)
 
             if self.checkpoint_period>0 and (iteration+1)%self.checkpoint_period==0:
+                self._logger.info('Checkpointing at iteration {}, batch {}/{}'.format(iteration + 1, self.batch_number, len(loaded)))
                 self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
                                      self.neighbourhood.cell_number, self.neighbourhood.grid_position)
 

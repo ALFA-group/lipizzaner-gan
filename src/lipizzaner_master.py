@@ -67,10 +67,12 @@ class LipizzanerMaster:
                         self.cc.settings['trainer']['params']['score']['cuda'])
         self._logger.info("Seed used in master: {}".format(self.cc.settings['general']['seed']))
 
+        self._logger.info("RESTART CLIENT NUM ATTEMPTS IS {}".format(self.cc.settings['general']['distribution']['master_node']['restart_client_number_attempts']))
+
         self.heartbeat_event = Event()
         self.heartbeat_thread = Heartbeat(self.heartbeat_event,
-                                          self.cc.settings['general']['distribution']['master_node'][
-                                              'exit_clients_on_disconnect'])
+                                          self.cc.settings['general']['distribution']['master_node']['exit_clients_on_disconnect'], 
+                                          self.cc.settings['general']['distribution']['master_node']['restart_client_number_attempts']) # exit_clients_on_disconnect was True originally 
 
         signal.signal(signal.SIGINT, self._sigint)
         self._start_experiments()
