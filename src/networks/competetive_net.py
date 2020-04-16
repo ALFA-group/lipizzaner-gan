@@ -291,13 +291,15 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Adding noise to prevent Discriminator from getting too strong
         # if iter is not None:
-        #     std = max(0, 0.1 - iter * 0.0005)
+        #     std = max(1e-10, 0.1 - iter * 0.0005)
         #     # if std == 0:
         #     #     input_perturbation = 0
         #     # else:
         #     input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
         # else:
         #     input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
+
+        # NOTE: Maybe this is not necessary since Dropout might be taking care of this
         input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
         input = input + input_perturbation
 
@@ -308,7 +310,6 @@ class SSDiscriminatorNet(DiscriminatorNet):
         supervised_loss_function = CrossEntropyLoss(reduction='none')
         supervised_loss = supervised_loss_function(network_output, labels)
         num_usable_labels = torch.sum(label_mask)
-        print(f"Number of Usable Labels: {num_usable_labels}")
         loss_for_usable_labels = torch.sum(supervised_loss * label_mask)
         label_prediction_loss = loss_for_usable_labels / num_usable_labels
 

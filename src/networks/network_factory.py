@@ -312,8 +312,10 @@ class SSGANPerceptronFactory(NetworkFactory):
             self.num_classes,
             Sequential(
                 nn.Linear(128, 256),
+                nn.Dropout(0.3),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 512),
+                nn.Dropout(0.3),
                 nn.LeakyReLU(0.2),
                 nn.Linear(512, self.input_data_size),
                 nn.Tanh()), self.gen_input_size)
@@ -331,11 +333,11 @@ class SSGANPerceptronFactory(NetworkFactory):
             self.num_classes,
             Sequential(
                 nn.Linear(self.input_data_size, 256),
-                nn.Dropout(0.1),
+                nn.Dropout(0.3),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 256),
                 nn.BatchNorm1d(256),
-                nn.Dropout(0.1),
+                nn.Dropout(0.3),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 512),
                 nn.LeakyReLU(0.2)
