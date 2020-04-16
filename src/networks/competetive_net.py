@@ -281,7 +281,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         tensor = tensor.long()
         fake_labels = to_pytorch_variable(tensor)
 
-        label_rate = 0.1
+        label_rate = 0.01
         label_mask = self._get_labeled_mask(batch_size, label_rate)
 
         # Positive Label Smoothing
@@ -308,6 +308,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         supervised_loss_function = CrossEntropyLoss(reduction='none')
         supervised_loss = supervised_loss_function(network_output, labels)
         num_usable_labels = torch.sum(label_mask)
+        print(f"Number of Usable Labels: {num_usable_labels}")
         loss_for_usable_labels = torch.sum(supervised_loss * label_mask)
         label_prediction_loss = loss_for_usable_labels / num_usable_labels
 
@@ -364,6 +365,6 @@ class SSGeneratorNet(GeneratorNet):
         network_output = opponent.net(fake_images)
         fake_data_moments = torch.mean(network_output, 0)
 
-        loss = torch.mean(torch.abs(real_data_moments - fake_data_moments))
+        loss = torch.norm(real_data_moments - fake_data_moments)
 
         return loss, fake_images, None
