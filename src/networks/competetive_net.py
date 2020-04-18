@@ -331,7 +331,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         # Fake Unsupervised Loss
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
-        fake_image_perturbation = torch.empty(z.shape).normal_(mean=0, std=0.1)
+        fake_image_perturbation = torch.empty(fake_images.shape).normal_(mean=0, std=0.1)
         fake_image_perturbation = to_pytorch_variable(fake_image_perturbation)
         fake_images = fake_images + fake_image_perturbation
 
