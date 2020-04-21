@@ -303,7 +303,14 @@ class SSDiscriminatorNet(DiscriminatorNet):
         input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
         input = input + input_perturbation
 
-        network_output = self.classification_layer(self.net(input))
+        # network_output = self.classification_layer(self.net(input))
+        if self.conv:
+            leaky_relu = torch.nn.LeakyReLU(0.2, inplace=True)
+        else:
+            leaky_relu = torch.nn.LeakyReLU(0.2)
+
+        network_output = self.classification_layer(leaky_relu(self.net(input)))
+
         network_output = network_output.view(batch_size, -1)
 
         # Real Supervised Loss
@@ -335,7 +342,8 @@ class SSDiscriminatorNet(DiscriminatorNet):
         fake_image_perturbation = to_pytorch_variable(fake_image_perturbation)
         fake_images = fake_images + fake_image_perturbation
 
-        network_output = self.classification_layer(self.net(fake_images))
+        # network_output = self.classification_layer(self.net(fake_images))
+        network_output = self.classification_layer(leaky_relu(self.net(fake_images)))
         network_output = network_output.view(batch_size, -1)
         label_prediction_loss = self.loss_function(network_output, fake_labels)
         d_loss_unsupervised = d_loss_unsupervised + label_prediction_loss
