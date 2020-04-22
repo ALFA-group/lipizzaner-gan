@@ -47,10 +47,16 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self.neighbourhood = Neighbourhood.instance()
 
         for i, individual in enumerate(self.population_gen.individuals):
-            individual.learning_rate = self._default_adam_learning_rate
+            individual.learning_rate = self.settings.get(
+                'default_g_adam_learning_rate',
+                self._default_adam_learning_rate
+            )
             individual.id = '{}/G{}'.format(self.neighbourhood.cell_number, i)
         for i, individual in enumerate(self.population_dis.individuals):
-            individual.learning_rate = self._default_adam_learning_rate
+            individual.learning_rate = self.settings.get(
+                'default_d_adam_learning_rate',
+                self._default_adam_learning_rate
+            )
             individual.id = '{}/D{}'.format(self.neighbourhood.cell_number, i)
 
         self.concurrent_populations = ConcurrentPopulations.instance()
