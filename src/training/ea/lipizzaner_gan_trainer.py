@@ -170,8 +170,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             # Fitness evaluation
             self._logger.debug('Evaluating fitness')
             self.evaluate_fitness(all_generators, all_discriminators, fitness_input, self.fitness_mode)
-            self.evaluate_fitness(all_discriminators, all_generators, fitness_input, self.fitness_mode,
-                                  labels=fitness_labels, logger=self._logger, alpha=alpha, beta=beta, iter=iteration)
+            self.evaluate_fitness(all_discriminators, all_generators, fitness_input,
+                                  self.fitness_mode, labels=fitness_labels,
+                                  logger=self._logger, alpha=alpha, beta=beta,
+                                  iter=iteration, log_class_distribution=True)
             self._logger.debug('Finished evaluating fitness')
 
             # Tournament selection
@@ -419,8 +421,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         return input_var
 
     @staticmethod
-    def evaluate_fitness(population_attacker, population_defender, input_var, fitness_mode,
-                         labels=None, logger=None, alpha=None, beta=None, iter=None):
+    def evaluate_fitness(population_attacker, population_defender, input_var,
+                         fitness_mode, labels=None, logger=None, alpha=None,
+                         beta=None, iter=None, log_class_distribution=False):
         # Single direction only: Evaluate fitness of attacker based on defender
         # TODO: Simplify and refactor this function
         def compare_fitness(curr_fitness, fitness, mode):
@@ -474,7 +477,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             generator = gen.genome
             discriminator = dis.genome
             discriminator_output = discriminator.compute_loss_against(
-                generator, input_var, labels=labels, alpha=alpha, beta=beta, iter=iter
+                generator, input_var, labels=labels, alpha=alpha, beta=beta,
+                iter=iter, log_class_distribution=log_class_distribution
             )
             accuracy = discriminator_output[2]
             if discriminator.name == "SemiSupervisedDiscriminator" and \
