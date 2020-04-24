@@ -276,7 +276,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         label_mask = to_pytorch_variable(torch.zeros(batch_size))
         label_count = to_pytorch_variable(torch.tensor(batch_size * label_rate).int())
         label_mask[range(label_count)] = 1.0
-        np.random.shuffle(label_mask.data.cpu().numpy())
+        # np.random.shuffle(label_mask.data.cpu().numpy())
         return label_mask
 
     def _log_classification_distribution(self, ground_truth, label_mask, labels,

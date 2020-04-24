@@ -1,8 +1,12 @@
+import os
+import torch
 from torchvision import datasets, transforms
-from data.data_loader import DataLoader
-
 from torchvision.utils import save_image
+
+from data.data_loader import DataLoader
 from helpers.pytorch_helpers import denorm
+from data.balanced_labels_batch_sampler import BalancedLabelsBatchSampler
+
 
 class MNISTDataLoader(DataLoader):
 
@@ -16,6 +20,26 @@ class MNISTDataLoader(DataLoader):
     @property
     def num_classes(self):
         return 10
+
+    def load(self):
+        label_rate = self.cc.settings['dataloader'].get('label_rate', None)
+        if label_rate is None:
+            return super.load()
+        else:
+            dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
+                                   train=True,
+                                   transform=self.transform(),
+                                   download=True)
+
+            balanced_batch_sampler = BalancedLabelsBatchSampler(
+                dataset,
+                self.num_classes,
+                self.batch_size,
+                label_rate
+            )
+            return torch.utils.data.DataLoader(dataset=dataset,
+                                               num_workers=self.cc.settings['general']['num_workers'],
+                                               batch_sampler=balanced_batch_sampler)
 
     def transform(self):
         if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
