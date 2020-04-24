@@ -38,8 +38,8 @@ class BalancedLabelsBatchSampler(BatchSampler):
             self.labels_list.append(label)
         # Create a dictionary from labels to all their indices in the dataset
         self.labels = to_pytorch_variable(torch.LongTensor(self.labels_list))
-        self.labels_set = list(set(self.labels.numpy()))
-        self.label_to_indices = {label: np.where(self.labels.numpy() == label)[0]
+        self.labels_set = list(set(self.labels.data.cpu().numpy()))
+        self.label_to_indices = {label: np.where(self.labels.data.cpu().numpy() == label)[0]
                                  for label in self.labels_set}
         # Shuffle the indices of each label
         for label in self.labels_set:
