@@ -24,7 +24,7 @@ class MNISTDataLoader(DataLoader):
     def load(self):
         label_rate = self.cc.settings['dataloader'].get('label_rate', None)
         if label_rate is None:
-            return super.load()
+            return super().load()
         else:
             dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
                                    train=True,
