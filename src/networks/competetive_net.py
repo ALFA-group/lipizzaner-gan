@@ -395,21 +395,23 @@ class SSGeneratorNet(GeneratorNet):
                              labels=None, alpha=None, beta=None, iter=None,
                              get_class_distribution=False):
         batch_size = input.size(0)
-        # tensor = torch.Tensor(batch_size)
-        # tensor.fill_(self.num_classes)
-        # tensor = tensor.long()
-        # fake_labels = to_pytorch_variable(tensor)
-
+        fake = to_pytorch_variable(torch.zeros(batch_size))
 
         z = noise(batch_size, self.data_size)
         fake_images = self.net(z)
         network_output = opponent.net(fake_images)
 
-        real_data_moments = torch.mean(opponent.net(input), 0)
-        fake_data_moments = torch.mean(network_output, 0)
-        loss = torch.abs(real_data_moments - fake_data_moments).mean()
+        # real_data_moments = torch.mean(opponent.net(input), 0)
+        # fake_data_moments = torch.mean(network_output, 0)
+        # loss = torch.abs(real_data_moments - fake_data_moments).mean()
 
-        # network_output = opponent.classification_layer(network_output)
-        # loss += self.loss_function(network_output, fake_labels)
+        network_output = opponent.classification_layer(network_output)
+        network_output = network_output.view(batch_size, -1)
+
+        softmax_layer = Softmax()
+        probabilities = softmax_layer(network_output)
+        fake_probabilities = probabilities[:, -1]
+        bce_loss = BCELoss()
+        loss = bce_loss(fake_probabilities, fake)
 
         return loss, fake_images, None
