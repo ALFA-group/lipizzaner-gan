@@ -17,6 +17,9 @@ class BalancedLabelsBatchSampler(BatchSampler):
     """
 
     def __init__(self, dataset, num_classes, batch_size, label_rate):
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info("Using Balanced Labels Batch Sampler")
         self.dataset = dataset
         self.num_classes = num_classes
         self.batch_size = batch_size
