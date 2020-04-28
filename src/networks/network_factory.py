@@ -415,7 +415,7 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
             ),
             Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
-            conv=True
+            mnist_28x28_conv=False
         )
 
         if parameters is not None:
@@ -494,7 +494,88 @@ class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
             ),
             Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
-            conv=True
+            mnist_28x28_conv=False
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        elif encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+        else:
+            net.net.apply(self._init_weights)
+
+        return net
+
+    @staticmethod
+    def _init_weights(m):
+        if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
+            m.weight.data.normal_(0, 0.02)
+            m.bias.data.zero_()
+
+class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
+
+    complexity = 64
+
+    @property
+    def gen_input_size(self):
+        return 100, 1, 1
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+        net = SSGeneratorNet(
+            self.loss_function,
+            self.num_classes,
+            nn.Sequential(
+                # nn.ConvTranspose2d(100, self.complexity * 8, 4, 1, 0),
+                # nn.BatchNorm2d(self.complexity * 8),
+                # nn.LeakyReLU(0.2, inplace=True),
+                # nn.ConvTranspose2d(self.complexity * 8, self.complexity * 4, 4, 2, 1),
+                nn.ConvTranspose2d(100, self.complexity * 4, 4, 1, 0),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity * 4, self.complexity * 2, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 2),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity * 2, self.complexity, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity, 1, 4, 2, 3),
+                nn.Tanh()
+            ),
+            self.gen_input_size)
+
+        if parameters is not None:
+            net.parameters = parameters
+        elif encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+        else:
+            net.net.apply(self._init_weights)
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+        net = SSDiscriminatorNet(
+            self.loss_function,
+            self.num_classes,
+            Sequential(
+                nn.Conv2d(1, self.complexity, 4, 2, 3),
+                nn.Dropout2d(0.2),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity, self.complexity * 2, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 2),
+                nn.Dropout2d(0.2),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 2, self.complexity * 4, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.Dropout2d(0.2),
+                nn.LeakyReLU(0.2, inplace=True),
+                # nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
+                # nn.BatchNorm2d(self.complexity * 8),
+                # nn.LeakyReLU(0.2, inplace=True)
+            ),
+            Sequential(nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
+            # Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
+            self.gen_input_size,
+            mnist_28x28_conv=True
         )
 
         if parameters is not None:

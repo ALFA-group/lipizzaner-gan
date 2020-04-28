@@ -249,11 +249,11 @@ class DiscriminatorNetSequential(CompetetiveNet):
 class SSDiscriminatorNet(DiscriminatorNet):
 
     def __init__(self, label_pred_loss, num_classes, net, classification_layer, data_size,
-                 optimize_bias=True, conv=False):
+                 optimize_bias=True, mnist_28x28_conv=False):
         DiscriminatorNet.__init__(self, label_pred_loss, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
         self.classification_layer = classification_layer.cuda() if is_cuda_enabled() else classification_layer
-        self.conv = conv
+        self.mnist_28x28_conv = mnist_28x28_conv
 
     @property
     def name(self):
@@ -270,7 +270,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
                                   self.classification_layer,
                                   self.data_size,
                                   self.optimize_bias,
-                                  conv=self.conv)
+                                  mnist_28x28_conv=self.mnist_28x28_conv)
 
     def _get_labeled_mask(self, batch_size, label_rate):
         label_mask = to_pytorch_variable(torch.zeros(batch_size))
@@ -328,6 +328,9 @@ class SSDiscriminatorNet(DiscriminatorNet):
         # NOTE: Maybe this is not necessary since Dropout might be taking care of this
         input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
         input = input + input_perturbation
+
+        if self.mnist_28x28_conv:
+            input = input.view(-1, 1, 28, 28)
 
         network_output = self.classification_layer(self.net(input))
         network_output = network_output.view(batch_size, -1)
