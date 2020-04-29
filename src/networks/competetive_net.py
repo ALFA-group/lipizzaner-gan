@@ -320,7 +320,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Adding noise to prevent Discriminator from getting too strong
         if iter is not None:
-            std = max(1e-10, 0.1 - iter * 0.001)
+            std = max(1e-10, 0.07 - iter * 0.000025)
             input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
         else:
             input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
@@ -330,10 +330,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
         input = input + input_perturbation
 
         if self.mnist_28x28_conv:
-            # input = input.view(-1, 1, 28, 28)
-            transform_layer = torch.nn.Linear(784, 4096)
-            input = transform_layer(input)
-            input = input.view(-1, 1, 64, 64)
+            input = input.view(-1, 1, 28, 28)
+            # transform_layer = torch.nn.Linear(784, 4096)
+            # input = transform_layer(input)
+            # input = input.view(-1, 1, 64, 64)
 
         network_output = self.classification_layer(self.net(input))
         network_output = network_output.view(batch_size, -1)
@@ -426,9 +426,9 @@ class SSGeneratorNet(GeneratorNet):
         bce_loss = BCELoss()
         loss = bce_loss(fake_probabilities, fake)
 
-        if opponent.mnist_28x28_conv:
-            fake_images = fake_images.view(-1, 4096)
-            transform_layer = torch.nn.Linear(4096, 784)
-            fake_images = transform_layer(fake_images)
+        # if opponent.mnist_28x28_conv:
+        #     fake_images = fake_images.view(-1, 4096)
+        #     transform_layer = torch.nn.Linear(4096, 784)
+        #     fake_images = transform_layer(fake_images)
 
         return loss, fake_images, None
