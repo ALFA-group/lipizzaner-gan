@@ -597,6 +597,8 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
             # Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             Sequential(
                 nn.Linear(784, 4096),
+                nn.BatchNorm1d(self.complexity * 2),
+                nn.LeakyReLU(0.2, inplace=True),
                 View((1, 64, 64)),
                 nn.Conv2d(1, self.complexity, 4, 2, 1),
                 nn.Dropout2d(0.2),
