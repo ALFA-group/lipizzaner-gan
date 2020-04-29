@@ -319,14 +319,14 @@ class SSDiscriminatorNet(DiscriminatorNet):
         real = to_pytorch_variable(real)
 
         # Adding noise to prevent Discriminator from getting too strong
-        # if iter is not None:
-        #     std = max(1e-10, 0.1 - iter * 0.0005)
-        #     input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
-        # else:
-        #     input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
+        if iter is not None:
+            std = max(1e-10, 0.1 - iter * 0.001)
+            input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
+        else:
+            input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
 
         # NOTE: Maybe this is not necessary since Dropout might be taking care of this
-        input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
+        # input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
         input = input + input_perturbation
 
         if self.mnist_28x28_conv:
@@ -365,8 +365,14 @@ class SSDiscriminatorNet(DiscriminatorNet):
         # Fake Unsupervised Loss
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
-        fake_image_perturbation = torch.empty(fake_images.shape).normal_(mean=0, std=0.1)
-        fake_image_perturbation = to_pytorch_variable(fake_image_perturbation)
+
+        # if iter is not None:
+        #     std = max(1e-10, 0.1 - iter * 0.001)
+        #     fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=std))
+        # else:
+        #     fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=0.1))
+
+        fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=0.1))
         fake_images = fake_images + fake_image_perturbation
 
         network_output = self.classification_layer(self.net(fake_images))
