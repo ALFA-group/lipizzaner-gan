@@ -514,7 +514,7 @@ class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
 
 class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
 
-    complexity = 64
+    complexity = 128
 
     @property
     def gen_input_size(self):
@@ -524,12 +524,28 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
         net = SSGeneratorNet(
             self.loss_function,
             self.num_classes,
+            # nn.Sequential(
+            #     # nn.ConvTranspose2d(100, self.complexity * 8, 4, 1, 0),
+            #     # nn.BatchNorm2d(self.complexity * 8),
+            #     # nn.LeakyReLU(0.2, inplace=True),
+            #     # nn.ConvTranspose2d(self.complexity * 8, self.complexity * 4, 4, 2, 1),
+            #     nn.ConvTranspose2d(100, self.complexity * 4, 4, 1, 0),
+            #     nn.BatchNorm2d(self.complexity * 4),
+            #     nn.LeakyReLU(0.2, inplace=True),
+            #     nn.ConvTranspose2d(self.complexity * 4, self.complexity * 2, 4, 2, 1),
+            #     nn.BatchNorm2d(self.complexity * 2),
+            #     nn.LeakyReLU(0.2, inplace=True),
+            #     nn.ConvTranspose2d(self.complexity * 2, self.complexity, 4, 2, 1),
+            #     nn.BatchNorm2d(self.complexity),
+            #     nn.LeakyReLU(0.2, inplace=True),
+            #     nn.ConvTranspose2d(self.complexity, 1, 4, 2, 3),
+            #     nn.Tanh()
+            # ),
             nn.Sequential(
-                # nn.ConvTranspose2d(100, self.complexity * 8, 4, 1, 0),
-                # nn.BatchNorm2d(self.complexity * 8),
-                # nn.LeakyReLU(0.2, inplace=True),
-                # nn.ConvTranspose2d(self.complexity * 8, self.complexity * 4, 4, 2, 1),
-                nn.ConvTranspose2d(100, self.complexity * 4, 4, 1, 0),
+                nn.ConvTranspose2d(100, self.complexity * 8, 4, 1, 0),
+                nn.BatchNorm2d(self.complexity * 8),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity * 8, self.complexity * 4, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 4),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.ConvTranspose2d(self.complexity * 4, self.complexity * 2, 4, 2, 1),
@@ -538,7 +554,7 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
                 nn.ConvTranspose2d(self.complexity * 2, self.complexity, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.ConvTranspose2d(self.complexity, 1, 4, 2, 3),
+                nn.ConvTranspose2d(self.complexity, 1, 4, 2, 1),
                 nn.Tanh()
             ),
             self.gen_input_size)
@@ -556,24 +572,42 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
         net = SSDiscriminatorNet(
             self.loss_function,
             self.num_classes,
+            # Sequential(
+            #     nn.Conv2d(1, self.complexity, 4, 2, 3),
+            #     # nn.Dropout2d(0.2),
+            #     nn.LeakyReLU(0.2, inplace=True),
+            #     nn.Conv2d(self.complexity, self.complexity * 2, 4, 2, 1),
+            #     nn.BatchNorm2d(self.complexity * 2),
+            #     # nn.Dropout2d(0.2),
+            #     nn.LeakyReLU(0.2, inplace=True),
+            #     nn.Conv2d(self.complexity * 2, self.complexity * 4, 4, 2, 1),
+            #     nn.BatchNorm2d(self.complexity * 4),
+            #     # nn.Dropout2d(0.2),
+            #     nn.LeakyReLU(0.2, inplace=True),
+            #     # nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
+            #     # nn.BatchNorm2d(self.complexity * 8),
+            #     # nn.LeakyReLU(0.2, inplace=True)
+            # ),
+            # Sequential(nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
+            # Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             Sequential(
-                nn.Conv2d(1, self.complexity, 4, 2, 3),
-                # nn.Dropout2d(0.2),
+                nn.Conv2d(1, self.complexity, 4, 2, 1),
+                nn.Dropout2d(0.2),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity, self.complexity * 2, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 2),
-                # nn.Dropout2d(0.2),
+                nn.Dropout2d(0.2),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 2, self.complexity * 4, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 4),
-                # nn.Dropout2d(0.2),
+                nn.Dropout2d(0.2),
                 nn.LeakyReLU(0.2, inplace=True),
-                # nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
-                # nn.BatchNorm2d(self.complexity * 8),
-                # nn.LeakyReLU(0.2, inplace=True)
+                nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 8),
+                nn.LeakyReLU(0.2, inplace=True)
             ),
-            Sequential(nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
-            # Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
+            Sequential(
+                nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
             mnist_28x28_conv=True
         )
