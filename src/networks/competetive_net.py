@@ -320,7 +320,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Adding noise to prevent Discriminator from getting too strong
         if iter is not None:
-            std = max(1e-10, 0.1 - iter * 0.0005)
+            std = max(0.065, 0.1 - iter * 0.0005)
             # std = max(1e-10, 0.07 - iter * 0.000025)
             input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
         else:
