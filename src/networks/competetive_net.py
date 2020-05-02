@@ -248,11 +248,10 @@ class DiscriminatorNetSequential(CompetetiveNet):
 
 class SSDiscriminatorNet(DiscriminatorNet):
 
-    def __init__(self, label_pred_loss, num_classes, net, classification_layer, data_size,
+    def __init__(self, label_pred_loss, num_classes, net, data_size,
                  optimize_bias=True, mnist_28x28_conv=False):
         DiscriminatorNet.__init__(self, label_pred_loss, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
-        self.classification_layer = classification_layer.cuda() if is_cuda_enabled() else classification_layer
         self.mnist_28x28_conv = mnist_28x28_conv
 
     @property
@@ -267,7 +266,6 @@ class SSDiscriminatorNet(DiscriminatorNet):
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,
                                   copy.deepcopy(self.net),
-                                  self.classification_layer,
                                   self.data_size,
                                   self.optimize_bias,
                                   mnist_28x28_conv=self.mnist_28x28_conv)
@@ -333,7 +331,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         if self.mnist_28x28_conv:
             input = input.view(-1, 1, 28, 28)
 
-        network_output = self.classification_layer(self.net(input))
+        network_output = self.net(input)
         network_output = network_output.view(batch_size, -1)
 
         # Real Supervised Loss
@@ -376,7 +374,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=0.1))
         fake_images = fake_images + fake_image_perturbation
 
-        network_output = self.classification_layer(self.net(fake_images))
+        network_output = self.net(fake_images)
         network_output = network_output.view(batch_size, -1)
         label_prediction_loss = self.loss_function(network_output, fake_labels)
         d_loss_unsupervised = d_loss_unsupervised + label_prediction_loss
@@ -415,7 +413,6 @@ class SSGeneratorNet(GeneratorNet):
         # fake_data_moments = torch.mean(network_output, 0)
         # loss = torch.abs(real_data_moments - fake_data_moments).mean()
 
-        network_output = opponent.classification_layer(network_output)
         network_output = network_output.view(batch_size, -1)
 
         softmax_layer = Softmax()
