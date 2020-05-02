@@ -27,6 +27,21 @@ def main():
     # Training settings
     cuda = torch.cuda.is_available()
     device = torch.device("cuda" if cuda else "cpu")
+    cc = ConfigurationContainer.instance()
+    cc.settings = {
+        'network': {
+            # 'name': 'ssgan_perceptron',
+            'name': 'ssgan_conv_mnist_28x28',
+            'loss': 'celoss'
+        },
+        'trainer': {
+            'params': {
+                'score': {
+                    'cuda': cuda
+                }
+            }
+        }
+    }
 
     transform = transforms.Compose(
         [
@@ -68,21 +83,6 @@ def main():
         batch_sampler=balanced_batch_sampler
     )
 
-    cc = ConfigurationContainer.instance()
-    cc.settings = {
-        'network': {
-            # 'name': 'ssgan_perceptron',
-            'name': 'ssgan_conv_mnist_28x28',
-            'loss': 'celoss'
-        },
-        'trainer': {
-            'params': {
-                'score': {
-                    'cuda': cuda
-                }
-            }
-        }
-    }
     network_factory = cc.create_instance(
         cc.settings['network']['name'],
         output_neurons,
