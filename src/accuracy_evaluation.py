@@ -25,7 +25,8 @@ def test(model, device, test_loader):
 
 def main():
     # Training settings
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    cuda = torch.cuda.is_available()
+    device = torch.device("cuda" if cuda else "cpu")
 
     transform = transforms.Compose(
         [
@@ -73,6 +74,13 @@ def main():
             # 'name': 'ssgan_perceptron',
             'name': 'ssgan_conv_mnist_28x28',
             'loss': 'celoss'
+        },
+        'trainer': {
+            'params': {
+                'score': {
+                    'cuda': cuda
+                }
+            }
         }
     }
     network_factory = cc.create_instance(
