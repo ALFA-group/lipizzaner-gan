@@ -25,7 +25,7 @@ def test(model, device, test_loader):
 
 def main():
     # Training settings
-    device = torch.device("cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     transform = transforms.Compose(
         [
