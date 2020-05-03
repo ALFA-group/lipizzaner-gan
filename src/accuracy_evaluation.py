@@ -94,9 +94,14 @@ def main():
         'discriminator.pkl',
         map_location=device
     )
+    checkpoint_final_layer = torch.load(
+        'discriminator_classification_layer.pkl',
+        map_location=device
+    )
     disc.net.load_state_dict(checkpoint)
     disc.net.eval()
-    print(disc.net)
+    disc.classification_layer.load_state_dict(checkpoint_final_layer)
+    disc.classification_layer.eval()
     test(disc, device, test_loader)
 
 
