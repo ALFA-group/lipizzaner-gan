@@ -13,7 +13,7 @@ def test(model, device, test_loader):
             data, target = data.to(device), target.to(device)
             # data = data.view(-1, 784)
             data = data.view(-1, 1, 28, 28)
-            output = model.net(data)
+            output = model.classification_layer(model.net(data))
             output = output.view(-1, 11)
             pred = output.argmax(dim=1, keepdim=True)
             correct += pred.eq(target.view_as(pred)).sum().item()
@@ -96,6 +96,7 @@ def main():
     )
     disc.net.load_state_dict(checkpoint)
     disc.net.eval()
+    print(disc.net)
     test(disc, device, test_loader)
 
 
