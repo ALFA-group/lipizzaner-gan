@@ -73,3 +73,5 @@ class Lipizzaner:
         # Save the trained parameters
         torch.save(generator.net.state_dict(), os.path.join(self.cc.output_dir, 'generator.pkl'))
         torch.save(discriminator.net.state_dict(), os.path.join(self.cc.output_dir, 'discriminator.pkl'))
+        if 'ssgan' in self.cc.settings['network']['name']:
+            torch.save(discriminator.classification_layer.state_dict(), os.path.join(self.cc.output_dir, 'discriminator_classification_layer.pkl'))

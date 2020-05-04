@@ -342,9 +342,9 @@ class SSGANPerceptronFactory(NetworkFactory):
                 nn.Dropout(0.1),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 512),
-                nn.LeakyReLU(0.2),
-                nn.Linear(512, self.num_classes + 1)
+                nn.LeakyReLU(0.2)
             ),
+            Sequential(nn.Linear(512, self.num_classes + 1)),
             self.gen_input_size,
         )
 
@@ -413,9 +413,9 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 8),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)
+                nn.LeakyReLU(0.2, inplace=True)
             ),
+            Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
             mnist_28x28_conv=False
         )
@@ -492,9 +492,9 @@ class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 8),
-                nn.LeakyReLU(0.2, inplace=True),
-                Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
+                nn.LeakyReLU(0.2, inplace=True)
             ),
+            Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
             mnist_28x28_conv=False
         )
@@ -516,6 +516,7 @@ class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
 
 class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
 
+    # complexity = 64
     complexity = 128
 
     @property
@@ -588,11 +589,11 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
                 nn.BatchNorm2d(self.complexity * 4),
                 # nn.Dropout2d(0.2),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0),
                 # nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 # nn.BatchNorm2d(self.complexity * 8),
                 # nn.LeakyReLU(0.2, inplace=True)
             ),
+            Sequential(nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
             # Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             # Sequential(
             #     nn.Linear(784, 4096),
