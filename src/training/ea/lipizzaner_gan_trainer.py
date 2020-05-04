@@ -281,6 +281,18 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                      self.neighbourhood.cell_number, self.neighbourhood.grid_position)
 
 
+        discriminator = self.concurrent_populations.discriminator.individuals[0].genome
+
+        dataloader_loaded = self.dataloader.load(train=True)
+        print(self.dataloader)
+        print(dataloader_loaded)
+        self.test(discriminator, dataloader_loaded, train=True)
+
+        dataloader_loaded = self.dataloader.load(train=False)
+        print(self.dataloader)
+        print(dataloader_loaded)
+        self.test(discriminator, dataloader_loaded, train=False)
+
         if self.optimize_weights_at_the_end:
             self.optimize_generator_mixture_weights()
 
@@ -298,6 +310,26 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
 
         return self.result()
+
+    def test(self, model, test_loader, train=False):
+        correct = 0
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        train_or_test = 'Train' if train else 'Test'
+        # model.net.eval()
+        # model.classification_layer.eval()
+        # with torch.no_grad():
+        for data, target in test_loader:
+            data, target = data.to(device), target.to(device)
+            # data = data.view(-1, 784)
+            data = data.view(-1, 1, 28, 28)
+            output = model.classification_layer(model.net(data))
+            output = output.view(-1, 11)
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+        num_samples = len(test_loader.dataset)
+        accuracy = 100.0 * float(correct / num_samples)
+        self._logger.info(f'{train_or_test} Accuracy: {correct}/{num_samples} ({accuracy}%)')
 
     def optimize_generator_mixture_weights(self):
         generators = self.neighbourhood.best_generators

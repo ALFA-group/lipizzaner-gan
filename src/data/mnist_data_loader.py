@@ -21,13 +21,13 @@ class MNISTDataLoader(DataLoader):
     def num_classes(self):
         return 10
 
-    def load(self):
+    def load(self, train=True):
         label_rate = self.cc.settings['dataloader'].get('label_rate', None)
         if label_rate is None:
-            return super().load()
+            return super().load(train=train)
         else:
             dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
-                                   train=True,
+                                   train=train,
                                    transform=self.transform(),
                                    download=True)
 

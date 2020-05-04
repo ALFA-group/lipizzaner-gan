@@ -37,12 +37,12 @@ class DataLoader(ABC):
         self.sampling_ratio = settings.get('sampling_ratio', sampling_ratio)
         # self.cell_number = self.cc.settings['general']['distribution']['client_id']
 
-    def load(self):
+    def load(self, train=True):
         # Image processing
 
         # Dataset
         dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
-                               train=True,
+                               train=train,
                                transform=self.transform(),
                                download=True)
 
