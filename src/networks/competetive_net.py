@@ -248,11 +248,10 @@ class DiscriminatorNetSequential(CompetetiveNet):
 
 class SSDiscriminatorNet(DiscriminatorNet):
 
-    def __init__(self, label_pred_loss, num_classes, net, classification_layer, data_size,
+    def __init__(self, label_pred_loss, num_classes, net, data_size,
                  optimize_bias=True, mnist_28x28_conv=False):
         DiscriminatorNet.__init__(self, label_pred_loss, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
-        self.classification_layer = classification_layer.cuda() if is_cuda_enabled() else classification_layer
         self.mnist_28x28_conv = mnist_28x28_conv
 
     @property
@@ -267,7 +266,6 @@ class SSDiscriminatorNet(DiscriminatorNet):
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,
                                   copy.deepcopy(self.net),
-                                  self.classification_layer,
                                   self.data_size,
                                   self.optimize_bias,
                                   mnist_28x28_conv=self.mnist_28x28_conv)
@@ -276,7 +274,6 @@ class SSDiscriminatorNet(DiscriminatorNet):
         label_mask = to_pytorch_variable(torch.zeros(batch_size))
         label_count = to_pytorch_variable(torch.tensor(batch_size * label_rate).int())
         label_mask[range(label_count)] = 1.0
-        # np.random.shuffle(label_mask.data.cpu().numpy())
         return label_mask
 
     def _log_classification_distribution(self, ground_truth, label_mask, labels,
@@ -319,21 +316,19 @@ class SSDiscriminatorNet(DiscriminatorNet):
         real = to_pytorch_variable(real)
 
         # Adding noise to prevent Discriminator from getting too strong
-        if iter is not None:
-            std = max(0.065, 0.1 - iter * 0.0005)
-            # std = max(1e-10, 0.07 - iter * 0.000025)
-            input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
-        else:
-            input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
+        # if iter is not None:
+        #     std = max(1e-10, 0.1 - iter * 0.0005)
+        #     input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
+        # else:
+        #     input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
 
-        # NOTE: Maybe this is not necessary since Dropout might be taking care of this
-        # input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
+        input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
         input = input + input_perturbation
 
         if self.mnist_28x28_conv:
             input = input.view(-1, 1, 28, 28)
 
-        network_output = self.classification_layer(self.net(input))
+        network_output = self.net(input)
         network_output = network_output.view(batch_size, -1)
 
         # Real Supervised Loss
@@ -367,16 +362,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
 
-        # if iter is not None:
-        #     std = max(1e-10, 0.1 - iter * 0.001)
-        #     fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=std))
-        # else:
-        #     fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=0.1))
-
         fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=0.1))
         fake_images = fake_images + fake_image_perturbation
 
-        network_output = self.classification_layer(self.net(fake_images))
+        network_output = self.net(fake_images)
         network_output = network_output.view(batch_size, -1)
         label_prediction_loss = self.loss_function(network_output, fake_labels)
         d_loss_unsupervised = d_loss_unsupervised + label_prediction_loss
@@ -410,12 +399,6 @@ class SSGeneratorNet(GeneratorNet):
         z = noise(batch_size, self.data_size)
         fake_images = self.net(z)
         network_output = opponent.net(fake_images)
-
-        # real_data_moments = torch.mean(opponent.net(input), 0)
-        # fake_data_moments = torch.mean(network_output, 0)
-        # loss = torch.abs(real_data_moments - fake_data_moments).mean()
-
-        network_output = opponent.classification_layer(network_output)
         network_output = network_output.view(batch_size, -1)
 
         softmax_layer = Softmax()
