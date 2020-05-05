@@ -2,9 +2,13 @@ import random
 from time import time
 from collections import OrderedDict
 
+import os
 import numpy as np
 import torch
+import traceback
+from torch.autograd import Variable
 
+from distribution.node_client import NodeClient
 from distribution.concurrent_populations import ConcurrentPopulations
 from distribution.neighbourhood import Neighbourhood
 from helpers.configuration_container import ConfigurationContainer
@@ -18,6 +22,8 @@ from training.mixture.score_factory import ScoreCalculatorFactory
 
 from data.network_data_loader import generate_random_sequences
 
+GENERATOR_PREFIX = 'generator-'
+DISCRIMINATOR_PREFIX = 'discriminator-'
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
     """
@@ -58,8 +64,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self.concurrent_populations.discriminator = self.population_dis
         self.concurrent_populations.unlock()
 
-        experiment_id = self.cc.settings['general']['logging'].get('experiment_id', None)
-        self.db_logger = DbLogger(current_experiment=experiment_id)
+        self.experiment_id = self.cc.settings['general']['logging'].get('experiment_id', None)
+        self.db_logger = DbLogger(current_experiment=self.experiment_id)
 
         if 'fitness' in self.settings:
             self.fitness_sample_size = self.settings['fitness'].get('fitness_sample_size', fitness_sample_size)
@@ -274,6 +280,56 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                            self.score, stop_time - start_time,
                                            path_real_images, path_fake_images)
 
+        node_client = NodeClient(self.network_factory)
+        results = node_client.gather_results([self.neighbourhood.local_node], 120)
+
+        for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator) in results:
+            node_name = '{}:{}'.format(node['address'], node['port'])
+            try:
+                # change this because this is a master function
+                output_dir = self.get_and_create_output_dir(node)
+                self._logger.info("Output dir: " + self.cc.output_dir)
+                for generator in generator_pop.individuals:
+                    source = generator.source.replace(':', '-')
+                    filename = '{}{}.pkl'.format(GENERATOR_PREFIX, source)
+                    torch.save(generator.genome.net.state_dict(),
+                               os.path.join(output_dir, 'generator-{}.pkl'.format(source)))
+
+                    with open(os.path.join(output_dir, 'mixture.yml'), "a") as file:
+                        file.write('{}: {}\n'.format(filename, weights_generator[generator.source]))
+
+                for discriminator in discriminator_pop.individuals:
+                    source = discriminator.source.replace(':', '-')
+                    filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, source)
+                    torch.save(discriminator.genome.net.state_dict(),
+                               os.path.join(output_dir, filename))
+
+                # Save images
+                dataset = MixedGeneratorDataset(generator_pop,
+                                                weights_generator,
+                                                self.cc.settings['master']['score_sample_size'],
+                                                self.cc.settings['trainer']['mixture_generator_samples_mode'])
+                image_paths = self.save_samples(dataset, output_dir, self.dataloader)
+                self._logger.info('Saved mixture result images of client {} to target directory {}.'
+                                  .format(node_name, output_dir))
+
+                # Calculate inception or FID score
+                if self.cc.settings['master']['calculate_score']:
+                    calc = ScoreCalculatorFactory.create()
+                    self._logger.info('Score calculator: {}'.format(type(calc).__name__))
+                    self._logger.info('Calculating score score of {}. Depending on the type, this may take very long.'
+                                      .format(node_name))
+
+                    self.neighbourhood.score = calc.calculate(dataset)
+                    self._logger.info('Node {} with weights {} yielded a score of {}'
+                                      .format(node_name, weights_generator, self.neighbourhood.score))
+
+                if self.db_logger.is_enabled and self.experiment_id is not None:
+                    self.db_logger.add_experiment_results(self.experiment_id, node_name, image_paths, self.neighbourhood.score)
+
+            except Exception as ex:
+                self._logger.error('An error occured while trying to gather results from {}: {}'.format(node_name, ex))
+                traceback.print_exc()
 
         return self.result()
 
@@ -514,3 +570,27 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 sampled_data = torch.cat((sampled_data, curr_data[:fitness_sample_size]), 0)
 
             return sampled_data
+
+    def get_and_create_output_dir(self, node):
+        directory = os.path.join(self.cc.output_dir, 'master', self.cc.settings['general']['distribution']['start_time'],
+                                 '{}-{}'.format(node['address'], node['port']))
+        os.makedirs(directory, exist_ok=True)
+        self._logger.info("Client trainer directory:" + directory)
+        return directory
+
+    def save_samples(self, dataset, output_dir, image_specific_loader, n_images=10, batch_size=100):
+        image_format = self.cc.settings['general']['logging']['image_format']
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
+        loaded = image_specific_loader.load()
+        paths = []
+
+        for i, data in enumerate(dataloader):
+            shape = loaded.dataset.train_data.shape if hasattr(loaded.dataset, 'train_data') else None
+            path = os.path.join(output_dir, 'mixture-{}.{}'.format(i + 1, image_format))
+            image_specific_loader.save_images(Variable(data), shape, path)
+            paths.append(path)
+
+            if i + 1 == n_images:
+                break
+
+        return paths

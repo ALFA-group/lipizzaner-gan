@@ -52,9 +52,10 @@ class LipizzanerMaster:
 
         num_clients = len(accessible_clients)
         if not is_square(num_clients):
-            next_smallest_square = int(sqrt(num_clients))**2
-            accessible_clients = accessible_clients[:next_smallest_square]
-            self.cc.settings['general']['distribution']['client_nodes'] = self.cc.settings['general']['distribution']['client_nodes'][:next_smallest_square]
+            width = int(round(sqrt(num_clients)))
+            height = num_clients//width
+            accessible_clients = accessible_clients[:width*height]
+            self.cc.settings['general']['distribution']['client_nodes'] = accessible_clients
             self._logger.info('Stopping some clients...')
             node_client = NodeClient(None)
             node_client.stop_running_experiments(accessible_clients)
@@ -184,67 +185,12 @@ class LipizzanerMaster:
         node_client = NodeClient(network_factory)
         db_logger = DbLogger()
 
-        results = node_client.gather_results(self.cc.settings['general']['distribution']['client_nodes'], 120)
-
-        scores = []
-        for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator) in results:
-            node_name = '{}:{}'.format(node['address'], node['port'])
-            try:
-                output_dir = self.get_and_create_output_dir(node)
-
-                for generator in generator_pop.individuals:
-                    source = generator.source.replace(':', '-')
-                    filename = '{}{}.pkl'.format(GENERATOR_PREFIX, source)
-                    torch.save(generator.genome.net.state_dict(),
-                               os.path.join(output_dir, 'generator-{}.pkl'.format(source)))
-
-                    with open(os.path.join(output_dir, 'mixture.yml'), "a") as file:
-                        file.write('{}: {}\n'.format(filename, weights_generator[generator.source]))
-
-                for discriminator in discriminator_pop.individuals:
-                    source = discriminator.source.replace(':', '-')
-                    filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, source)
-                    torch.save(discriminator.genome.net.state_dict(),
-                               os.path.join(output_dir, filename))
-
-                # Save images
-                dataset = MixedGeneratorDataset(generator_pop,
-                                                weights_generator,
-                                                self.cc.settings['master']['score_sample_size'],
-                                                self.cc.settings['trainer']['mixture_generator_samples_mode'])
-                image_paths = self.save_samples(dataset, output_dir, dataloader)
-                self._logger.info('Saved mixture result images of client {} to target directory {}.'
-                                  .format(node_name, output_dir))
-
-                # Calculate inception or FID score
-                score = float('-inf')
-                if self.cc.settings['master']['calculate_score']:
-                    calc = ScoreCalculatorFactory.create()
-                    self._logger.info('Score calculator: {}'.format(type(calc).__name__))
-                    self._logger.info('Calculating score score of {}. Depending on the type, this may take very long.'
-                                      .format(node_name))
-
-                    score = calc.calculate(dataset)
-                    self._logger.info('Node {} with weights {} yielded a score of {}'
-                                      .format(node_name, weights_generator, score))
-                    scores.append((node, score))
-
-                if db_logger.is_enabled and self.experiment_id is not None:
-                    db_logger.add_experiment_results(self.experiment_id, node_name, image_paths, score)
-            except Exception as ex:
-                self._logger.error('An error occured while trying to gather results from {}: {}'.format(node_name, ex))
-                traceback.print_exc()
+        scores = node_client.gather_scores(self.cc.settings['general']['distribution']['client_nodes'], 120)
 
         if self.cc.settings['master']['calculate_score'] and scores:
             best_node = sorted(scores, key=lambda x: x[1], reverse=ScoreCalculatorFactory.create().is_reversed)[-1]
             self._logger.info('Best result: {}:{} = {}'.format(best_node[0]['address'],
                                                                best_node[0]['port'], best_node[1]))
-
-    def get_and_create_output_dir(self, node):
-        directory = os.path.join(self.cc.output_dir, 'master', self.cc.settings['general']['distribution']['start_time'],
-                                 '{}-{}'.format(node['address'], node['port']))
-        os.makedirs(directory, exist_ok=True)
-        return directory
 
     def save_samples(self, dataset, output_dir, image_specific_loader, n_images=10, batch_size=100):
         image_format = self.cc.settings['general']['logging']['image_format']
