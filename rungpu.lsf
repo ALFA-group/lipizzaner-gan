@@ -1,6 +1,6 @@
 #!/bin/bash
 # Begin BSUB Options
-#BSUB -P csc363
+#BSUB -P csc387
 #BSUB -W 01:00
 #BSUB -nnodes 2
 #BSUB -alloc_flags "gpumps"
@@ -19,9 +19,9 @@ module load netlib-lapack/3.8.0
 RUNID=ganrun_000
 NODES=2
 export PYTHON_EGG_CACHE=$PWD/.cache
-export NUM_CLIENTS_PER_NODE=8
-export PORT_UPPER_LIMIT=5007
-cd $PROJWORK/csc363/floresd/lipizzaner-gan
+export NUM_CLIENTS_PER_NODE=6
+export PORT_UPPER_LIMIT=5005
+cd $PROJWORK/csc387/floresd/lipizzaner-gan
 
 # Load/Setup Conda Environment
 CONDA_ENV=/ccs/proj/csc363/path/to/your/conda_env
