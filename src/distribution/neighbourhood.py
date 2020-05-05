@@ -35,6 +35,7 @@ class Neighbourhood:
         self.cell_number = self._load_cell_number()
         self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]
+        self.score = float('-inf')
 
         self.mixture_weights_generators = self._init_mixture_weights()
         if self.cc.settings['trainer']['name'] == 'with_disc_mixture_wgan' \
@@ -135,19 +136,20 @@ class Neighbourhood:
         for node in nodes:
             node['id'] = '{}:{}'.format(node['address'], node['port'])
 
-        dim = int(round(sqrt(len(nodes))))
+        width = int(round(sqrt(len(nodes))))
+        height = len(nodes)//width
         x, y = self.grid_position
-        nodes = np.reshape(nodes, (-1, dim))
+        nodes = np.reshape(nodes, (-1, width))
 
         def neighbours(x, y):
             indices = np.array([(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)])
             # Start at 0 when x or y is out of bounds
-            indices[indices >= dim] = 0
-            indices[indices == -1] = dim - 1
+            indices[indices >= width] = 0
+            indices[indices == -1] = height - 1
             # Remove duplicates (needed for smaller grids), and convert to (x,y) tuples
             return np.array([tuple(row) for row in np.unique(indices, axis=0)])
 
-        mask = np.zeros((dim, dim))
+        mask = np.zeros((width, height))
         mask[tuple(neighbours(x, y).T)] = 1
 
         return nodes[mask == 1].tolist()

@@ -65,12 +65,29 @@ class ClientAPI:
     def get_results():
         ClientAPI._lock.acquire()
 
-        if ClientAPI.is_busy:
+        if ClientAPI.is_busy or ClientAPI.is_finished:
             ClientAPI._logger.info('Sending neighbourhood results to master')
             response = jsonify(ClientAPI._gather_results())
             ClientAPI._finish_event.set()
         else:
             ClientAPI._logger.warning('Master requested results, but no experiment is running.')
+            response = Response()
+
+        ClientAPI._lock.release()
+
+        return response
+
+    @staticmethod
+    @app.route('/scores', methods=['GET'])
+    def get_scores():
+        ClientAPI._lock.acquire()
+
+        if ClientAPI.is_finished:
+            ClientAPI._logger.info('Sending client score to master')
+            response = jsonify(ClientAPI._gather_scores())
+            ClientAPI._finish_event.set()
+        else:
+            ClientAPI._logger.warning('Master requested scores, but experiemtn not finished.')
             response = Response()
 
         ClientAPI._lock.release()
@@ -153,13 +170,12 @@ class ClientAPI:
         cc = ConfigurationContainer.instance()
         cc.settings = config
 
-        output_base_dir = cc.output_dir
-        ClientAPI._set_output_dir(cc)
+        output_dir = ClientAPI._get_output_dir(cc)
 
         if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
-            LogHelper.setup(cc.settings['general']['logging']['log_level'], cc.output_dir)
+            LogHelper.setup(cc.settings['general']['logging']['log_level'], output_dir)
 
-        ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(cc.output_dir))
+        ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(output_dir))
 
         try:
             lipizzaner = Lipizzaner()
@@ -177,7 +193,6 @@ class ClientAPI:
         finally:
             ClientAPI.is_busy = False
             ClientAPI._logger.info('Finished experiment, waiting for new requests.')
-            cc.output_dir = output_base_dir
             ConcurrentPopulations.instance().lock()
 
     @staticmethod
@@ -210,14 +225,26 @@ class ClientAPI:
 
         return results
 
+    @staticmethod
+    def _gather_scores():
+        neighbourhood = Neighbourhood.instance()
+        cc = ConfigurationContainer.instance()
+        results = {
+            'score': neighbourhood.score
+        }
+
+        return results
+
     @classmethod
-    def _set_output_dir(cls, cc):
+    def _get_output_dir(cls, cc):
         output = cc.output_dir
         dataloader = cc.settings['dataloader']['dataset_name']
         start_time = cc.settings['general']['distribution']['start_time']
 
-        cc.output_dir = os.path.join(output, 'distributed', dataloader, start_time, str(os.getpid()))
-        os.makedirs(cc.output_dir, exist_ok=True)
+        output_dir = os.path.join(output, 'distributed', dataloader, start_time, str(os.getpid()))
+
+        os.makedirs(output_dir, exist_ok=True)
+        return output_dir
 
     def listen(self, port):
         ClientEnvironment.port = port

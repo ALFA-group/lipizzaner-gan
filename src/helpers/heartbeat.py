@@ -19,8 +19,8 @@ class Heartbeat(Thread):
     def run(self):
         while not self.stopped.wait(HEARTBEAT_FREQUENCY_SEC):
             client_statuses = self.node_client.get_client_statuses()
-            dead_clients = [c for c in client_statuses if not c['alive'] or not c['busy']]
-            alive_clients = [c for c in client_statuses if c['alive'] and c['busy']]
+            dead_clients = [c for c in client_statuses if not c['alive'] or (not c['finished'] and not c['busy'])]
+            alive_clients = [c for c in client_statuses if c['alive'] and (c['finished'] or c['busy'])]
 
             if dead_clients and self.kill_clients_on_disconnect:
                 printable_names = '.'.join([c['address'] for c in dead_clients])
