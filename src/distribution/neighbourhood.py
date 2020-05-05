@@ -139,13 +139,20 @@ class Neighbourhood:
         width = int(round(sqrt(len(nodes))))
         height = len(nodes)//width
         x, y = self.grid_position
-        nodes = np.reshape(nodes, (-1, width))
+        nodes = np.reshape(nodes, (-1, height))
 
         def neighbours(x, y):
             indices = np.array([(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)])
             # Start at 0 when x or y is out of bounds
-            indices[indices >= width] = 0
-            indices[indices == -1] = height - 1
+            for idx in indices:
+                if idx[0] >= width:
+                    idx[0] = 0
+                elif idx[0] == -1:
+                    idx[0] = width - 1
+                if idx[1] >= height:
+                    idx[1] = 0
+                elif idx[1] == -1:
+                    idx[1] = height - 1
             # Remove duplicates (needed for smaller grids), and convert to (x,y) tuples
             return np.array([tuple(row) for row in np.unique(indices, axis=0)])
 
