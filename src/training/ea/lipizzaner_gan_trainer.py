@@ -312,8 +312,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         correct = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         train_or_test = 'Train' if train else 'Test'
-        model.net.eval()
-        model.classification_layer.eval()
+        # model.net.eval()
+        # model.classification_layer.eval()
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)

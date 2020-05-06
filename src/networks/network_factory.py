@@ -592,14 +592,8 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
                 # nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 # nn.BatchNorm2d(self.complexity * 8),
                 # nn.LeakyReLU(0.2, inplace=True)
-                View((-1,)),
-                nn.Linear(self.complexity * 4 * 4 * 4, self.complexity * 4 * 4),
-                nn.LeakyReLU(0.2, inplace=True),
-                nn.Linear(self.complexity * 4 * 4, self.complexity),
-                nn.LeakyReLU(0.2, inplace=True),
             ),
-            Sequential(nn.Linear(self.complexity, self.num_classes + 1)),
-            # Sequential(nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
+            Sequential(nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
             # Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             # Sequential(
             #     nn.Linear(784, 4096),
