@@ -284,11 +284,15 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         discriminator = self.concurrent_populations.discriminator.individuals[0].genome
 
         if 'ssgan' in self.cc.settings['network']['name']:
+            batch_size = self.dataloader.batch_size
+            self.dataloader.batch_size = 100
             dataloader_loaded = self.dataloader.load(train=True)
             self.test(discriminator, dataloader_loaded, train=True)
 
             dataloader_loaded = self.dataloader.load(train=False)
             self.test(discriminator, dataloader_loaded, train=False)
+            self.dataloader.batch_size = batch_size
+
 
         if self.optimize_weights_at_the_end:
             self.optimize_generator_mixture_weights()
