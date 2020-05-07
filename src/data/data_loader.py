@@ -36,6 +36,7 @@ class DataLoader(ABC):
         self.shuffle = settings.get('shuffle', shuffle)
         self.sampling_ratio = settings.get('sampling_ratio', sampling_ratio)
         self.cell_number = self.cc.settings['general']['distribution']['client_id']
+        print(self.dataset)
 
     def load(self):
         # Image processing

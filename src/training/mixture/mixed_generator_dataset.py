@@ -2,8 +2,12 @@ import math
 import collections
 import numpy as np
 import torch.utils.data
-
+import torch.nn as nn
+import torch
 from helpers.pytorch_helpers import noise
+from helpers.pytorch_helpers import to_pytorch_variable
+
+cuda = True if torch.cuda.is_available() else False
 
 
 class MixedGeneratorDataset(torch.utils.data.Dataset):
@@ -62,4 +66,16 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
         return self.n_samples
 
     def __getitem__(self, index):
-        return self.individuals[self.gen_indices[index]].genome.net(self.z[index].unsqueeze(0)).data.squeeze()
+        #label_emb = nn.Embedding(10, 10)
+        LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor 
+        FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        labels = LongTensor(np.random.randint(0, 10, 1)) #random labels for generator input
+        #print(self.z.shape)
+        #label_emb = self.individuals[self.gen_indices[index]].genome.label_emb
+        #return self.individuals[self.gen_indices[index]].genome.net(torch.cat((label_emb(label), self.z[index].unsqueeze(0)), -1)).data.squeeze()
+        labels = labels.view(-1,1)
+        labels_onehot = FloatTensor(1, 10)
+        labels_onehot.zero_()
+        labels_onehot.scatter_(1, labels, 1)
+        labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+        return self.individuals[self.gen_indices[index]].genome.net(torch.cat((labels, self.z[index].unsqueeze(0)), -1)).data.squeeze()

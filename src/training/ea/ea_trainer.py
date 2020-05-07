@@ -65,10 +65,11 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
     def tournament_selection(self, population, population_type, is_logging=False):
         assert 0 < self._tournament_size <= len(population.individuals), \
             "Invalid tournament size: {}".format(self._tournament_size)
-
+        print('1')
         competition_population = Population(individuals=[], default_fitness=population.default_fitness)
         new_population = Population(individuals=[], default_fitness=population.default_fitness,
                                     population_type=population_type)
+        print('2')
 
         # Iterate until there are enough tournament winners selected
         while len(new_population.individuals) < self._population_size:

@@ -1,6 +1,6 @@
 trainer:
-  name: lipizzaner_gan
-  n_iterations: 20
+  name: lipizzaner_cgan
+  n_iterations: 30
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -30,8 +30,8 @@ dataloader:
   n_batches: 0
   shuffle: True
 network:
-  name: four_layer_perceptron
-  loss: bceloss
+  name: conditional_2
+  loss: mseloss
 master:
   calculate_score: True
   score_sample_size: 50000

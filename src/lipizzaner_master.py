@@ -209,6 +209,8 @@ class LipizzanerMaster:
                     self._logger.info('Node {} with weights {} yielded a score of {}'
                                       .format(node_name, weights_generator, score))
                     scores.append((node, score))
+                    #file1 = open("output.txt","a") 
+                    #file1.write(score)
 
                 if db_logger.is_enabled and self.experiment_id is not None:
                     db_logger.add_experiment_results(self.experiment_id, node_name, image_paths, score)

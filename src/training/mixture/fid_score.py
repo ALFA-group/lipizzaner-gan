@@ -104,7 +104,8 @@ class FIDCalculator(ScoreCalculator):
 
         n_batches = d0 // self.batch_size
         n_used_imgs = n_batches * self.batch_size
-
+        print("images shape")
+        print(images.shape)
         pred_arr = np.empty((n_used_imgs, self.dims))
         for i in range(n_batches):
             if self.verbose:
@@ -224,6 +225,9 @@ class FIDCalculator(ScoreCalculator):
     def _compute_statistics_of_path(self, dataset, model):
         imgs = []
         assert len(dataset) >= self.n_samples, 'Cannot draw enough samples from dataset'
+
+        print(len(dataset))
+        print(n_samples)
 
         for i in range(self.n_samples):
             img = dataset[i]

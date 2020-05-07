@@ -5,9 +5,13 @@ import copy
 import numpy as np
 import torch
 from torch.nn import Softmax
+from torch import nn
 
 from distribution.state_encoder import StateEncoder
 from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_splits, noise
+
+
+cuda = True if torch.cuda.is_available() else False
 
 class CompetetiveNet(ABC):
     def __init__(self, loss_function, net, data_size, optimize_bias=True):
@@ -19,13 +23,18 @@ class CompetetiveNet(ABC):
         if self.loss_function.__class__.__name__ == 'MustangsLoss':
             self.loss_function.set_network_name(self.name)
 
+
+        #print([l for l in self.net.modules()])
+
         try:
-            self.n_weights = np.sum([l.weight.numel() for l in self.net if hasattr(l, 'weight')])
+
+            self.n_weights = np.sum([l.weight.numel() for l in self.net.modules() if hasattr(l, 'weight')])
             # Calculate split positions; cumulative sum needed because split() expects positions, not chunk sizes
-            self.split_positions_weights = [l.weight.numel() for l in self.net if hasattr(l, 'weight')]
+            self.split_positions_weights = [l.weight.numel() for l in self.net.modules() if hasattr(l, 'weight')]
 
             if optimize_bias:
-                self.split_positions_biases = [l.bias.numel() for l in self.net if hasattr(l, 'bias')]
+                self.split_positions_biases = [l.bias.numel() for l in self.net.modules() if hasattr(l, 'bias')]
+
         except Exception as e:
             print(e)
 
@@ -81,7 +90,7 @@ class CompetetiveNet(ABC):
         """
         :param value: 1d-ndarray[nr_of_layers * (nr_of_weights_per_layer + nr_of_biases_per_layer)]
         """
-
+        print('1')
         if self.optimize_bias:
             (weights, biases) = value.split(self.n_weights)
         else:
@@ -122,7 +131,7 @@ class GeneratorNet(CompetetiveNet):
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
 
-        z = noise(batch_size, self.data_size)
+        z = noise(batch_size, self.data_size) 
 
         fake_images = self.net(z)
         outputs = opponent.net(fake_images).view(-1)
@@ -165,6 +174,242 @@ class DiscriminatorNet(CompetetiveNet):
         d_loss_fake = self.loss_function(outputs, fake_labels)
 
         return d_loss_real + d_loss_fake, None
+
+
+
+
+class GeneratorNetConditional(CompetetiveNet):
+    #pass in loss_function as torch.nn.MSELoss()
+    @property
+    def name(self):
+        return 'GeneratorConditional'
+
+    @property
+    def default_fitness(self):
+        return float('-inf')
+
+    def compute_loss_against(self, opponent, input, labels_nil):
+
+        FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
+        batch_size = input.size(0)
+        #print('batch size')
+        #print(batch_size)
+        real_labels = to_pytorch_variable(torch.ones(batch_size)) #label all generator images 1 (real)
+
+        z = noise(batch_size, self.data_size) #dims: batch size x data_size
+
+        labels = LongTensor(np.random.randint(0, 10, batch_size)) #random labels between 0 and 9, output of shape batch_size
+        labels = labels.view(-1,1)
+        labels_onehot = torch.FloatTensor(batch_size, 10)
+        labels_onehot.zero_()
+        labels_onehot.scatter_(1, labels, 1)
+
+        labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+        #print(self.label_emb(labels))
+        #concatenate z and labels here before passing into generator net
+
+        gen_input = torch.cat((labels, z), -1)
+        #print('gen input shape')
+        #print(gen_input.shape)
+        fake_images = self.net(gen_input)
+        #print('fake images shape')
+        #print(fake_images.shape)
+        #fake_images = fake_images.view(fake_images.size(0), *)
+
+        dis_input = torch.cat((fake_images, labels), -1) #discriminator training data input
+        #concatenate fake_images and labels here before passing into discriminator net
+        outputs = opponent.net(dis_input).view(-1) #view(-1) flattens tensor
+
+        return self.loss_function(outputs, real_labels), fake_images #loss function evaluated discriminator output vs. 1 (generator trying to get discriminator output to be 1)
+
+
+#discriminator has to take in class labels (conditioned variable) and images
+
+class DiscriminatorNetConditional(CompetetiveNet):
+
+    @property
+    def name(self):
+        return 'DiscriminatorConditional'
+
+    @property
+    def default_fitness(self):
+        return float('-inf')
+
+    def compute_loss_against(self, opponent, input, labels): #need to pass in the labels from dataloader too in lipizzaner_gan_trainer.py
+        # Compute loss using real images
+        # Second term of the loss is always zero since real_labels == 1
+        batch_size = input.size(0)
+
+        FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
+        real_labels = to_pytorch_variable(torch.ones(batch_size))
+        fake_labels = to_pytorch_variable(torch.zeros(batch_size))
+
+        
+        #labels = nn.functional.one_hot(labels, 10)
+        #labels = to_pytorch_variable(labels)
+        #print(labels)
+        #print('real images shape')
+        #print(input.shape)
+
+        labels = labels.view(-1,1)
+        labels_onehot = torch.FloatTensor(batch_size, 10)
+        labels_onehot.zero_()
+        labels_onehot.scatter_(1, labels.cuda(), 1)
+
+        labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+        
+        print('input shape')
+        print(input.shape)
+        print('labels shape')
+        print(labels.shape)
+        dis_input = torch.cat((input, labels), -1) #discriminator training data input
+
+        outputs = self.net(dis_input).view(-1) #pass in training data input and respective labels to discriminator
+        d_loss_real = self.loss_function(outputs, real_labels) #get real image loss of discriminator (output vs. 1)
+
+        #torch.cat((img.view(img.size(0), -1), self.label_embedding(gen_labels)), -1)
+
+        # Compute loss using fake images
+        # First term of the loss is always zero since fake_labels == 0
+        gen_labels = LongTensor(np.random.randint(0, 10, batch_size)) #random labels for generator input
+
+        z = noise(batch_size, self.data_size) #noise for generator input
+        
+        gen_labels = gen_labels.view(-1,1)
+        labels_onehot = torch.FloatTensor(batch_size, 10)
+        labels_onehot.zero_()
+        labels_onehot.scatter_(1, gen_labels, 1)
+
+        gen_labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+
+        gen_input = torch.cat((gen_labels, z), -1)
+
+        fake_images = opponent.net(gen_input)
+        #print('fake images shape')
+        #print(fake_images.shape)
+        dis_input = torch.cat((fake_images, gen_labels), -1) #discriminator training data input
+        outputs = self.net(dis_input).view(-1)
+        d_loss_fake = self.loss_function(outputs, fake_labels) #get fake image loss of discriminator (output vs. 0)
+
+        return (d_loss_real + d_loss_fake), None
+
+class GeneratorNetConditional_2(CompetetiveNet):
+    #pass in loss_function as torch.nn.MSELoss()
+    @property
+    def name(self):
+        return 'GeneratorConditional_2'
+
+    @property
+    def default_fitness(self):
+        return float('-inf')
+
+    def compute_loss_against(self, opponent, input, labels_nil):
+
+        FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
+        batch_size = input.size(0)
+        #print('batch size')
+        #print(batch_size)
+        real_labels = to_pytorch_variable(torch.ones(batch_size)) #label all generator images 1 (real)
+
+        z = noise(batch_size, self.data_size) #dims: batch size x data_size
+
+        labels = LongTensor(np.random.randint(0, 10, batch_size)) #random labels between 0 and 9, output of shape batch_size
+        labels = labels.view(-1,1)
+        labels_onehot = FloatTensor(batch_size, 10)
+        labels_onehot.zero_()
+        labels_onehot.scatter_(1, labels, 1)
+
+        labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+        #print(self.label_emb(labels))
+        #concatenate z and labels here before passing into generator net
+
+        #gen_input = torch.cat((labels, z), -1)
+        #print('gen input shape')
+        #print(gen_input.shape)
+        fake_images = self.net(z, labels)
+        #print('fake images shape')
+        #print(fake_images.shape)
+        #fake_images = fake_images.view(fake_images.size(0), *)
+
+        #dis_input = torch.cat((fake_images, labels), -1) #discriminator training data input
+        #concatenate fake_images and labels here before passing into discriminator net
+        outputs = opponent.net(fake_images, labels).view(-1) #view(-1) flattens tensor
+
+        return self.loss_function(outputs, real_labels), fake_images #loss function evaluated discriminator output vs. 1 (generator trying to get discriminator output to be 1)
+
+
+#discriminator has to take in class labels (conditioned variable) and images
+
+class DiscriminatorNetConditional_2(CompetetiveNet):
+    @property
+    def name(self):
+        return 'DiscriminatorConditional_2'
+
+    @property
+    def default_fitness(self):
+        return float('-inf')
+
+    def compute_loss_against(self, opponent, input, labels): #need to pass in the labels from dataloader too in lipizzaner_gan_trainer.py
+        # Compute loss using real images
+        # Second term of the loss is always zero since real_labels == 1
+        batch_size = input.size(0)
+
+        FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
+        real_labels = to_pytorch_variable(torch.ones(batch_size))
+        fake_labels = to_pytorch_variable(torch.zeros(batch_size))
+
+        
+        #labels = nn.functional.one_hot(labels, 10)
+        #labels = to_pytorch_variable(labels)
+        #print(labels)
+        #print('real images shape')
+        #print(input.shape)
+
+        labels = labels.view(-1,1)
+        labels_onehot = FloatTensor(batch_size, 10)
+        labels_onehot.zero_()
+        labels_onehot.scatter_(1, labels.cuda(), 1)
+
+        labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+        
+        '''print('input shape')
+        print(input.shape)
+        print('labels shape')
+        print(labels.shape)'''
+        #dis_input = torch.cat((input, labels), -1) #discriminator training data input
+
+        outputs = self.net(input, labels).view(-1) #pass in training data input and respective labels to discriminator
+        d_loss_real = self.loss_function(outputs, real_labels) #get real image loss of discriminator (output vs. 1)
+
+        #torch.cat((img.view(img.size(0), -1), self.label_embedding(gen_labels)), -1)
+
+        # Compute loss using fake images
+        # First term of the loss is always zero since fake_labels == 0
+        gen_labels = LongTensor(np.random.randint(0, 10, batch_size)) #random labels for generator input
+
+        z = noise(batch_size, self.data_size) #noise for generator input
+        
+        gen_labels = gen_labels.view(-1,1)
+        labels_onehot = FloatTensor(batch_size, 10)
+        labels_onehot.zero_()
+        labels_onehot.scatter_(1, gen_labels, 1)
+
+        gen_labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+
+        #gen_input = torch.cat((gen_labels, z), -1)
+
+        fake_images = opponent.net(z, gen_labels)
+        #print('fake images shape')
+        #print(fake_images.shape)
+        #dis_input = torch.cat((fake_images, gen_labels), -1) #discriminator training data input
+        outputs = self.net(fake_images, gen_labels).view(-1)
+        d_loss_fake = self.loss_function(outputs, fake_labels) #get fake image loss of discriminator (output vs. 0)
+
+        return (d_loss_real + d_loss_fake), None
 
 
 class GeneratorNetSequential(CompetetiveNet):

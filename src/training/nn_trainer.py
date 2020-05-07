@@ -4,6 +4,9 @@ from abc import abstractmethod, ABC
 
 from helpers.configuration_container import ConfigurationContainer
 from helpers.pytorch_helpers import noise
+from helpers.pytorch_helpers import to_pytorch_variable
+from torch import nn
+import numpy as np
 
 import yaml
 from datetime import datetime
@@ -12,6 +15,9 @@ GENERATOR_PREFIX = 'generator-'
 DISCRIMINATOR_PREFIX = 'discriminator-'
 
 
+cuda = True if torch.cuda.is_available() else False
+LongTensor = torch.cuda.LongTensor if cuda else torch.LongTensor
+FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 class NeuralNetworkTrainer(ABC):
 
     _logger = logging.getLogger(__name__)
@@ -94,9 +100,26 @@ class NeuralNetworkTrainer(ABC):
                 self.dataloader.save_images(input_var, shape, path_real)
 
             z = noise(batch_size, self.network_factory.gen_input_size)
+
             gen = self.population_gen.individuals[0].genome.net
             gen.eval()
-            generated_output = gen(z)
+            labels = LongTensor(np.random.randint(0,10, batch_size))
+            labels = labels.view(-1,1)
+            labels_onehot = FloatTensor(batch_size, 10)
+            labels_onehot.zero_()
+            labels_onehot.scatter_(1, labels, 1)
+            labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+            print(labels[0])
+            #label_emb = self.population_gen.individuals[0].genome.label_emb
+            #print(label_emb(labels))
+            #gen_input = torch.cat((label_emb(labels), z), -1)
+            gen_input = torch.cat((labels, z), -1)
+            generated_output = gen(gen_input)
+            #print(path_fake)
+            #print(generated_output.shape)
+            #print(labels)
+            #print('shape')
+            #print(shape)
             self.dataloader.save_images(generated_output, shape, path_fake)
             gen.train()
 

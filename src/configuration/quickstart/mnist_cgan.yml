@@ -1,12 +1,12 @@
 trainer:
-  name: lipizzaner_gan
-  n_iterations: 20
+  name: lipizzaner_cgan
+  n_iterations: 5
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
   params:
     population_size: 1
-    tournament_size: 1
+    tournament_size: 2
     n_replacements: 1
     default_adam_learning_rate: 0.0002
     # Hyperparameter mutation
@@ -26,12 +26,12 @@ trainer:
 dataloader:
   dataset_name: mnist
   use_batch: True
-  batch_size: 100
+  batch_size: 400
   n_batches: 0
   shuffle: True
 network:
-  name: four_layer_perceptron
-  loss: bceloss
+  name: conditional
+  loss: mseloss
 master:
   calculate_score: True
   score_sample_size: 50000

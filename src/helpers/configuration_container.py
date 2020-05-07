@@ -15,6 +15,7 @@ class ConfigurationContainer:
         'heuristicloss': ('networks.customized_loss.heuristic_loss', 'HeuristicLoss'),
         'mustangs': ('networks.customized_loss.mustangs_loss', 'MustangsLoss'),
         'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
+        'mnistcgan': ('data.mnist_cgan_data_loader', 'MNISTcGANDataLoader'),
         'cifar': ('data.cifar10_data_loader', 'CIFAR10DataLoader'),
         'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
         'network_traffic': ('data.network_data_loader', 'NetworkDataLoader'),
@@ -29,11 +30,15 @@ class ConfigurationContainer:
         'alternating_ea': ('training.ea.alternating_ea_trainer', 'AlternatingEATrainer'),
         'parallel_ea': ('training.ea.parallel_ea_trainer', 'ParallelEATrainer'),
         'four_layer_perceptron': ('networks.network_factory', 'FourLayerPerceptronFactory'),
+        'conditional': ('networks.network_factory', 'ConditionalNetworkFactory'),
+        'conditional_2': ('networks.network_factory', 'ConditionalNetworkFactory_2'),
         'convolutional': ('networks.network_factory', 'ConvolutionalNetworkFactory'),
+        'convolutionalConditional': ('networks.network_factory', 'ConvolutionalNetworkFactoryConditional'),
         'mooc_net': ('networks.mooc_net', 'MOOCFourLayerPerceptronFactory'),
         'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),
         'rnn': ('networks.network_factory', 'RNNFactory'),
         'lipizzaner_gan': ('training.ea.lipizzaner_gan_trainer', 'LipizzanerGANTrainer'),
+        'lipizzaner_cgan': ('training.ea.lipizzaner_cgan_trainer', 'LipizzanerCGANTrainer'),
         'lipizzaner_wgan': ('training.ea.lipizzaner_wgan_trainer', 'LipizzanerWGANTrainer'),
     }
 

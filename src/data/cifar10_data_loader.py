@@ -24,5 +24,5 @@ class CIFAR10DataLoader(DataLoader):
     def save_images(self, images, shape, filename):
         save_image(denorm(images.data), filename)
 
-    def transpose_data(self, data):
-        return data
+    '''def transpose_data(self, data):
+        return data'''
