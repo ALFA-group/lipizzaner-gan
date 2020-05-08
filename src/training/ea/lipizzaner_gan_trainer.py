@@ -323,8 +323,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
-                data = data.view(-1, 784)
-                # data = data.view(-1, 1, 28, 28)
+                # data = data.view(-1, 784)
+                data = data.view(-1, 1, 28, 28)
                 pred_accumulator = []
                 for model in models:
                     output = model.classification_layer(model.net(data))
@@ -333,7 +333,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     pred_accumulator.append(pred.view(-1))
                 label_votes = torch.tensor(list(zip(*pred_accumulator)))
                 prediction = torch.tensor([labels.bincount(minlength=11).argmax() for labels in label_votes])
-                print(prediction.shape)
                 correct += prediction.eq(target.view_as(prediction)).sum().item()
 
         num_samples = len(test_loader.dataset)
@@ -347,8 +346,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
-                data = data.view(-1, 784)
-                # data = data.view(-1, 1, 28, 28)
+                # data = data.view(-1, 784)
+                data = data.view(-1, 1, 28, 28)
                 output = model.classification_layer(model.net(data))
                 output = output.view(-1, 11)
                 pred = output.argmax(dim=1, keepdim=True)
