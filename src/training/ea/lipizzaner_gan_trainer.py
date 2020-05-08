@@ -284,14 +284,18 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         discriminator = self.concurrent_populations.discriminator.individuals[0].genome
 
         if 'ssgan' in self.cc.settings['network']['name']:
-            # batch_size = self.dataloader.batch_size
+            batch_size = self.dataloader.batch_size
             dataloader_loaded = self.dataloader.load(train=True)
             self.test(discriminator, dataloader_loaded, train=True)
 
-            # self.dataloader.batch_size = 100
+            self.dataloader.batch_size = 100
             dataloader_loaded = self.dataloader.load(train=False)
             self.test(discriminator, dataloader_loaded, train=False)
-            # self.dataloader.batch_size = batch_size
+
+            discriminators = [individual.genome for individual in self.neighbourhood.all_discriminators.individuals]
+            dataloader_loaded = self.dataloader.load(train=False)
+            self.test_majority_voting(discriminators, dataloader_loaded, train=False)
+            self.dataloader.batch_size = batch_size
 
 
         if self.optimize_weights_at_the_end:
@@ -312,12 +316,33 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         return self.result()
 
+    def test_majority_voting(self, models, test_loader, train=False):
+        correct = 0
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        train_or_test = 'Train' if train else 'Test'
+        with torch.no_grad():
+            for data, target in test_loader:
+                data, target = data.to(device), target.to(device)
+                # data = data.view(-1, 784)
+                data = data.view(-1, 1, 28, 28)
+                pred_accumulator = []
+                for model in models:
+                    output = model.classification_layer(model.net(data))
+                    output = output.view(-1, 11)
+                    pred = output.argmax(dim=1, keepdim=True)
+                    pred_accumulator.append(pred.view(-1))
+                label_votes = torch.tensor(list(zip(*pred_accumulator)))
+                prediction = torch.tensor([labels.bincount(minlength=10).argmax() for labels in label_votes])
+                correct += prediction.eq(target.view_as(prediction)).sum().item()
+
+        num_samples = len(test_loader.dataset)
+        accuracy = 100.0 * float(correct / num_samples)
+        self._logger.info(f'Majority Voting {train_or_test} Accuracy: {correct}/{num_samples} ({accuracy}%)')
+
     def test(self, model, test_loader, train=False):
         correct = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         train_or_test = 'Train' if train else 'Test'
-        # model.net.eval()
-        # model.classification_layer.eval()
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
