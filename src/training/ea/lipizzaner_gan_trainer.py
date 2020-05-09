@@ -331,8 +331,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     output = output.view(-1, 11)
                     pred = output.argmax(dim=1, keepdim=True)
                     pred_accumulator.append(pred.view(-1))
-                label_votes = torch.tensor(list(zip(*pred_accumulator)))
-                prediction = torch.tensor([labels.bincount(minlength=11).argmax() for labels in label_votes])
+                label_votes = to_pytorch_variable(torch.tensor(list(zip(*pred_accumulator))))
+                prediction = to_pytorch_variable(torch.tensor([labels.bincount(minlength=11).argmax() for labels in label_votes]))
                 correct += prediction.eq(target.view_as(prediction)).sum().item()
 
         num_samples = len(test_loader.dataset)
