@@ -56,6 +56,15 @@ python main.py ensemble-generator -f configuration/quickstart-ensemble-optimizat
 python main.py ensemble-generator -f configuration/quickstart-ensemble-optimization/mnist-greedy-random.yml  --generators enesmble_optimization/mnist-generators/ --generators_prefix mnist-generator -o output-greedy-random.txt  
 ```
 
+##### Create generators folder
+In order to create a folder that contains all the generators that are used to create the ensemble, we include an 
+auxiliar software that copy the generators from a given set of folders to a given destination folder 
+`create-generators-folder.py`. The file names are defined according to a *prefix* given by the user.
+
+```
+python create-generators-folder.py -o <origin folder 1> [<origin folder 2> ... <origin folder n>] -d <destination folder> -p <prefix> 
+```
+
 
 ### Included files
 
@@ -69,6 +78,11 @@ the previously presented classes.
 In order to test these methods, we provide test cases that use ten generators previously trained to generate MNIST samples.
 - test_ga_ensemble_generator.py: It allows testing the EA methods (i.e., NREO-GEN and REO-GEN)
 - test_greedy_ensemble_generator.py: It allows testing the Greedy methods.
+
+Auxiliary files:
+- create-generators-folder.py allows the creation of a folder that contains all the generators used to create the
+ensemble of generators by copying them from a set of origin folders.
+
 
 
 ## GECCO'20 Paper Information
