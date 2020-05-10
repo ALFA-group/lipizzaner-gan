@@ -2,21 +2,69 @@
 
 ## Summary
 
-Using ensmbles to improve generative adversarial networks (GANs) performance in generating accurate and diverese samples has shown a great success. Finding the best way to define these ensembles is not an easy task. 
-This code applies two evolutionary algorithms (EAs) and two greedies to create ensembles of previously trained generators to maximize the diversity of the generated samples(i.e., improve TVD). 
+Using ensembles to improve generative adversarial networks (GANs) performance in generating accurate and diverse samples has shown great success. Finding the best way to define these ensembles is not an easy task. 
+This code explores the use of evolutionary (EAs) and greedy algorithms to create ensembles of previously 
+trained generators to optimize a given objective, e.g., samples quality (FID score) and 
+diversity of the generated samples (TVD). 
+- Evolutionary algorithms
+    - Restricted Ensemble Optimization of GENenrators (**REO-GEN**) 
+    - Non-Restricted Ensemble Optimization of GENenrators (**NREO-GEN**)
+- Greedy algorithms:
+    - Iterative Greedy (**IG**)
+    - Random Greedy (**RG**) 
+    
+These methods are presented in the paper [**Re-purposing Heterogeneous Generative Ensembles with Evolutionary Computation**](https://arxiv.org/abs/2003.13532) published in **GECCO'20**. The information about the paper can be seen below.
 
-These method have been presented in the paper [**Re-purposing Heterogeneous Generative Ensembles with Evolutionary Computation**](https://arxiv.org/abs/2003.13532), which has been accepted/published in **GECCO'20**. The information about the paper can be seen below.
 
 
 ## How-To
 
 As these method are developed over **Lipizzaner**, it requires the installation of this software (see https://github.com/ALFA-group/lipizzaner-gan). 
-In order to use our methods, the folder `enesmble_optimization/` should be copied inside the `src/` folder of Lipizzaner. 
+The last version of **Lipizzaner** includes this software as a part of the framework. 
+In order to use our methods, the folder `enesmble_optimization/` should be inside the `src/` folder of Lipizzaner. 
+
+### Quick start
+
+Four quick start configuration files are provided to test the proposed methods (see `configuration/quickstart-ensemble-optimization` folder). 
+The the folder `enesmble_optimization/mnist-generators/` includes a set of 10 pre-trained generators to create MNIST samples, which are used in these examples. 
+
+These methods can be run by using the following command:
+```
+python main.py ensemble-generator -f <configuration file> --generators <folder that contains the generators> --generators_prefix <prefix that follow the generators .pkl files> [-o <output file>]  
+```
+Where:
+- `<configuration file>` is the yml file that contains the configuration of the experiment
+- `<generators folder>` is folder that contains the generators 
+- `<generators prefix>` is the prefix that follow the generators .pkl file names (in the example is *mnist-generator* because the generators are stored in files named *mnist-generator-XXX.pkl*)
+- `<output file>` is the file that contains the output of the experiment 
+  
+##### Run REO-GEN
+```
+python main.py ensemble-generator -f configuration/quickstart-ensemble-optimization/mnist-ga-reo-gen.yml  --generators enesmble_optimization/mnist-generators/ --generators_prefix mnist-generator -o output-reo-gen.txt  
+```
+
+##### Run NREO-GEN
+```
+python main.py ensemble-generator -f configuration/quickstart-ensemble-optimization/mnist-ga-nreo-gen.yml  --generators enesmble_optimization/mnist-generators/ --generators_prefix mnist-generator -o output-nreo-gen.txt  
+```
+##### Run IG
+```
+python main.py ensemble-generator -f configuration/quickstart-ensemble-optimization/mnist-greedy-iterative.yml  --generators enesmble_optimization/mnist-generators/ --generators_prefix mnist-generator -o output-greedy-iterative.txt  
+```
+##### Run RG
+```
+python main.py ensemble-generator -f configuration/quickstart-ensemble-optimization/mnist-greedy-random.yml  --generators enesmble_optimization/mnist-generators/ --generators_prefix mnist-generator -o output-greedy-random.txt  
+```
+
+
+### Included files
 
 Source code files in `enesmble_optimization/` folder:
-- evolutionary_nonrestricted_ensemble_optimization.py: It implements the NREO-GEN method.
-- evolutionary_restricted_ensemble_optimization.py: It implements the REO-GEN method.
-- greedy_for_ensemble_generator.py: It implements both Greedy methods, iterative and random.
+- evolutionary_nonrestricted_ensemble_optimization.py: It implements the NREO-GEN method (NonRestrictedEnsembleOptimization class).
+- evolutionary_restricted_ensemble_optimization.py: It implements the REO-GEN method (RestrictedEnsembleOptimization class).
+- ga_for_ensemble_generator.py: It implements the general EA used to address the ensmeble optimization problem by using 
+the previously presented classes.    
+- greedy_for_ensemble_generator.py: It implements both Greedy methods, iterative and random (GreedyEnsembleGenerator class).
 
 In order to test these methods, we provide test cases that use ten generators previously trained to generate MNIST samples.
 - test_ga_ensemble_generator.py: It allows testing the EA methods (i.e., NREO-GEN and REO-GEN)
