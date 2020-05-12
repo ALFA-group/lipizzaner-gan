@@ -33,8 +33,9 @@ dataloader:
   n_batches: 0
   shuffle: True
 network:
-  name: ssgan_perceptron 
-  # name: four_layer_perceptron 
+  name: ssgan_conv_mnist_28x28
+#  name: ssgan_perceptron
+  # name: four_layer_perceptron
   # loss: bceloss
   loss: celoss
 master:
