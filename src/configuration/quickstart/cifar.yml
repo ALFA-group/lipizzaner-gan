@@ -25,7 +25,7 @@ trainer:
       fitness_mode: average    # worse, best, average
 dataloader:
   dataset_name: cifar
-  label_rate: 0.01
+  label_rate: 0.1
   use_batch: True
   batch_size: 100
   n_batches: 0
