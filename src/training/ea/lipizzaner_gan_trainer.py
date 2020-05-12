@@ -333,7 +333,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 elif self.cc.settings['network']['name'] == 'ssgan_conv_mnist_28x28':
                     data = data.view(-1, 1, 28, 28)
                 else:
-                    data = data.view(-1, 1, 64, 64)
+                    if self.cc.settings['dataloader']['dataset_name']:
+                        data = data.view(-1, 3, 64, 64)
+                    else:
+                        data = data.view(-1, 1, 64, 64)
                 pred_accumulator = []
                 for model in models:
                     output = model.classification_layer(model.net(data))
