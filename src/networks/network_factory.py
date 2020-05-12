@@ -358,7 +358,7 @@ class SSGANPerceptronFactory(NetworkFactory):
 
 class SSGANConvolutionalNetworkFactory(NetworkFactory):
 
-    complexity = 64
+    complexity = 128
 
     @property
     def gen_input_size(self):
