@@ -263,6 +263,22 @@ class SSDiscriminatorNet(DiscriminatorNet):
     def default_fitness(self):
         return float('-inf')
 
+    @property
+    def encoded_classification_layer_parameters(self):
+        """
+        :return: base64 encoded representation of the classification layer's
+        state dictionary
+        """
+        return StateEncoder.encode(self.classification_layer.state_dict())
+
+    @encoded_classification_layer_parameters.setter
+    def encoded_classification_layer_parameters(self, value):
+        """
+        :param value: base64 encoded representation of the classification
+        layer's state dictionary
+        """
+        self.classification_layer.load_state_dict(StateEncoder.decode(value))
+
     def clone(self):
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,

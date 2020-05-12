@@ -293,6 +293,11 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.test(discriminator, dataloader_loaded, train=False)
 
             discriminators = [individual.genome for individual in self.neighbourhood.all_discriminators.individuals]
+
+            for model in discriminators:
+                dataloader_loaded = self.dataloader.load(train=False)
+                self.test(model, dataloader_loaded, train=False)
+
             dataloader_loaded = self.dataloader.load(train=False)
             self.test_majority_voting(discriminators, dataloader_loaded, train=False)
             self.dataloader.batch_size = batch_size
