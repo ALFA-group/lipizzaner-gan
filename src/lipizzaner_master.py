@@ -190,7 +190,11 @@ class LipizzanerMaster:
                     filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, source)
                     torch.save(discriminator.genome.net.state_dict(),
                                os.path.join(output_dir, filename))
-
+                    if 'ssgan' in self.cc.settings['network']['name']:
+                        filename = '{}{}_classification_layer.pkl'.format(DISCRIMINATOR_PREFIX,
+                                                     source)
+                        torch.save(discriminator.genome.classification_layer.state_dict(),
+                                   os.path.join(output_dir, filename))
 
                 # Save images
                 dataset = MixedGeneratorDataset(generator_pop,
