@@ -328,8 +328,12 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
-                # data = data.view(-1, 784)
-                data = data.view(-1, 1, 28, 28)
+                if self.cc.settings['network']['name'] == 'ssgan_perceptron':
+                    data = data.view(-1, 784)
+                elif self.cc.settings['network']['name'] == 'ssgan_conv_mnist_28x28':
+                    data = data.view(-1, 1, 28, 28)
+                else:
+                    data = data.view(-1, 1, 64, 64)
                 pred_accumulator = []
                 for model in models:
                     output = model.classification_layer(model.net(data))
@@ -351,8 +355,12 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         with torch.no_grad():
             for data, target in test_loader:
                 data, target = data.to(device), target.to(device)
-                # data = data.view(-1, 784)
-                data = data.view(-1, 1, 28, 28)
+                if self.cc.settings['network']['name'] == 'ssgan_perceptron':
+                    data = data.view(-1, 784)
+                elif self.cc.settings['network']['name'] == 'ssgan_conv_mnist_28x28':
+                    data = data.view(-1, 1, 28, 28)
+                else:
+                    data = data.view(-1, 1, 64, 64)
                 output = model.classification_layer(model.net(data))
                 output = output.view(-1, 11)
                 pred = output.argmax(dim=1, keepdim=True)
