@@ -8,7 +8,7 @@ from data.data_loader import DataLoader
 from helpers.configuration_container import ConfigurationContainer
 from helpers.pytorch_helpers import denorm
 
-from src.data.balanced_labels_batch_sampler import BalancedLabelsBatchSampler
+from data.balanced_labels_batch_sampler import BalancedLabelsBatchSampler
 
 
 class CIFAR10DataLoader(DataLoader):
