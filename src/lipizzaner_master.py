@@ -59,7 +59,8 @@ class LipizzanerMaster:
             self._logger.info('Stopping some clients...')
             node_client = NodeClient(None)
             node_client.stop_running_experiments(accessible_clients)
-            self._logger.info("Remaining clients:" + str(self.cc.settings['general']['distribution']['client_nodes']))
+            self._logger.info("Number of remaining clients:" + str(len(accessible_clients)))
+            self._logger.info("Grid size:" + str(width) + "x" + str(height))
 
         if len(accessible_clients) == 0:
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
