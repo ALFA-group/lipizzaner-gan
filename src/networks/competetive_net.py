@@ -394,9 +394,11 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
 class SSGeneratorNet(GeneratorNet):
 
-    def __init__(self, loss_function, num_classes, net, data_size, optimize_bias=True):
+    def __init__(self, loss_function, num_classes, net, data_size,
+                 optimize_bias=True, is_mnist=True):
         GeneratorNet.__init__(self, loss_function, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
+        self.is_mnist = is_mnist
 
     @property
     def name(self):
@@ -407,25 +409,32 @@ class SSGeneratorNet(GeneratorNet):
                               self.num_classes,
                               copy.deepcopy(self.net),
                               self.data_size,
-                              self.optimize_bias)
+                              self.optimize_bias,
+                              is_mnist=self.is_mnist)
 
     def compute_loss_against(self, opponent: SSDiscriminatorNet, input,
                              labels=None, alpha=None, beta=None, iter=None,
                              get_class_distribution=False):
         batch_size = input.size(0)
-        fake = to_pytorch_variable(torch.zeros(batch_size))
 
         z = noise(batch_size, self.data_size)
         fake_images = self.net(z)
         network_output = opponent.net(fake_images)
 
-        network_output = opponent.classification_layer(network_output)
-        network_output = network_output.view(batch_size, -1)
+        if self.is_mnist:
+            fake = to_pytorch_variable(torch.zeros(batch_size))
+            network_output = opponent.classification_layer(network_output)
+            network_output = network_output.view(batch_size, -1)
 
-        softmax_layer = Softmax()
-        probabilities = softmax_layer(network_output)
-        fake_probabilities = probabilities[:, -1]
-        bce_loss = BCELoss()
-        loss = bce_loss(fake_probabilities, fake)
+            softmax_layer = Softmax()
+            probabilities = softmax_layer(network_output)
+            fake_probabilities = probabilities[:, -1]
+            bce_loss = BCELoss()
+            loss = bce_loss(fake_probabilities, fake)
+        else:
+            real_data_moments = torch.mean(opponent.net(input), 0)
+            fake_data_moments = torch.mean(network_output, 0)
+
+            loss = torch.mean(torch.abs(real_data_moments - fake_data_moments))
 
         return loss, fake_images, None

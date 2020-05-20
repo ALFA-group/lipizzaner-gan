@@ -384,7 +384,9 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
                 nn.ConvTranspose2d(self.complexity, 3, 4, 2, 1),
                 nn.Tanh()
             ),
-            self.gen_input_size)
+            self.gen_input_size,
+            is_mnist=False
+        )
 
         if parameters is not None:
             net.parameters = parameters
