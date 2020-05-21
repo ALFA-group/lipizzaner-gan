@@ -9,10 +9,12 @@ trainer:
     tournament_size: 2 
     n_replacements: 1
     default_adam_learning_rate: 0.0003
+    default_d_adam_learning_rate: 0.001
+    default_g_adam_learning_rate: 0.0003
     # Hyperparameter mutation
     alpha: 0.0001
     mutation_probability: 0.5
-    discriminator_skip_each_nth_step: 1
+    discriminator_skip_each_nth_step: 0
     mixture_sigma: 0.01
     enable_selection: True
     score:
