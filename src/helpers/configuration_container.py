@@ -18,6 +18,7 @@ class ConfigurationContainer:
         'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
         'mnist_fashion': ('data.mnist_fashion_data_loader', 'MNISTFashionDataLoader'),
         'cifar': ('data.cifar10_data_loader', 'CIFAR10DataLoader'),
+        'svhn': ('data.svhn_data_loader', 'SVHNDataLoader'),
         'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
         'network_traffic': ('data.network_data_loader', 'NetworkDataLoader'),
         'gaussian': ('data.gaussian_data_loader', 'GaussianDataLoader'),
