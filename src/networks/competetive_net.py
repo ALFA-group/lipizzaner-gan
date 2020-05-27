@@ -5,6 +5,7 @@ import logging
 import numpy as np
 import torch
 from torch.nn import Softmax, BCELoss, CrossEntropyLoss
+from torch.nn.utils.weight_norm import WeightNorm
 
 from distribution.state_encoder import StateEncoder
 from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_splits, noise
@@ -279,11 +280,34 @@ class SSDiscriminatorNet(DiscriminatorNet):
         """
         self.classification_layer.load_state_dict(StateEncoder.decode(value))
 
+    def copy_weight_norm(self, sequential_block):
+        # Delete the none-graph leaf tensor
+        for module in sequential_block:
+            for _, hook in module._forward_pre_hooks.items():
+                if isinstance(hook, WeightNorm):
+                    delattr(module, hook.name)
+        # Make the deepcopy
+        sequential_block_copy = copy.deepcopy(sequential_block)
+        # Re-create the deleted tensor
+        for module in sequential_block_copy:
+            for _, hook in module._forward_pre_hooks.items():
+                if isinstance(hook, WeightNorm):
+                    hook(module, None)
+        # Restore the sequential block to its previous version
+        for module in sequential_block:
+            for _, hook in module._forward_pre_hooks.items():
+                if isinstance(hook, WeightNorm):
+                    hook(module, None)
+        return sequential_block
+
     def clone(self):
+        net_copy = self.copy_weight_norm(self.net)
+        classification_layer_copy = self.copy_weight_norm(self.classification_layer)
+
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,
-                                  copy.deepcopy(self.net),
-                                  copy.deepcopy(self.classification_layer),
+                                  net_copy,
+                                  classification_layer_copy,
                                   self.data_size,
                                   self.optimize_bias,
                                   mnist_28x28_conv=self.mnist_28x28_conv)
