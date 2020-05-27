@@ -5,7 +5,6 @@ from torch import nn
 from torch.nn import Sequential
 from torch.nn import RNN
 from torch.autograd import Variable
-import torch.nn.utils.weight_norm as Weight_norm
 
 from helpers.configuration_container import ConfigurationContainer
 from networks.competetive_net import (
@@ -418,35 +417,35 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
                 # nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 # nn.BatchNorm2d(self.complexity * 8),
                 # nn.LeakyReLU(0.2, inplace=True)
-                Weight_norm(nn.Conv2d(3, self.complexity, 3, 1, 1), name='weight'),
-                # nn.Dropout2d(0.1),
-                nn.LeakyReLU(0.2, inplace=True),
-                Weight_norm(nn.Conv2d(self.complexity, self.complexity * 2, 3, 2, 1), name='weight'),
-                # nn.BatchNorm2d(self.complexity * 2),
+                nn.Conv2d(3, self.complexity, 3, 1, 1),
                 nn.Dropout2d(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
-                Weight_norm(nn.Conv2d(self.complexity * 2, self.complexity * 2, 3, 1, 1), name='weight'),
-                # nn.BatchNorm2d(self.complexity * 2),
-                # nn.Dropout2d(0.1),
-                nn.LeakyReLU(0.2, inplace=True),
-                Weight_norm(nn.Conv2d(self.complexity * 2, self.complexity * 4, 3, 2, 1), name='weight'),
-                # nn.BatchNorm2d(self.complexity * 4),
+                nn.Conv2d(self.complexity, self.complexity * 2, 3, 2, 1),
+                nn.BatchNorm2d(self.complexity * 2),
                 nn.Dropout2d(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
-                Weight_norm(nn.Conv2d(self.complexity * 4, self.complexity * 4, 3, 1, 1), name='weight'),
-                # nn.BatchNorm2d(self.complexity * 4),
-                # nn.Dropout2d(0.1),
-                nn.LeakyReLU(0.2, inplace=True),
-                Weight_norm(nn.Conv2d(self.complexity * 4, self.complexity * 8, 3, 2, 1), name='weight'),
-                # nn.BatchNorm2d(self.complexity * 8),
+                nn.Conv2d(self.complexity * 2, self.complexity * 2, 3, 1, 1),
+                nn.BatchNorm2d(self.complexity * 2),
                 nn.Dropout2d(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
-                Weight_norm(nn.Conv2d(self.complexity * 8, self.complexity * 16, 3, 2, 1), name='weight'),
-                # nn.BatchNorm2d(self.complexity * 16),
+                nn.Conv2d(self.complexity * 2, self.complexity * 4, 3, 2, 1),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.Dropout2d(0.1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 4, self.complexity * 4, 3, 1, 1),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.Dropout2d(0.1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 4, self.complexity * 8, 3, 2, 1),
+                nn.BatchNorm2d(self.complexity * 8),
+                nn.Dropout2d(0.1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 8, self.complexity * 16, 3, 2, 1),
+                nn.BatchNorm2d(self.complexity * 16),
                 nn.Dropout2d(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
             ),
-            Sequential(Weight_norm(nn.Conv2d(self.complexity * 16, self.num_classes + 1, 4, 1, 0), name='weight')),
+            Sequential(nn.Conv2d(self.complexity * 16, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
             mnist_28x28_conv=False
         )
