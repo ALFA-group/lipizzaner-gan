@@ -279,11 +279,26 @@ class SSDiscriminatorNet(DiscriminatorNet):
         """
         self.classification_layer.load_state_dict(StateEncoder.decode(value))
 
+    def copy_weight_norm(self, net):
+        for module in net:
+            for _, hook in module._forward_pre_hooks.items():
+                if isinstance(hook, torch.nn.utils.weight_norm):
+                    delattr(module, hook.name)
+        net_copy = copy.deepcopy(net)
+        for module in net_copy:
+            for _, hook in module._forward_pre_hooks.items():
+                if isinstance(hook, torch.nn.utils.weight_norm):
+                    hook(module, None)
+        return net
+
     def clone(self):
+        net_copy = self.copy_weight_norm(self.net)
+        classification_layer_copy = self.copy_weight_norm(self.classification_layer)
+
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,
-                                  copy.deepcopy(self.net),
-                                  copy.deepcopy(self.classification_layer),
+                                  net_copy,
+                                  classification_layer_copy,
                                   self.data_size,
                                   self.optimize_bias,
                                   mnist_28x28_conv=self.mnist_28x28_conv)
