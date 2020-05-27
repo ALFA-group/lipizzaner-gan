@@ -22,14 +22,17 @@ class Heartbeat(Thread):
             dead_clients = [c for c in client_statuses if not c['alive'] or not c['busy']]
             alive_clients = [c for c in client_statuses if c['alive'] and c['busy']]
 
-            if dead_clients and self.kill_clients_on_disconnect:
+            if dead_clients:
                 printable_names = '.'.join([c['address'] for c in dead_clients])
-                _logger.critical('Heartbeat: One or more clients ({}) are not alive anymore; '
-                                 'exiting others as well.'.format(printable_names))
+                if self.kill_clients_on_disconnect:
+                    _logger.critical('Heartbeat: One or more clients ({}) are not alive anymore; '
+                                    'exiting others as well.'.format(printable_names))
 
-                self.node_client.stop_running_experiments(dead_clients)
-                self.success = False
-                return
+                    self.node_client.stop_running_experiments(dead_clients)
+                    self.success = False
+                    return
+                else:
+                    _logger.info("Heartbeat: Dead clients {} but will attempt to reconnect to them".format(printable_names))
             elif all(c['finished'] for c in alive_clients):
                 _logger.info('Heartbeat: All clients finished their experiments.')
                 self.success = True
