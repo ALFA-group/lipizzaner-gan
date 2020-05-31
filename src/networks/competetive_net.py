@@ -298,14 +298,14 @@ class SSDiscriminatorNet(DiscriminatorNet):
             for _, hook in module._forward_pre_hooks.items():
                 if isinstance(hook, WeightNorm):
                     hook(module, None)
-        return sequential_block
+        return sequential_block_copy
 
     def clone(self):
-        # net_copy = self.copy_weight_norm(self.net)
-        # classification_layer_copy = self.copy_weight_norm(self.classification_layer)
+        net_copy = self.copy_weight_norm(self.net)
+        classification_layer_copy = self.copy_weight_norm(self.classification_layer)
 
-        net_copy = copy.deepcopy(self.net)
-        classification_layer_copy = copy.deepcopy(self.classification_layer)
+        # net_copy = copy.deepcopy(self.net)
+        # classification_layer_copy = copy.deepcopy(self.classification_layer)
 
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,
