@@ -481,6 +481,6 @@ class SSGeneratorNet(GeneratorNet):
             real_data_moments = torch.mean(opponent.net(input), 0)
             fake_data_moments = torch.mean(features, 0)
 
-            loss = torch.mean(torch.abs(real_data_moments - fake_data_moments))
+            loss += torch.mean(torch.abs(real_data_moments - fake_data_moments))
 
         return loss, fake_images, None
