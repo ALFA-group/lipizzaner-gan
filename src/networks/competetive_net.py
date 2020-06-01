@@ -381,6 +381,9 @@ class SSDiscriminatorNet(DiscriminatorNet):
         supervised_loss_function = CrossEntropyLoss(reduction='none')
         supervised_loss = supervised_loss_function(network_output, labels)
         num_usable_labels = torch.sum(label_mask)
+        import logging
+        _logger = logging.getLogger(__name__)
+        _logger.info(f"Num Usable Labels: {num_usable_labels}")
         loss_for_usable_labels = torch.sum(supervised_loss * label_mask)
         label_prediction_loss = loss_for_usable_labels / num_usable_labels
 
