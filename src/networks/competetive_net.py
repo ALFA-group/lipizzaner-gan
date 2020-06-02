@@ -301,11 +301,11 @@ class SSDiscriminatorNet(DiscriminatorNet):
         return sequential_block_copy
 
     def clone(self):
-        net_copy = self.copy_weight_norm(self.net)
-        classification_layer_copy = self.copy_weight_norm(self.classification_layer)
+        # net_copy = self.copy_weight_norm(self.net)
+        # classification_layer_copy = self.copy_weight_norm(self.classification_layer)
 
-        # net_copy = copy.deepcopy(self.net)
-        # classification_layer_copy = copy.deepcopy(self.classification_layer)
+        net_copy = copy.deepcopy(self.net)
+        classification_layer_copy = copy.deepcopy(self.classification_layer)
 
         return SSDiscriminatorNet(self.loss_function,
                                   self.num_classes,
