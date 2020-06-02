@@ -135,5 +135,7 @@ class NeuralNetworkTrainer(ABC):
         checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number)
 
         path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}.yml'.format(cell_number))
-        with open(path_checkpoint, 'w') as file:
+        with open(path_checkpoint, 'w+') as file:
             yaml.dump(checkpoint, file)
+        
+        self._logger.info('Saved checkpoint of cell {} at output {} with checkpoint info {}'.format(cell_number, path_checkpoint, checkpoint))

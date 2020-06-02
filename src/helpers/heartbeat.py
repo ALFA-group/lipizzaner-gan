@@ -17,10 +17,14 @@ class Heartbeat(Thread):
         self.node_client = NodeClient(None)
 
     def run(self):
+        # TESTING CODE ONLY
+        start_time = 0
         while not self.stopped.wait(HEARTBEAT_FREQUENCY_SEC):
             client_statuses = self.node_client.get_client_statuses()
             dead_clients = [c for c in client_statuses if not c['alive'] or not c['busy']]
             alive_clients = [c for c in client_statuses if c['alive'] and c['busy']]
+
+            # TESTING CODE ONLY - here we can pretend that a client has died and try to start up a new cell 
 
             if dead_clients:
                 printable_names = '.'.join([c['address'] for c in dead_clients])
@@ -33,6 +37,7 @@ class Heartbeat(Thread):
                     return
                 else:
                     _logger.info("Heartbeat: Dead clients {} but will attempt to reconnect to them".format(printable_names))
+                    return 
             elif all(c['finished'] for c in alive_clients):
                 _logger.info('Heartbeat: All clients finished their experiments.')
                 self.success = True
