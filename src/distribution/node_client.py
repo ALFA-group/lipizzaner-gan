@@ -117,6 +117,18 @@ class NodeClient:
 
         return statuses
 
+    # NEW METHOD should this be static or not?
+    def get_checkpoints(self):
+        checkpoints = []
+        for client in self.cc.settings['general']['distribution']['client_nodes']:
+            address = 'http://{}:{}/experiments/checkpoint'.format(client['address'], client['port'])
+            try: 
+                resp = requests.get(address) # TODO not sure what to do here 
+            except Exception as ex:
+                NodeClient._logger.error('Error retrieving checkpoint from {}: {}.'.format(address, ex))
+                return None
+
+
     def stop_running_experiments(self, except_for_clients=None):
         if except_for_clients is None:
             except_for_clients = []

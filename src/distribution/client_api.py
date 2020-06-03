@@ -77,6 +77,24 @@ class ClientAPI:
 
         return response
 
+    
+    # NEW METHOD for requesting checkpoint from each cell 
+    @staticmethod
+    @app.route('/experiments/checkpoint', methods=['GET']) # How is this route made? 
+    def get_checkpoints(): 
+        ClientAPI._lock.acquire()
+
+        if ClientAPI.is_busy:
+            # get the checkpoint
+            ClientAPI._logger.info('Sending checkpoint to master')
+            response = Response() # TODO make checkpoint gathering function
+        else: 
+            ClientAPI._logger.warning('Master requested checkpoints, but no experiment is running.')
+            response = Response()
+        
+        ClientAPI._lock.release()
+        return response
+
     @staticmethod
     @app.route('/status', methods=['GET'])
     def get_status():
@@ -209,6 +227,14 @@ class ClientAPI:
             results['weights_discriminators'] = 0.0
 
         return results
+
+    # NEW METHOD for gathering checkpoints
+    @staticmethod
+    def _get_checkpoints():
+        neighborhood = Neighbourhood.instance()
+        cc = ConfigurationContainer.instance()
+        checkpoints = {} # TODO
+        return checkpoints
 
     @classmethod
     def _set_output_dir(cls, cc):
