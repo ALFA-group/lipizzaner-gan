@@ -70,7 +70,8 @@ class LipizzanerMaster:
         self.heartbeat_event = Event()
         self.heartbeat_thread = Heartbeat(self.heartbeat_event,
                                           self.cc.settings['general']['distribution']['master_node'][
-                                              'exit_clients_on_disconnect'])
+                                              'exit_clients_on_disconnect']) 
+                                              # if exit_clients_on_disconnect set to false then recovery will happen
 
         signal.signal(signal.SIGINT, self._sigint)
         self._start_experiments()

@@ -89,6 +89,7 @@ class ClientAPI:
 
     @staticmethod
     @app.route('/experiments/sleep', methods=['GET'])
+    # used to create sleepfile if one doesn't exist and delete it if one does (toggle)
     def sleep(): 
         ClientAPI._lock.acquire()
         dir = os.getcwd()
@@ -125,6 +126,7 @@ class ClientAPI:
     @staticmethod
     @app.route('/status', methods=['GET'])
     def get_status():
+        # makes Master register client as dead if sleepfile exists
         if os.path.exists("sleepfile.txt") :
                 ClientAPI._logger.info('Client made to sleep')
                 response = Response()
