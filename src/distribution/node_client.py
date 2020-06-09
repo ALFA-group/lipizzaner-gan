@@ -61,6 +61,7 @@ class NodeClient:
     @staticmethod
     def _load_results(node, timeout_sec):
         address = 'http://{}:{}/experiments'.format(node['address'], node['port'])
+        NodeClient._logger.info('Attempting to load results from {}'.format(address))
         try:
             resp = requests.get(address, timeout=timeout_sec)
             return resp.json()

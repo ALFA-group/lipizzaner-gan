@@ -16,4 +16,4 @@ sleep_time=15
 port_path=../ports.txt 
 bash -x ../client_killing.sh ${netstat_output_path} ${sleep_time} ${port_path} &
 
-python main.py train --distributed --master -f configuration/tests/checkpointing/mnist.yml # configuration/quickstart/mnist.yml
+python main.py train --distributed --master -f configuration/tests/recovery/mnist.yml # configuration/quickstart/mnist.yml

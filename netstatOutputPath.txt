@@ -1,4 +1,4 @@
-tcp        0      0 0.0.0.0:5000            0.0.0.0:*               LISTEN      21920/python        
-tcp        0      0 0.0.0.0:5001            0.0.0.0:*               LISTEN      21933/python        
-tcp        0      0 0.0.0.0:rfe             0.0.0.0:*               LISTEN      21947/python        
-tcp        0      0 0.0.0.0:5003            0.0.0.0:*               LISTEN      21960/python        
+tcp        0      0 0.0.0.0:5000            0.0.0.0:*               LISTEN      11372/python        
+tcp        0      0 0.0.0.0:5001            0.0.0.0:*               LISTEN      11385/python        
+tcp        0      0 0.0.0.0:rfe             0.0.0.0:*               LISTEN      11398/python        
+tcp        0      0 0.0.0.0:5003            0.0.0.0:*               LISTEN      11411/python        

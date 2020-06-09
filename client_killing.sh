@@ -10,3 +10,9 @@ python ../parsePorts.py ${1} ${3}
 sleep ${2}
 
 echo "printing here"
+
+python - << END 
+import requests
+print("python code inside bash script\n")
+response = requests.get("http://127.0.0.1:5000/experiments/sleep") 
+print("Response is " + str(response.status_code))

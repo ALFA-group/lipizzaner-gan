@@ -65,10 +65,20 @@ class ClientAPI:
     def get_results():
         ClientAPI._lock.acquire()
 
+        dir = os.getcwd()
+        ClientAPI._logger.info("Experiments current working directory is {}".format(dir))
+        
+
         if ClientAPI.is_busy:
-            ClientAPI._logger.info('Sending neighbourhood results to master')
-            response = jsonify(ClientAPI._gather_results())
-            ClientAPI._finish_event.set()
+            if os.path.exists("sleepfile.txt") :
+                ClientAPI._logger.info('Client made to sleep')
+                response = Response() # TODO indicate that it will not be responding 
+                # response._content = b'{ "key" : "a" }'
+            else :
+                ClientAPI._logger.info('Sending neighbourhood results to master')
+                response = jsonify(ClientAPI._gather_results())
+                ClientAPI._finish_event.set()
+
         else:
             ClientAPI._logger.warning('Master requested results, but no experiment is running.')
             response = Response()
@@ -77,7 +87,24 @@ class ClientAPI:
 
         return response
 
+    @staticmethod
+    @app.route('/experiments/sleep', methods=['GET'])
+    def sleep(): 
+        ClientAPI._lock.acquire()
+        dir = os.getcwd()
+        ClientAPI._logger.info("Sleep Request current working directory is {}".format(dir))
+
+        response = Response()
     
+        if os.path.exists("sleepfile.txt"):
+            os.remove("sleepfile.txt")
+        else:
+            with open("sleepfile.txt", 'w+') as f:
+                f.write("sleep")
+        ClientAPI._lock.release()
+        return response
+
+
     # NEW METHOD for requesting checkpoint from each cell 
     @staticmethod
     @app.route('/experiments/checkpoint', methods=['GET']) # How is this route made? 
@@ -98,11 +125,17 @@ class ClientAPI:
     @staticmethod
     @app.route('/status', methods=['GET'])
     def get_status():
-        result = {
-            'busy': ClientAPI.is_busy,
-            'finished': ClientAPI.is_finished
-        }
-        return jsonify(result)
+        if os.path.exists("sleepfile.txt") :
+                ClientAPI._logger.info('Client made to sleep')
+                response = Response()
+                response._status_code = 404 
+                return response
+        else:
+            result = {
+                'busy': ClientAPI.is_busy,
+                'finished': ClientAPI.is_finished
+            }
+            return jsonify(result)
 
     @staticmethod
     @app.route('/parameters/discriminators', methods=['GET'])
