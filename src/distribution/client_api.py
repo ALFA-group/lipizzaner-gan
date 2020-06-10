@@ -93,14 +93,20 @@ class ClientAPI:
     def sleep(): 
         ClientAPI._lock.acquire()
         dir = os.getcwd()
-        ClientAPI._logger.info("Sleep Request current working directory is {}".format(dir))
 
         response = Response()
+
+        cc = ConfigurationContainer.instance()
+        # output_base_dir = cc.output_dir
+        path = "sleepfile.txt" # output_base_dir + "sleepfile.txt"
+
+        ClientAPI._logger.info("Sleep Request current working directory is {} and checking for sleepfile at {}".format(dir, path))
+
     
-        if os.path.exists("sleepfile.txt"):
-            os.remove("sleepfile.txt")
+        if os.path.exists(path):
+            os.remove(path)
         else:
-            with open("sleepfile.txt", 'w+') as f:
+            with open(path, 'w+') as f:
                 f.write("sleep")
         ClientAPI._lock.release()
         return response
@@ -128,6 +134,16 @@ class ClientAPI:
     def get_status():
         # makes Master register client as dead if sleepfile exists
         #TODO check if the checkpoint file exists and then read it 
+        # cc = ConfigurationContainer.instance()
+        # output_base_dir = cc.output_dir
+        # path = output_base_dir + "sleepfile.txt"
+
+        # if cc.settings == None:
+        #     result = {
+        #         'busy': ClientAPI.is_busy,
+        #         'finished': ClientAPI.is_finished
+        #     }
+        #     return jsonify(result)
         if os.path.exists("sleepfile.txt") :
                 ClientAPI._logger.info('Client made to sleep')
                 response = Response()
