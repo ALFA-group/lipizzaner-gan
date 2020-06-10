@@ -254,7 +254,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             if self.checkpoint_period>0 and (iteration+1)%self.checkpoint_period==0:
                 self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
                                      self.neighbourhood.cell_number, self.neighbourhood.grid_position)
-
+                #TODO send checkpoint back to master on a thread that's waiting to hear back 
 
         if self.optimize_weights_at_the_end:
             self.optimize_generator_mixture_weights()

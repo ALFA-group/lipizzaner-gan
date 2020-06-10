@@ -127,6 +127,7 @@ class ClientAPI:
     @app.route('/status', methods=['GET'])
     def get_status():
         # makes Master register client as dead if sleepfile exists
+        #TODO check if the checkpoint file exists and then read it 
         if os.path.exists("sleepfile.txt") :
                 ClientAPI._logger.info('Client made to sleep')
                 response = Response()
@@ -215,7 +216,7 @@ class ClientAPI:
         ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(cc.output_dir))
 
         try:
-            lipizzaner = Lipizzaner()
+            lipizzaner = Lipizzaner() # TODO we want to access this object to call save_checkpoint(). can start background thread to collect checkpoints that client sends back. 
             lipizzaner.run(cc.settings['trainer']['n_iterations'], ClientAPI._stop_event)
             ClientAPI.is_finished = True
 
