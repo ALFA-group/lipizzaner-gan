@@ -34,10 +34,12 @@ dataloader:
   shuffle: True
 network:
   name: ssgan_conv_mnist_28x28
-#  name: ssgan_perceptron
-  # name: four_layer_perceptron
-  # loss: bceloss
   loss: celoss
+  in_mean: 0
+  in_std: 0.1
+  in_std_decay_rate: 0.0005
+  in_std_min: 0.065
+  in_fake_decay: False
 master:
   calculate_score: True
   score_sample_size: 50000

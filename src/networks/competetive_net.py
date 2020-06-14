@@ -6,6 +6,7 @@ import numpy as np
 import torch
 from torch.nn import Softmax, BCELoss, CrossEntropyLoss
 from torch.nn.utils.weight_norm import WeightNorm
+from helpers.configuration_container import ConfigurationContainer
 
 from distribution.state_encoder import StateEncoder
 from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_splits, noise
@@ -256,6 +257,18 @@ class SSDiscriminatorNet(DiscriminatorNet):
         self.classification_layer = classification_layer.cuda() if is_cuda_enabled() else classification_layer
         self.mnist_28x28_conv = mnist_28x28_conv
 
+        cc = ConfigurationContainer.instance()
+        self.in_mean = cc.settings['network'].get('in_mean', 0.0)
+        self.in_std = cc.settings['network'].get('in_std', 1e-10)
+        self.in_std_decay_rate = cc.settings['network'].get('in_std_decay_rate', 0.0)
+        self.in_std_min = cc.settings['network'].get('in_std_min', 1e-10)
+        self.label_rate = cc.settings['dataloader'].get('label_rate', 1)
+        print(self.in_mean)
+        print(self.in_std)
+        print(self.in_std_decay_rate)
+        print(self.in_std_min)
+        print(self.label_rate)
+
     @property
     def name(self):
         return 'SemiSupervisedDiscriminator'
@@ -280,44 +293,20 @@ class SSDiscriminatorNet(DiscriminatorNet):
         """
         self.classification_layer.load_state_dict(StateEncoder.decode(value))
 
-    def copy_weight_norm(self, sequential_block):
-        # Delete the none-graph leaf tensor
-        for module in sequential_block:
-            for _, hook in module._forward_pre_hooks.items():
-                if isinstance(hook, WeightNorm):
-                    delattr(module, hook.name)
-        # Make the deepcopy
-        sequential_block_copy = copy.deepcopy(sequential_block)
-        # Re-create the deleted tensor
-        for module in sequential_block_copy:
-            for _, hook in module._forward_pre_hooks.items():
-                if isinstance(hook, WeightNorm):
-                    hook(module, None)
-        # Restore the sequential block to its previous version
-        for module in sequential_block:
-            for _, hook in module._forward_pre_hooks.items():
-                if isinstance(hook, WeightNorm):
-                    hook(module, None)
-        return sequential_block_copy
-
     def clone(self):
-        # net_copy = self.copy_weight_norm(self.net)
-        # classification_layer_copy = self.copy_weight_norm(self.classification_layer)
+        return SSDiscriminatorNet(
+            self.loss_function,
+            self.num_classes,
+            copy.deepcopy(self.net),
+            copy.deepcopy(self.classification_layer),
+            self.data_size,
+            self.optimize_bias,
+            mnist_28x28_conv=self.mnist_28x28_conv
+        )
 
-        net_copy = copy.deepcopy(self.net)
-        classification_layer_copy = copy.deepcopy(self.classification_layer)
-
-        return SSDiscriminatorNet(self.loss_function,
-                                  self.num_classes,
-                                  net_copy,
-                                  classification_layer_copy,
-                                  self.data_size,
-                                  self.optimize_bias,
-                                  mnist_28x28_conv=self.mnist_28x28_conv)
-
-    def _get_labeled_mask(self, batch_size, label_rate):
+    def _get_labeled_mask(self, batch_size):
         label_mask = to_pytorch_variable(torch.zeros(batch_size))
-        label_count = to_pytorch_variable(torch.tensor(batch_size * label_rate).int())
+        label_count = to_pytorch_variable(torch.tensor(batch_size * self.label_rate).int())
         label_mask[range(label_count)] = 1.0
         return label_mask
 
@@ -327,8 +316,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
         frequencies[frequencies == 0.0] = 1e-10
         frequencies = frequencies.data.cpu().numpy()
         usable_labels = label_mask * labels.float()
+
         label_data_per_class = usable_labels.long().bincount(
-            minlength=self.num_classes)
+            minlength=self.num_classes
+        )
         label_data_per_class[0] = num_usable_labels - label_data_per_class[1:].sum()
         predicted_frequencies = np.bincount(
             pred_labels[np.where(pred_labels == ground_truth)],
@@ -337,8 +328,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
         classification_rate_per_class = torch.from_numpy(
             predicted_frequencies * 100.0 / frequencies
         )
+
         labels = to_pytorch_variable(torch.tensor([i for i in range(0, self.num_classes)]))
         statistics = zip(labels, label_data_per_class, classification_rate_per_class)
+
         stats = f"\nLabel, Number of Labeled Data points, Classification Rate for this label"
         for (label, label_data, classification_rate) in statistics:
             stats += f"\n{label}, {label_data}, {classification_rate}"
@@ -352,8 +345,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         tensor = tensor.long()
         fake_labels = to_pytorch_variable(tensor)
 
-        label_rate = 0.01
-        label_mask = self._get_labeled_mask(batch_size, label_rate)
+        label_mask = self._get_labeled_mask(batch_size)
 
         # Positive Label Smoothing
         real = torch.Tensor(batch_size)
@@ -362,13 +354,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Adding noise to prevent Discriminator from getting too strong
         if iter is not None:
-            std = max(0.065, 0.1 - iter * 0.0005)
-            input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=std))
+            std = max(self.in_std_min, self.in_std - iter * self.in_std_decay_rate)
         else:
-            input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
-
-        # NOTE: Maybe this is not necessary since Dropout might be taking care of this
-        # input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=0, std=0.1))
+            std = self.in_std
+        input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=self.in_mean, std=std))
         input = input + input_perturbation
 
         if self.mnist_28x28_conv:
@@ -381,7 +370,6 @@ class SSDiscriminatorNet(DiscriminatorNet):
         supervised_loss_function = CrossEntropyLoss(reduction='none')
         supervised_loss = supervised_loss_function(network_output, labels)
         num_usable_labels = torch.sum(label_mask)
-        import logging
         _logger = logging.getLogger(__name__)
         _logger.info(f"Num Usable Labels: {num_usable_labels}")
         loss_for_usable_labels = torch.sum(supervised_loss * label_mask)
@@ -411,7 +399,9 @@ class SSDiscriminatorNet(DiscriminatorNet):
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
 
-        fake_image_perturbation = to_pytorch_variable(torch.empty(fake_images.shape).normal_(mean=0, std=0.1))
+        fake_image_perturbation = to_pytorch_variable(
+            torch.empty(fake_images.shape).normal_(mean=self.in_mean, std=self.in_std)
+        )
         fake_images = fake_images + fake_image_perturbation
 
         network_output = self.classification_layer(self.net(fake_images))
@@ -425,10 +415,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
 class SSGeneratorNet(GeneratorNet):
 
     def __init__(self, loss_function, num_classes, net, data_size,
-                 optimize_bias=True, is_mnist=True):
+                 optimize_bias=True, fm=False):
         GeneratorNet.__init__(self, loss_function, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
-        self.is_mnist = is_mnist
+        self.fm = fm
 
     @property
     def name(self):
@@ -440,7 +430,7 @@ class SSGeneratorNet(GeneratorNet):
                               copy.deepcopy(self.net),
                               self.data_size,
                               self.optimize_bias,
-                              is_mnist=self.is_mnist)
+                              fm=self.fm)
 
     def compute_loss_against(self, opponent: SSDiscriminatorNet, input,
                              labels=None, alpha=None, beta=None, iter=None,
@@ -451,7 +441,7 @@ class SSGeneratorNet(GeneratorNet):
         fake_images = self.net(z)
         network_output = opponent.net(fake_images)
 
-        if self.is_mnist:
+        if not self.fm:
             fake = to_pytorch_variable(torch.zeros(batch_size))
             network_output = opponent.classification_layer(network_output)
             network_output = network_output.view(batch_size, -1)
@@ -462,6 +452,7 @@ class SSGeneratorNet(GeneratorNet):
             bce_loss = BCELoss()
             loss = bce_loss(fake_probabilities, fake)
         else:
+            # Feature Matching
             real_data_moments = torch.mean(opponent.net(input), 0)
             fake_data_moments = torch.mean(network_output, 0)
 

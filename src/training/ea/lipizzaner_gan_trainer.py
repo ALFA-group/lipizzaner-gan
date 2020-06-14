@@ -560,14 +560,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             accuracy = discriminator_output[2]
             if discriminator.name == "SemiSupervisedDiscriminator" and \
                     accuracy is not None:
-                # d_acc = accuracy[0]
-                # real_acc = accuracy[1]
-                # fake_acc = accuracy[2]
                 logger.info(
                     f"Iteration {iter},  Label Prediction Accuracy: {100 * accuracy}% "
-                    # "Real Image Prediction Accuracy: %d%%, "
-                    # "Fake Image Prediction Accuracy: %d%%"
-                    # % (100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc))
                 )
 
 

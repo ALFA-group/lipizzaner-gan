@@ -27,11 +27,6 @@ class BalancedLabelsBatchSampler(BatchSampler):
         self.num_labels_per_batch = int(self.label_rate * self.batch_size)
         # Ensure that the dataset can be broken down exactly into batch size
         assert len(self.dataset) % self.batch_size == 0
-        # Ensure that we have an integral number of labels per batch
-        # assert self.num_labels_per_batch == int(self.num_labels_per_batch)
-        # Convert number of labels per batch to its integral form after a
-        # successful assertion
-        # self.num_labels_per_batch = int(self.num_labels_per_batch)
 
         # Load the dataset
         loader = DataLoader(dataset)

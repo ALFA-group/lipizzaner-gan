@@ -33,10 +33,13 @@ dataloader:
   n_batches: 0
   shuffle: True
 network:
-#  name: convolutional
   name: ssgan_convolutional
   loss: celoss
-#  loss: bceloss
+  in_mean: 0
+  in_std: 0.07
+  in_std_decay_rate: 0.0005
+  in_std_min: 0.025
+  in_fake_decay: True
 master:
   calculate_score: True
   score_sample_size: 50000
