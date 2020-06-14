@@ -262,12 +262,8 @@ class SSDiscriminatorNet(DiscriminatorNet):
         self.in_std = cc.settings['network'].get('in_std', 1e-10)
         self.in_std_decay_rate = cc.settings['network'].get('in_std_decay_rate', 0.0)
         self.in_std_min = cc.settings['network'].get('in_std_min', 1e-10)
+        self.in_fake_decay = cc.settings['network'].get('in_fake_decay', False)
         self.label_rate = cc.settings['dataloader'].get('label_rate', 1)
-        print(self.in_mean)
-        print(self.in_std)
-        print(self.in_std_decay_rate)
-        print(self.in_std_min)
-        print(self.label_rate)
 
     @property
     def name(self):
@@ -399,8 +395,12 @@ class SSDiscriminatorNet(DiscriminatorNet):
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
 
+        if self.in_fake_decay and iter is not None:
+            std = max(self.in_std_min, self.in_std - iter * self.in_std_decay_rate)
+        else:
+            std = self.in_std
         fake_image_perturbation = to_pytorch_variable(
-            torch.empty(fake_images.shape).normal_(mean=self.in_mean, std=self.in_std)
+            torch.empty(fake_images.shape).normal_(mean=self.in_mean, std=std)
         )
         fake_images = fake_images + fake_image_perturbation
 
