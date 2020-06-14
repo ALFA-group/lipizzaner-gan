@@ -35,7 +35,8 @@ class DataLoader(ABC):
         self.n_batches = settings.get('n_batches', n_batches)
         self.shuffle = settings.get('shuffle', shuffle)
         self.sampling_ratio = settings.get('sampling_ratio', sampling_ratio)
-        # self.cell_number = self.cc.settings['general']['distribution']['client_id']
+        cell_settings = self.cc.settings['general']['distribution']
+        self.cell_number = cell_settings.get('client_id', 0)
 
     def load(self, train=True):
         # Image processing

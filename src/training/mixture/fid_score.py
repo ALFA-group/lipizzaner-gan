@@ -62,6 +62,7 @@ class FIDCalculator(ScoreCalculator):
 
         :param imgs: PyTorch dataset containing the generated images. (Could be both grey or RGB images)
         :param exact: Currently has no effect for FID.
+        :return: FID and TVD
         """
         model = None
         if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
@@ -79,7 +80,7 @@ class FIDCalculator(ScoreCalculator):
         else:    # Other RGB dataset
             block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
             model = InceptionV3([block_idx])
-            compute_label_freqs = True
+            compute_label_freqs = False
 
         if self.cuda:
             model.cuda()
@@ -219,7 +220,7 @@ class FIDCalculator(ScoreCalculator):
         return frequencies
 
     def calculate_activation_statistics(self, images, model, compute_label_freqs=False):
-        """Calculation of the statistics used by the FID.
+        """Calculation of the statistics used by the FID and TVD.
         Params:
         -- images      : Numpy array of dimension (n_images, 3, hi, wi). The values
                          must lie between 0 and 1.
@@ -240,6 +241,7 @@ class FIDCalculator(ScoreCalculator):
         act = self.get_activations(images, model)
         mu = np.mean(act, axis=0)
         sigma = np.cov(act, rowvar=False)
+
         frequencies = self.get_frequencies_of_activations(act) if compute_label_freqs else []
 
         return mu, sigma, frequencies
