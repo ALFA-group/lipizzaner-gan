@@ -13,6 +13,6 @@ echo "printing here"
 
 python - << END 
 import requests
-print("python code inside bash script\n")
-response = requests.get("http://127.0.0.1:5000/experiments/sleep") 
-print("Response is " + str(response.status_code))
+print("python code inside bash script. currently not putting client to sleep \n")
+# response = requests.get("http://127.0.0.1:5000/experiments/sleep") 
+# print("Response is " + str(response.status_code))

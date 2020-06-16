@@ -37,6 +37,7 @@ class Heartbeat(Thread):
                     return
                 else:
                     _logger.info("Heartbeat: Dead clients {} but will attempt to reconnect to them".format(printable_names)) 
+                    
             elif all(c['finished'] for c in alive_clients):
                 _logger.info('Heartbeat: All clients finished their experiments.')
                 self.success = True

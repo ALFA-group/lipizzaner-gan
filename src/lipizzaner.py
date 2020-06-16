@@ -45,6 +45,8 @@ class Lipizzaner:
             network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
             self.trainer = self.cc.create_instance(self.cc.settings['trainer']['name'], dataloader, network_factory)
 
+        # TODO if checkpoint here then update the trainer attributes 
+
         if 'params' in self.cc.settings['trainer'] and 'score' in self.cc.settings['trainer']['params']:
             self.cuda = self.cc.settings['trainer']['params']['score']['cuda']
         else:

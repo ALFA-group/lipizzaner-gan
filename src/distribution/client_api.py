@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re 
 import traceback
 from threading import Thread, Lock, Event
 
@@ -72,8 +73,7 @@ class ClientAPI:
         if ClientAPI.is_busy:
             if os.path.exists("sleepfile.txt") :
                 ClientAPI._logger.info('Client made to sleep')
-                response = Response() # TODO indicate that it will not be responding 
-                # response._content = b'{ "key" : "a" }'
+                response = Response() 
             else :
                 ClientAPI._logger.info('Sending neighbourhood results to master')
                 response = jsonify(ClientAPI._gather_results())
@@ -97,12 +97,12 @@ class ClientAPI:
         response = Response()
 
         cc = ConfigurationContainer.instance()
-        # output_base_dir = cc.output_dir
-        path = "sleepfile.txt" # output_base_dir + "sleepfile.txt"
-
+        if hasattr(cc, "settings"):
+            output_base_dir = cc.output_dir
+            path = output_base_dir + "sleepfile.txt"
+        
         ClientAPI._logger.info("Sleep Request current working directory is {} and checking for sleepfile at {}".format(dir, path))
 
-    
         if os.path.exists(path):
             os.remove(path)
         else:
@@ -121,7 +121,8 @@ class ClientAPI:
         if ClientAPI.is_busy:
             # get the checkpoint
             ClientAPI._logger.info('Sending checkpoint to master')
-            response = Response() # TODO make checkpoint gathering function
+            response = Response() 
+            # TODO copy checkpoint dictionary from client into response body
         else: 
             ClientAPI._logger.warning('Master requested checkpoints, but no experiment is running.')
             response = Response()
@@ -133,28 +134,33 @@ class ClientAPI:
     @app.route('/status', methods=['GET'])
     def get_status():
         # makes Master register client as dead if sleepfile exists
-        #TODO check if the checkpoint file exists and then read it 
-        # cc = ConfigurationContainer.instance()
-        # output_base_dir = cc.output_dir
-        # path = output_base_dir + "sleepfile.txt"
+        #TODO
+        # take timestamp of latest checkpoint to see if we need to
+        # request checkpoint -> look into output dir for the 
+        # new checkpoint 
+        cc = ConfigurationContainer.instance()
 
-        # if cc.settings == None:
-        #     result = {
-        #         'busy': ClientAPI.is_busy,
-        #         'finished': ClientAPI.is_finished
-        #     }
-        #     return jsonify(result)
-        if os.path.exists("sleepfile.txt") :
-                ClientAPI._logger.info('Client made to sleep')
-                response = Response()
-                response._status_code = 404 
-                return response
-        else:
-            result = {
-                'busy': ClientAPI.is_busy,
-                'finished': ClientAPI.is_finished
-            }
-            return jsonify(result)
+        ClientAPI._logger.info('CC dictionary is {}'.format(cc.__dict__))
+        result = {
+            'busy': ClientAPI.is_busy,
+            'finished': ClientAPI.is_finished
+        }
+
+        if hasattr(cc, "settings"):
+            if 'general' in cc.settings.keys():
+                sleep_path = cc.output_dir + "sleepfile.txt"
+                if os.path.exists(sleep_path) :
+                        ClientAPI._logger.info('Client made to sleep')
+                        response = Response()
+                        response._status_code = 404 
+                        return response
+                # otherwise find files in output dir and sort in alphanumeric order
+                # return timestamp of most recent checkpoint 
+                files = [x for x in os.listdir(cc.output_dir) if x.startswith("checkpoint")]
+                sortedFiles = sorted_nicely(files)
+                latestCheckpoint = sortedFiles[len(sortedFiles) - 1] # last one should be latest
+                result['checkpoint_timestamp'] = latestCheckpoint
+        return jsonify(result)
 
     @staticmethod
     @app.route('/parameters/discriminators', methods=['GET'])
@@ -233,6 +239,7 @@ class ClientAPI:
 
         try:
             lipizzaner = Lipizzaner() # TODO we want to access this object to call save_checkpoint(). can start background thread to collect checkpoints that client sends back. 
+            # initialize lipizzaner_gan_trainer instance and neighborhood 
             lipizzaner.run(cc.settings['trainer']['n_iterations'], ClientAPI._stop_event)
             ClientAPI.is_finished = True
 
@@ -301,3 +308,11 @@ class ClientAPI:
         ClientEnvironment.port = port
         ConcurrentPopulations.instance().lock()
         self.app.run(threaded=True, port=port, host="0.0.0.0")
+
+# sorts alphanumerically so '4 sheets', '12 sheets', 'booklet' would be the order with numbers 
+# first in increasing order 
+def sorted_nicely(l): 
+    """ Sort the given iterable in the way that humans expect.""" 
+    convert = lambda text: int(text) if text.isdigit() else text 
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    return sorted(l, key = alphanum_key)

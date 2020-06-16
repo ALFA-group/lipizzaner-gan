@@ -104,6 +104,7 @@ class NodeClient:
                 resp = requests.get(address)
                 assert resp.status_code == 200
                 result = resp.json()
+                # TODO if checkpoint newer then call the checkpoint func 
                 result['address'] = address
                 result['alive'] = True
                 statuses.append(result)

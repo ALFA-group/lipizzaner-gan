@@ -134,7 +134,8 @@ class NeuralNetworkTrainer(ABC):
         checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number)
         checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number)
 
-        path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}.yml'.format(cell_number))
+        # add timestamp to end of path by sorting then retrieve the latest 
+        path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}-{}.yml'.format(cell_number, checkpoint['time']))
         with open(path_checkpoint, 'w+') as file:
             yaml.dump(checkpoint, file)
         
