@@ -119,7 +119,7 @@ class NodeClient:
 
         return statuses
 
-    # NEW METHOD should this be static or not?
+    # TODO idk if this makes sense to call for all clients?
     def get_checkpoints(self):
         checkpoints = []
         for client in self.cc.settings['general']['distribution']['client_nodes']:

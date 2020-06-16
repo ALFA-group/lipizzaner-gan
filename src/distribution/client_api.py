@@ -27,6 +27,7 @@ class ClientAPI:
     _lock = Lock()
 
     _logger = logging.getLogger(__name__)
+    _last_checkpoint = "" # initialize to empty timestamp 
 
     @staticmethod
     @app.route('/experiments', methods=['POST'])
@@ -159,7 +160,9 @@ class ClientAPI:
                 files = [x for x in os.listdir(cc.output_dir) if x.startswith("checkpoint")]
                 sortedFiles = sorted_nicely(files)
                 latestCheckpoint = sortedFiles[len(sortedFiles) - 1] # last one should be latest
-                result['checkpoint_timestamp'] = latestCheckpoint
+                if self._last_checkpoint != latestCheckpoint {
+                    # make another api call for checkpoint! 
+                }
         return jsonify(result)
 
     @staticmethod
