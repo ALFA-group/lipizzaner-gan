@@ -34,7 +34,7 @@ class ConfigurationContainer:
         'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),
         'rnn': ('networks.network_factory', 'RNNFactory'),
         'lipizzaner_gan': ('training.ea.lipizzaner_gan_trainer', 'LipizzanerGANTrainer'),
-        'lipizzaner_wgan': ('training.ea.lipizzaner_wgan_trainer', 'LipizzanerWGANTrainer'),
+        'lipizzaner_wgan': ('training.ea.lipizzaner_wgan_trainer', 'LipizzanerWGANTrainer')
     }
 
     _logger = logging.getLogger(__name__)

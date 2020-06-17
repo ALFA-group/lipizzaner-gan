@@ -100,6 +100,19 @@ class LipizzanerMaster:
                 assert resp.status_code == 200
                 assert not resp.json()['busy']
                 accessible_clients.append(client)
+                # if there's a new checkpoint from the client then retrieve it 
+                if resp.json()['new_checkpoint']:
+                    checkpoint_addr = 'http://{}:{}/experiments/checkpoint'.format(client['address'], client['port'])
+                    try:
+                        resp_chkpt = requests.get(checkpoint_addr)
+                        assert resp.status_code == 200
+                        # save the checkpoint 
+                        checkpoint_path = self.cc['general']['checkpoint_dir'] + '_{}'.format(client['port']) # todo make it unique for each client and version
+                        with open(checkpoint_path, 'w+') as file:
+                            file.write('{}'.format(resp_chkpt.json()['checkpoint']))
+                        file.close()
+                    except Exception:
+                        pass 
             except Exception:
                 pass
 

@@ -28,6 +28,7 @@ class ClientAPI:
 
     _logger = logging.getLogger(__name__)
     _last_checkpoint = "" # initialize to empty timestamp 
+    _lipizzaner = None 
 
     @staticmethod
     @app.route('/experiments', methods=['POST'])
@@ -123,7 +124,11 @@ class ClientAPI:
             # get the checkpoint
             ClientAPI._logger.info('Sending checkpoint to master')
             response = Response() 
-            # TODO copy checkpoint dictionary from client into response body
+            checkpoint = ClientAPI._lipizzaner.trainer._checkpoint # TODO: does this work for getting dict
+            result = {
+                'checkpoint': checkpoint
+            }
+            return jsonify(result)
         else: 
             ClientAPI._logger.warning('Master requested checkpoints, but no experiment is running.')
             response = Response()
@@ -160,9 +165,11 @@ class ClientAPI:
                 files = [x for x in os.listdir(cc.output_dir) if x.startswith("checkpoint")]
                 sortedFiles = sorted_nicely(files)
                 latestCheckpoint = sortedFiles[len(sortedFiles) - 1] # last one should be latest
-                if self._last_checkpoint != latestCheckpoint {
-                    # make another api call for checkpoint! 
-                }
+                if ClientAPI._last_checkpoint != latestCheckpoint:
+                    # TODO: not sure whether to update the last checkpoint time here so i can avoid herd effect
+                    # but i also don't want to miss checkpoints if the call fails 
+                    result['new_checkpoint'] = True 
+                
         return jsonify(result)
 
     @staticmethod
@@ -241,7 +248,8 @@ class ClientAPI:
         ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(cc.output_dir))
 
         try:
-            lipizzaner = Lipizzaner() # TODO we want to access this object to call save_checkpoint(). can start background thread to collect checkpoints that client sends back. 
+            lipizzaner = Lipizzaner() 
+            ClientAPI._lipizzaner = lipizzaner # NEW saving the instance here to access checkpoint later 
             # initialize lipizzaner_gan_trainer instance and neighborhood 
             lipizzaner.run(cc.settings['trainer']['n_iterations'], ClientAPI._stop_event)
             ClientAPI.is_finished = True

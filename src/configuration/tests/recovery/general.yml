@@ -8,6 +8,7 @@ losswise:
   enabled: False
   api_key: # Fill in API key 
 output_dir: ./output
+checkpoint_dir: ./checkpoint 
 distribution:
   auto_discover: False
   master_node:

@@ -15,6 +15,7 @@ DISCRIMINATOR_PREFIX = 'discriminator-'
 class NeuralNetworkTrainer(ABC):
 
     _logger = logging.getLogger(__name__)
+    _checkpoint = None 
 
     """
     Abstract base class for neural network training modules, cannot be instanced.
@@ -133,6 +134,8 @@ class NeuralNetworkTrainer(ABC):
         checkpoint['position']['y'] = grid_position[1]
         checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number)
         checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number)
+
+        self._checkpoint = checkpoint
 
         # add timestamp to end of path by sorting then retrieve the latest 
         path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}-{}.yml'.format(cell_number, checkpoint['time']))
