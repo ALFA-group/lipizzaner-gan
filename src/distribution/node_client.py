@@ -108,6 +108,19 @@ class NodeClient:
                 result['address'] = address
                 result['alive'] = True
                 statuses.append(result)
+                # if there's a new checkpoint from the client then retrieve it 
+                if resp.json()['new_checkpoint']:
+                    checkpoint_addr = 'http://{}:{}/experiments/checkpoint'.format(client['address'], client['port'])
+                    try:
+                        resp_chkpt = requests.get(checkpoint_addr)
+                        assert resp.status_code == 200
+                        # save the checkpoint 
+                        checkpoint_path = self.cc.settings['general']['checkpoint_dir'] + '_{}'.format(client['port']) # todo make it unique for each client and version
+                        with open(checkpoint_path, 'w+') as file:
+                            file.write('{}'.format(resp_chkpt.json()['checkpoint']))
+                        file.close()
+                    except Exception:
+                        pass 
             except Exception:
                 statuses.append({
                     'busy': None,
@@ -118,18 +131,6 @@ class NodeClient:
                 })
 
         return statuses
-
-    # TODO idk if this makes sense to call for all clients?
-    def get_checkpoints(self):
-        checkpoints = []
-        for client in self.cc.settings['general']['distribution']['client_nodes']:
-            address = 'http://{}:{}/experiments/checkpoint'.format(client['address'], client['port'])
-            try: 
-                resp = requests.get(address) # TODO not sure what to do here 
-            except Exception as ex:
-                NodeClient._logger.error('Error retrieving checkpoint from {}: {}.'.format(address, ex))
-                return None
-
 
     def stop_running_experiments(self, except_for_clients=None):
         if except_for_clients is None:
