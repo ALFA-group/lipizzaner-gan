@@ -33,7 +33,7 @@ class CompetetiveNet(ABC):
 
     @abstractmethod
     def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, get_class_distribution=False):
+                             beta=None, iter=None, log_class_distribution=False):
         """
         :return: (computed_loss, output_data -> (optional), accuracy(s) -> (optional))
         """
@@ -121,7 +121,7 @@ class GeneratorNet(CompetetiveNet):
         return float('-inf')
 
     def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, get_class_distribution=False):
+                             beta=None, iter=None, log_class_distribution=False):
         batch_size = input.size(0)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
@@ -136,6 +136,11 @@ class GeneratorNet(CompetetiveNet):
 
 
 class DiscriminatorNet(CompetetiveNet):
+
+    def __init__(self, loss_function, net, data_size, optimize_bias=True, mnist_28x28_conv=False):
+        CompetetiveNet.__init__(self, loss_function, net, data_size, optimize_bias=optimize_bias)
+        self.mnist_28x28_conv = mnist_28x28_conv
+
     @property
     def name(self):
         return 'Discriminator'
@@ -144,8 +149,17 @@ class DiscriminatorNet(CompetetiveNet):
     def default_fitness(self):
         return float('-inf')
 
+    def clone(self):
+        return DiscriminatorNet(
+            self.loss_function,
+            copy.deepcopy(self.net),
+            self.data_size,
+            self.optimize_bias,
+            mnist_28x28_conv=self.mnist_28x28_conv
+        )
+
     def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, get_class_distribution=False):
+                             beta=None, iter=None, log_class_distribution=False):
 
         # If HeuristicLoss is applied in the Generator, the Discriminator applies BCELoss
         if self.loss_function.__class__.__name__ == 'MustangsLoss':
@@ -155,6 +169,9 @@ class DiscriminatorNet(CompetetiveNet):
         # Compute loss using real images
         # Second term of the loss is always zero since real_labels == 1
         batch_size = input.size(0)
+
+        if self.mnist_28x28_conv:
+            input = input.view(-1, 1, 28, 28)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
         fake_labels = to_pytorch_variable(torch.zeros(batch_size))
@@ -182,7 +199,7 @@ class GeneratorNetSequential(CompetetiveNet):
         return float('-inf')
 
     def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, get_class_distribution=False):
+                             beta=None, iter=None, log_class_distribution=False):
         batch_size = input.size(0)
         sequence_length = input.size(1)
         num_inputs = input.size(2)
@@ -216,7 +233,7 @@ class DiscriminatorNetSequential(CompetetiveNet):
         return float('-inf')
 
     def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, get_class_distribution=False):
+                             beta=None, iter=None, log_class_distribution=False):
         # Compute BCE_Loss using real images where BCE_Loss(x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
         # Second term of the loss is always zero since real_labels == 1
 
@@ -434,7 +451,7 @@ class SSGeneratorNet(GeneratorNet):
 
     def compute_loss_against(self, opponent: SSDiscriminatorNet, input,
                              labels=None, alpha=None, beta=None, iter=None,
-                             get_class_distribution=False):
+                             log_class_distribution=False):
         batch_size = input.size(0)
 
         z = noise(batch_size, self.data_size)
