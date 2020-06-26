@@ -39,3 +39,9 @@ class MNISTLabelsDataLoader(DataLoader):
     @property
     def n_input_neurons(self):
         return 784
+
+    def transform(self):
+        return transforms.Compose([
+                           transforms.ToTensor(),
+                           transforms.Normalize((0.1307,), (0.3081,))
+        ])
