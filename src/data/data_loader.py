@@ -50,9 +50,7 @@ class DataLoader(ABC):
         if self.sampling_ratio >= 1:
             self.sampler = None
         else:
-            # set_random_seed(self.cc.settings['general']['seed'] + self.cell_number,
-            #                 self.cc.settings['trainer']['params']['score']['cuda'])
-            set_random_seed(self.cc.settings['general']['seed'],
+            set_random_seed(self.cc.settings['general']['seed'] + self.cell_number,
                             self.cc.settings['trainer']['params']['score']['cuda'])
             dataset_size = len(dataset)
             sample_size = int(dataset_size * self.sampling_ratio)

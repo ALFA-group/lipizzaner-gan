@@ -356,16 +356,19 @@ class SSDiscriminatorNet(DiscriminatorNet):
         tensor = torch.Tensor(batch_size)
         tensor.fill_(self.num_classes)
         tensor = tensor.long()
-        fake_labels = to_pytorch_variable(tensor)
+        fake_unsupervised_labels = to_pytorch_variable(tensor)
 
         label_mask = self._get_labeled_mask(batch_size)
 
-        # Positive Label Smoothing
-        real = torch.Tensor(batch_size)
-        real.fill_(0.9)
-        real = to_pytorch_variable(real)
+        # Positive Label Smoothing at 0.9 following the Improved Techniques for
+        # Training GANs. This prevents the discriminator from getting
+        # overconfident with regards to its predictions and makes it less
+        # susceptible to adversarial examples
+        real_unsupervised_labels = torch.Tensor(batch_size)
+        real_unsupervised_labels.fill_(0.9)
+        real_unsupervised_labels = to_pytorch_variable(real_unsupervised_labels)
 
-        # Adding noise to prevent Discriminator from getting too strong
+        # Adding instance noise to prevent Discriminator from getting too strong
         if iter is not None:
             std = max(self.in_std_min, self.in_std - iter * self.in_std_decay_rate)
         else:
@@ -393,19 +396,19 @@ class SSDiscriminatorNet(DiscriminatorNet):
         probabilities = softmax_layer(network_output)
         real_probabilities = -probabilities[:, -1] + 1
         bce_loss = BCELoss()
-        validity = bce_loss(real_probabilities, real)
+        validity = bce_loss(real_probabilities, real_unsupervised_labels)
 
         d_loss_supervised = label_prediction_loss
         d_loss_unsupervised = validity
 
         pred = network_output.data.cpu().numpy()
         ground_truth = labels.data.cpu().numpy()
-        pred_labels = np.argmax(pred, axis=1)
-        accuracy = np.mean(pred_labels == ground_truth)
+        predicted_labels = np.argmax(pred, axis=1)
+        accuracy = np.mean(predicted_labels == ground_truth)
 
         if log_class_distribution:
             self._log_classification_distribution(
-                ground_truth, label_mask, labels, num_usable_labels.long(), pred_labels
+                ground_truth, label_mask, labels, num_usable_labels.long(), predicted_labels
             )
 
         # Fake Unsupervised Loss
@@ -423,7 +426,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         network_output = self.classification_layer(self.net(fake_images))
         network_output = network_output.view(batch_size, -1)
-        label_prediction_loss = self.loss_function(network_output, fake_labels)
+        label_prediction_loss = self.loss_function(network_output, fake_unsupervised_labels)
         d_loss_unsupervised = d_loss_unsupervised + label_prediction_loss
 
         return d_loss_supervised + d_loss_unsupervised, None, accuracy
@@ -432,10 +435,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
 class SSGeneratorNet(GeneratorNet):
 
     def __init__(self, loss_function, num_classes, net, data_size,
-                 optimize_bias=True, fm=False):
+                 optimize_bias=True, use_feature_matching=False):
         GeneratorNet.__init__(self, loss_function, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
-        self.fm = fm
+        self.use_feature_matching = use_feature_matching
 
     @property
     def name(self):
@@ -447,7 +450,7 @@ class SSGeneratorNet(GeneratorNet):
                               copy.deepcopy(self.net),
                               self.data_size,
                               self.optimize_bias,
-                              fm=self.fm)
+                              use_feature_matching=self.use_feature_matching)
 
     def compute_loss_against(self, opponent: SSDiscriminatorNet, input,
                              labels=None, alpha=None, beta=None, iter=None,
@@ -458,7 +461,7 @@ class SSGeneratorNet(GeneratorNet):
         fake_images = self.net(z)
         network_output = opponent.net(fake_images)
 
-        if not self.fm:
+        if not self.use_feature_matching:
             fake = to_pytorch_variable(torch.zeros(batch_size))
             network_output = opponent.classification_layer(network_output)
             network_output = network_output.view(batch_size, -1)

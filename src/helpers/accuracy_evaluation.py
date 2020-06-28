@@ -1,3 +1,14 @@
+"""
+This file is used to evaluate the accuracy of a discriminator model obtained
+upon training it in a Semi-Supervised environment. We load the network as well
+as the parameters associated with the final layer following which the
+BalancedLabelsBatchSampler is used to load a test dataset upon which the
+discriminator model is tested. Many components are reused from the project such
+as the DataLoader, ConfigurationContainer, etc enabling a very similar code
+structure in this file as the rest of the project.
+"""
+
+
 import os
 
 import torch
@@ -11,7 +22,6 @@ def test(model, device, test_loader):
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
-            # data = data.view(-1, 784)
             data = data.view(-1, 1, 28, 28)
             output = model.classification_layer(model.net(data))
             output = output.view(-1, 11)
@@ -30,7 +40,6 @@ def main():
     cc = ConfigurationContainer.instance()
     cc.settings = {
         'network': {
-            # 'name': 'ssgan_perceptron',
             'name': 'ssgan_conv_mnist_28x28',
             'loss': 'celoss'
         },
@@ -62,14 +71,6 @@ def main():
         train=train,
         transform=transform,
         download=True)
-
-    # test_loader = torch.utils.data.DataLoader(
-    #     dataset=dataset,
-    #     batch_size=batch_size,
-    #     num_workers=0,
-    #     shuffle=True,
-    #     sampler=None
-    # )
 
     balanced_batch_sampler = BalancedLabelsBatchSampler(
         dataset,

@@ -49,8 +49,8 @@ class LipizzanerMaster:
             clients = self.cc.settings['general']['distribution']['client_nodes']
         accessible_clients = self._accessible_clients(clients)
 
-        # NOTE: Uncomment this line to run Loss Function Based Diversity
-        # self.cc.settings['general']['distribution']['num_clients'] = len(accessible_clients)
+        # Set settings parameter to use Loss Function Based Diversity
+        self.cc.settings['general']['distribution']['num_clients'] = len(accessible_clients)
 
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'

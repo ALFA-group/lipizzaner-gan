@@ -369,7 +369,7 @@ class ConvolutionalMNISTUnsupervised(NetworkFactory):
             m.bias.data.zero_()
 
 
-class SSGANPerceptronFactory(NetworkFactory):
+class SSGANFourLayerPerceptronFactory(NetworkFactory):
 
     @property
     def gen_input_size(self):
@@ -452,7 +452,7 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
                 nn.Tanh()
             ),
             self.gen_input_size,
-            fm=True
+            use_feature_matching=True
         )
 
         if parameters is not None:

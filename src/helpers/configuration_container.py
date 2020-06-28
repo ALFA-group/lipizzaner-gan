@@ -33,7 +33,7 @@ class ConfigurationContainer:
         'parallel_ea': ('training.ea.parallel_ea_trainer', 'ParallelEATrainer'),
         'four_layer_perceptron': ('networks.network_factory', 'FourLayerPerceptronFactory'),
         'conv_mnist_unsupervised': ('networks.network_factory', 'ConvolutionalMNISTUnsupervised'),
-        'ssgan_perceptron': ('networks.network_factory', 'SSGANPerceptronFactory'),
+        'ssgan_perceptron': ('networks.network_factory', 'SSGANFourLayerPerceptronFactory'),
         'ssgan_convolutional': ('networks.network_factory', 'SSGANConvolutionalNetworkFactory'),
         'ssgan_convolutional_mnist': ('networks.network_factory', 'SSGANConvolutionalMNISTNetworkFactory'),
         'ssgan_conv_mnist_28x28': ('networks.network_factory', 'SSGANConvMNIST28x28NetworkFactory'),
