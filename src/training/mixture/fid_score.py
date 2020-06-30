@@ -51,7 +51,9 @@ class FIDCalculator(ScoreCalculator):
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist' or self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
+        self.dataset = self.cc.settings['dataloader']['dataset_name']
+        self.network = self.cc.settings['network']['name']
+        if self.dataset == 'mnist' or self.dataset == 'mnist_fashion':
             self.dims = 10    # For MNIST the dimension of feature map is 10
         else:
             self.dims = dims
@@ -65,15 +67,15 @@ class FIDCalculator(ScoreCalculator):
         :return: FID and TVD
         """
         model = None
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
-            if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
+        if self.dataset == 'mnist':    # Gray dataset
+            if self.network == 'ssgan_convolutional_mnist':
                 model = MNISTConvCnn()
                 model.load_state_dict(torch.load('./output/networks/mnist_conv_cnn.pt'))
             else:
                 model = MNISTCnn()
                 model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
             compute_label_freqs = True
-        elif self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
+        elif self.dataset == 'mnist_fashion':
             model = MNISTCnn()
             model.load_state_dict(torch.load('./output/networks/fashion_mnist_cnn.pt'))
             compute_label_freqs = True
@@ -138,8 +140,7 @@ class FIDCalculator(ScoreCalculator):
 
             pred = model(batch)[0]
 
-            if self.cc.settings['dataloader']['dataset_name'] != 'mnist' \
-                and self.cc.settings['dataloader']['dataset_name'] != 'mnist_fashion':
+            if self.dataset != 'mnist' and self.dataset != 'mnist_fashion':
                 # If model output is not scalar, apply global spatial average pooling.
                 # This happens if you choose a dimensionality not equal 2048.
                 if pred.shape[2] != 1 or pred.shape[3] != 1:
@@ -252,12 +253,12 @@ class FIDCalculator(ScoreCalculator):
 
         for i in range(self.n_samples):
             img = dataset[i]
-            if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
-                if self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
+            if self.dataset == 'mnist':
+                if self.network == 'ssgan_convolutional_mnist':
                     img = img.view(-1, 64, 64)
                 else:
                     img = img.view(-1, 28, 28)
-            if self.cc.settings['dataloader']['dataset_name'] == 'mnist_fashion':
+            if self.dataset == 'mnist_fashion':
                 # Reshape to 2D images as required by MNISTCnn class
                 img = img.view(-1, 28, 28)
 

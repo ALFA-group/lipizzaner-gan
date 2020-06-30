@@ -153,24 +153,24 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             new_populations = {}
 
             # Create random dataset to evaluate fitness in each iterations
-            fitness_input, fitness_labels = self.generate_random_fitness_samples(self.fitness_sample_size)
+            fitness_samples, fitness_labels = self.generate_random_fitness_samples(self.fitness_sample_size)
             if self.cc.settings['dataloader']['dataset_name'] == 'celeba' \
                     or self.cc.settings['dataloader']['dataset_name'] == 'cifar' \
                     or self.cc.settings['network']['name'] == 'ssgan_convolutional_mnist':
-                fitness_input = to_pytorch_variable(fitness_input)
+                fitness_samples = to_pytorch_variable(fitness_samples)
                 fitness_labels = to_pytorch_variable(fitness_labels)
             elif self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
-                fitness_input = to_pytorch_variable(generate_random_sequences(self.fitness_sample_size))
+                fitness_samples = to_pytorch_variable(generate_random_sequences(self.fitness_sample_size))
             else:
-                fitness_input = to_pytorch_variable(fitness_input.view(self.fitness_sample_size, -1))
+                fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
                 fitness_labels = to_pytorch_variable(fitness_labels.view(self.fitness_sample_size, -1))
 
             fitness_labels = torch.squeeze(fitness_labels)
 
             # Fitness evaluation
             self._logger.debug('Evaluating fitness')
-            self.evaluate_fitness(all_generators, all_discriminators, fitness_input, self.fitness_mode)
-            self.evaluate_fitness(all_discriminators, all_generators, fitness_input,
+            self.evaluate_fitness(all_generators, all_discriminators, fitness_samples, self.fitness_mode)
+            self.evaluate_fitness(all_discriminators, all_generators, fitness_samples,
                                   self.fitness_mode, labels=fitness_labels,
                                   logger=self._logger, alpha=alpha, beta=beta,
                                   iter=iteration, log_class_distribution=True)
@@ -231,9 +231,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             # Replace the worst with the best new
             if self._enable_selection:
                 # Evaluate fitness of new_populations against neighborhood
-                self.evaluate_fitness(new_populations[TYPE_GENERATOR], all_discriminators, fitness_input,
+                self.evaluate_fitness(new_populations[TYPE_GENERATOR], all_discriminators, fitness_samples,
                                       self.fitness_mode)
-                self.evaluate_fitness(new_populations[TYPE_DISCRIMINATOR], all_generators, fitness_input,
+                self.evaluate_fitness(new_populations[TYPE_DISCRIMINATOR], all_generators, fitness_samples,
                                       self.fitness_mode, labels=fitness_labels, alpha=alpha, beta=beta, iter=iteration)
                 self.concurrent_populations.lock()
                 local_generators.replacement(new_populations[TYPE_GENERATOR], self._n_replacements, is_logging=True)
@@ -252,9 +252,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     individual.iteration = iteration + 1
             else:
                 # Re-evaluate fitness of local_generators and local_discriminators against neighborhood
-                self.evaluate_fitness(local_generators, all_discriminators, fitness_input, self.fitness_mode)
+                self.evaluate_fitness(local_generators, all_discriminators, fitness_samples, self.fitness_mode)
                 self.evaluate_fitness(local_discriminators, all_generators,
-                                      fitness_input, self.fitness_mode,
+                                      fitness_samples, self.fitness_mode,
                                       labels=fitness_labels, alpha=alpha, beta=beta, iter=iteration)
 
 
@@ -637,29 +637,29 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 input, labels = next(iterator)
                 return input, labels, iterator
 
-        sampled_input, sampled_labels, self.fitness_iterator = get_next_batch(
+        sampled_data, sampled_labels, self.fitness_iterator = get_next_batch(
             self.fitness_iterator, self.fitness_loaded)
-        batch_size = sampled_input.size(0)
+        batch_size = sampled_data.size(0)
 
         if fitness_sample_size < batch_size:
-            return sampled_input[:fitness_sample_size], sampled_labels[:fitness_sample_size]
+            return sampled_data[:fitness_sample_size], sampled_labels[:fitness_sample_size]
         else:
             fitness_sample_size -= batch_size
             while fitness_sample_size >= batch_size:
                 # Keep concatenate a full batch of data
-                curr_input, curr_labels, self.fitness_iterator = get_next_batch(
+                curr_data, curr_labels, self.fitness_iterator = get_next_batch(
                     self.fitness_iterator, self.fitness_loaded)
-                sampled_input = torch.cat((sampled_input, curr_input), 0)
+                sampled_data = torch.cat((sampled_data, curr_data), 0)
                 sampled_labels = torch.cat((sampled_labels, curr_labels), 0)
                 fitness_sample_size -= batch_size
 
             if fitness_sample_size > 0:
                 # Concatenate partial batch of data
-                curr_input, curr_labels, self.fitness_iterator = get_next_batch(
+                curr_data, curr_labels, self.fitness_iterator = get_next_batch(
                     self.fitness_iterator, self.fitness_loaded)
-                sampled_input = torch.cat(
-                    (sampled_input, curr_input[:fitness_sample_size]), 0)
+                sampled_data = torch.cat(
+                    (sampled_data, curr_data[:fitness_sample_size]), 0)
                 sampled_labels = torch.cat(
                     (sampled_labels, curr_labels[:fitness_sample_size]), 0)
 
-            return sampled_input, sampled_labels
+            return sampled_data, sampled_labels

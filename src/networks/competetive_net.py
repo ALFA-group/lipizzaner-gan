@@ -275,11 +275,11 @@ class SSDiscriminatorNet(DiscriminatorNet):
         self.mnist_28x28_conv = mnist_28x28_conv
 
         cc = ConfigurationContainer.instance()
-        self.in_mean = cc.settings['network'].get('in_mean', 0.0)
-        self.in_std = cc.settings['network'].get('in_std', 1e-10)
-        self.in_std_decay_rate = cc.settings['network'].get('in_std_decay_rate', 0.0)
-        self.in_std_min = cc.settings['network'].get('in_std_min', 1e-10)
-        self.in_fake_decay = cc.settings['network'].get('in_fake_decay', False)
+        self.instance_noise_mean = cc.settings['network'].get('in_mean', 0.0)
+        self.instance_noise_std_dev = cc.settings['network'].get('in_std', 1e-10)
+        self.instance_noise_std_decay_rate = cc.settings['network'].get('in_std_decay_rate', 0.0)
+        self.instance_noise_std_dev_min = cc.settings['network'].get('in_std_min', 1e-10)
+        self.instance_noise_fake_image_decay = cc.settings['network'].get('in_fake_decay', False)
         self.label_rate = cc.settings['dataloader'].get('label_rate', 1)
 
     @property
@@ -370,10 +370,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Adding instance noise to prevent Discriminator from getting too strong
         if iter is not None:
-            std = max(self.in_std_min, self.in_std - iter * self.in_std_decay_rate)
+            std = max(self.instance_noise_std_dev_min, self.instance_noise_std_dev - iter * self.instance_noise_std_decay_rate)
         else:
-            std = self.in_std
-        input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=self.in_mean, std=std))
+            std = self.instance_noise_std_dev
+        input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=self.instance_noise_mean, std=std))
         input = input + input_perturbation
 
         if self.mnist_28x28_conv:
@@ -415,12 +415,12 @@ class SSDiscriminatorNet(DiscriminatorNet):
         z = noise(batch_size, self.data_size)
         fake_images = opponent.net(z)
 
-        if self.in_fake_decay and iter is not None:
-            std = max(self.in_std_min, self.in_std - iter * self.in_std_decay_rate)
+        if self.instance_noise_fake_image_decay and iter is not None:
+            std = max(self.instance_noise_std_dev_min, self.instance_noise_std_dev - iter * self.instance_noise_std_decay_rate)
         else:
-            std = self.in_std
+            std = self.instance_noise_std_dev
         fake_image_perturbation = to_pytorch_variable(
-            torch.empty(fake_images.shape).normal_(mean=self.in_mean, std=std)
+            torch.empty(fake_images.shape).normal_(mean=self.instance_noise_mean, std=std)
         )
         fake_images = fake_images + fake_image_perturbation
 
