@@ -49,6 +49,9 @@ def main():
                     'cuda': cuda
                 }
             }
+        },
+        'dataloader': {
+            'label_rate': 0.01
         }
     }
 

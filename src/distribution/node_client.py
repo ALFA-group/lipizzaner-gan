@@ -178,7 +178,13 @@ class NodeClient:
 
     @staticmethod
     def _create_population(all_parameters, create_genome, population_type):
-        individuals = [Individual.decode(create_genome, parameters['parameters'],
+        individuals = []
+        for parameters in all_parameters:
+            if parameters and len(parameters) > 0:
+                individual = Individual.decode(create_genome, parameters['parameters'],
                                          source=parameters['source'])
-                       for parameters in all_parameters if parameters and len(parameters) > 0]
+                if hasattr(individual.genome, 'classification_layer'):
+                    individual.genome.encoded_classification_layer_parameters = \
+                        parameters['classification_layer_parameters']
+                individuals.append(individual)
         return Population(individuals, float('-inf'), population_type)
