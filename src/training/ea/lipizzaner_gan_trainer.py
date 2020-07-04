@@ -113,6 +113,12 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
     def train(self, n_iterations, stop_event=None):
         loaded = self.dataloader.load()
 
+        alpha = self.neighbourhood.alpha
+        beta = self.neighbourhood.beta
+        if alpha is not None:
+            self._logger.info(f'Alpha is {alpha} and Beta is {beta}')
+        else:
+            self._logger.debug('Alpha and Beta are not set')
 
         for iteration in range(n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
@@ -122,13 +128,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             all_discriminators = self.neighbourhood.all_discriminators
             local_generators = self.neighbourhood.local_generators
             local_discriminators = self.neighbourhood.local_discriminators
-
-            alpha = self.neighbourhood.alpha
-            beta = self.neighbourhood.beta
-            if alpha is not None:
-                self._logger.info(f'Alpha is {alpha} and Beta is {beta}')
-            else:
-                self._logger.debug('Alpha and Beta are not set')
 
             # Log the name of individuals in entire neighborhood and local individuals for every iteration
             # (to help tracing because individuals from adjacent cells might be from different iterations)
