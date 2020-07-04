@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 200
+  n_iterations: 150
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -8,7 +8,7 @@ trainer:
     population_size: 1
     tournament_size: 2
     n_replacements: 1
-    default_d_adam_learning_rate: 0.001
+    default_d_adam_learning_rate: 0.0007
     default_g_adam_learning_rate: 0.0003
     # Hyperparameter mutation
     alpha: 0.0001
