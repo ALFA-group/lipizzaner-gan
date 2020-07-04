@@ -429,7 +429,11 @@ class SSDiscriminatorNet(DiscriminatorNet):
         label_prediction_loss = self.loss_function(network_output, fake_unsupervised_labels)
         d_loss_unsupervised = d_loss_unsupervised + label_prediction_loss
 
-        return d_loss_supervised + d_loss_unsupervised, None, accuracy
+        if alpha is not None:
+            loss = alpha * d_loss_unsupervised + beta * d_loss_supervised
+        else:
+            loss = d_loss_unsupervised + d_loss_supervised
+        return loss, None, accuracy
 
 
 class SSGeneratorNet(GeneratorNet):
