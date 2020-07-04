@@ -1,12 +1,12 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 5
+  n_iterations: 200
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
   params:
     population_size: 1
-    tournament_size: 1
+    tournament_size: 2
     n_replacements: 1
     default_d_adam_learning_rate: 0.001
     default_g_adam_learning_rate: 0.0002
@@ -20,7 +20,7 @@ trainer:
       enabled: True
       type: fid
       score_sample_size: 1000
-      cuda: False
+      cuda: True
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
@@ -42,5 +42,5 @@ network:
 master:
   calculate_score: True
   score_sample_size: 50000
-  cuda: False
+  cuda: True
 general: !include general.yml
