@@ -255,7 +255,6 @@ def test_classifiers(args, cc):
     cc.settings['dataloader']['batch_size'] = 100
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
     test_loader = dataloader.load(train=False)
-    _logger.info(f"{len(test_loader)}")
 
     network_factory = cc.create_instance(cc.settings['network']['name'],
                                          dataloader.n_input_neurons,
@@ -294,7 +293,6 @@ def test_classifiers(args, cc):
     correct = 0
     _logger.info("Starting Majority Voting Process")
     i = 0
-    _logger.info(f"{view_shape}")
     with torch.no_grad():
         for data, target in test_loader:
             data, target = data.to(device), target.to(device)
