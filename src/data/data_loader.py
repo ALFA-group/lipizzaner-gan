@@ -30,6 +30,7 @@ class DataLoader(ABC):
         self.dataset = dataset
         self.cc = ConfigurationContainer.instance()
         settings = self.cc.settings['dataloader']
+        self.dataset_name = settings.get('dataset_name', use_batch)
         self.use_batch = settings.get('use_batch', use_batch)
         self.batch_size = settings.get('batch_size', batch_size)
         self.n_batches = settings.get('n_batches', n_batches)
@@ -42,7 +43,13 @@ class DataLoader(ABC):
         # Image processing
 
         # Dataset
-        dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
+        if dataset_name == 'svhn':
+            dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
+                                   split=train,
+                                   transform=self.transform(),
+                                   download=True)
+        else:
+            dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
                                train=train,
                                transform=self.transform(),
                                download=True)

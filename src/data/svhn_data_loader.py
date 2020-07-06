@@ -11,7 +11,7 @@ from helpers.pytorch_helpers import denorm
 
 from data.balanced_labels_batch_sampler import BalancedLabelsBatchSampler
 
-from src.helpers.pytorch_helpers import to_pytorch_variable
+from helpers.pytorch_helpers import to_pytorch_variable
 
 
 class SVHNDataLoader(DataLoader):
@@ -31,7 +31,7 @@ class SVHNDataLoader(DataLoader):
         label_rate = self.cc.settings['dataloader'].get('label_rate', None)
         dataset_type = 'train' if train else 'test'
         if label_rate is None:
-            return super().load(split=dataset_type)
+            return super().load(train=dataset_type)
         else:
             dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
                                    split=dataset_type,
