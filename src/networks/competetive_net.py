@@ -137,9 +137,9 @@ class GeneratorNet(CompetetiveNet):
 
 class DiscriminatorNet(CompetetiveNet):
 
-    def __init__(self, loss_function, net, data_size, optimize_bias=True, mnist_28x28_conv=False):
+    def __init__(self, loss_function, net, data_size, optimize_bias=True, disc_output_reshape=None):
         CompetetiveNet.__init__(self, loss_function, net, data_size, optimize_bias=optimize_bias)
-        self.mnist_28x28_conv = mnist_28x28_conv
+        self.disc_output_reshape = disc_output_reshape
 
     @property
     def name(self):
@@ -155,7 +155,7 @@ class DiscriminatorNet(CompetetiveNet):
             copy.deepcopy(self.net),
             self.data_size,
             self.optimize_bias,
-            mnist_28x28_conv=self.mnist_28x28_conv
+            disc_output_reshape=self.disc_output_reshape
         )
 
     def compute_loss_against(self, opponent, input, labels=None, alpha=None,
@@ -170,8 +170,8 @@ class DiscriminatorNet(CompetetiveNet):
         # Second term of the loss is always zero since real_labels == 1
         batch_size = input.size(0)
 
-        if self.mnist_28x28_conv:
-            input = input.view(-1, 1, 28, 28)
+        if self.disc_output_reshape is not None:
+            input = input.view(self.disc_output_reshape)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
         fake_labels = to_pytorch_variable(torch.zeros(batch_size))
@@ -268,11 +268,11 @@ class DiscriminatorNetSequential(CompetetiveNet):
 class SSDiscriminatorNet(DiscriminatorNet):
 
     def __init__(self, label_pred_loss, num_classes, net, classification_layer, data_size,
-                 optimize_bias=True, mnist_28x28_conv=False):
+                 optimize_bias=True, disc_output_reshape=None):
         DiscriminatorNet.__init__(self, label_pred_loss, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
         self.classification_layer = classification_layer.cuda() if is_cuda_enabled() else classification_layer
-        self.mnist_28x28_conv = mnist_28x28_conv
+        self.disc_output_reshape = disc_output_reshape
 
         cc = ConfigurationContainer.instance()
         self.instance_noise_mean = cc.settings['network'].get('in_mean', 0.0)
@@ -314,7 +314,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
             copy.deepcopy(self.classification_layer),
             self.data_size,
             self.optimize_bias,
-            mnist_28x28_conv=self.mnist_28x28_conv
+            disc_output_reshape=self.disc_output_reshape
         )
 
     def _get_labeled_mask(self, batch_size):
@@ -376,8 +376,8 @@ class SSDiscriminatorNet(DiscriminatorNet):
         input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=self.instance_noise_mean, std=std))
         input = input + input_perturbation
 
-        if self.mnist_28x28_conv:
-            input = input.view(-1, 1, 28, 28)
+        if self.disc_output_reshape is not None:
+            input = input.view(self.disc_output_reshape)
 
         network_output = self.classification_layer(self.net(input))
         network_output = network_output.view(batch_size, -1)
