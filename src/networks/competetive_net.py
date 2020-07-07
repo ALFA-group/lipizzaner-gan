@@ -477,6 +477,8 @@ class SSGeneratorNet(GeneratorNet):
             loss = bce_loss(fake_probabilities, fake)
         else:
             # Feature Matching
+            if opponent.disc_output_reshape is not None:
+                input = input.view(opponent.disc_output_reshape)
             real_data_moments = torch.mean(opponent.net(input), 0)
             fake_data_moments = torch.mean(network_output, 0)
 
