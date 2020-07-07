@@ -331,6 +331,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     data = data.view(-1, 784)
                 elif self.cc.settings['network']['name'] == 'ssgan_conv_mnist_28x28':
                     data = data.view(-1, 1, 28, 28)
+                elif self.cc.settings['network']['name'] == 'ssgan_svhn':
+                    data = data.view(-1, 3, 32, 32)
                 else:
                     if self.cc.settings['dataloader']['dataset_name'] == 'cifar':
                         data = data.view(-1, 3, 64, 64)
@@ -361,6 +363,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     data = data.view(-1, 784)
                 elif self.cc.settings['network']['name'] == 'ssgan_conv_mnist_28x28':
                     data = data.view(-1, 1, 28, 28)
+                elif self.cc.settings['network']['name'] == 'ssgan_svhn':
+                    data = data.view(-1, 3, 32, 32)
                 else:
                     if self.cc.settings['dataloader']['dataset_name'] == 'cifar':
                         data = data.view(-1, 3, 64, 64)

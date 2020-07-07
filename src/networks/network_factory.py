@@ -688,7 +688,9 @@ class SSGANPerceptronSVHNFactory(NetworkFactory):
                 nn.ConvTranspose2d(self.complexity, 3, 4, 2, 1),
                 nn.Tanh()
             ),
-            self.gen_input_size)
+            self.gen_input_size,
+            use_feature_matching=True
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -704,17 +706,31 @@ class SSGANPerceptronSVHNFactory(NetworkFactory):
             self.loss_function,
             self.num_classes,
             Sequential(
-                nn.Conv2d(3, self.complexity, 4, 2, 3),
+                nn.Conv2d(3, self.complexity, 3, 1, 1),
+                nn.Dropout2d(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(self.complexity, self.complexity * 2, 4, 2, 1),
+                nn.Conv2d(self.complexity, self.complexity * 2, 3, 2, 1),
                 nn.BatchNorm2d(self.complexity * 2),
+                nn.Dropout2d(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
-                nn.Conv2d(self.complexity * 2, self.complexity * 4, 4, 2, 1),
+                nn.Conv2d(self.complexity * 2, self.complexity * 2, 3, 1, 1),
+                nn.BatchNorm2d(self.complexity * 2),
+                nn.Dropout2d(0.1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 2, self.complexity * 4, 3, 2, 1),
                 nn.BatchNorm2d(self.complexity * 4),
+                nn.Dropout2d(0.1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 4, self.complexity * 4, 3, 1, 1),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.Dropout2d(0.1),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 4, self.complexity * 8, 3, 2, 1),
+                nn.BatchNorm2d(self.complexity * 8),
+                nn.Dropout2d(0.1),
                 nn.LeakyReLU(0.2, inplace=True),
             ),
-            Sequential(
-                nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
+            Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
             disc_output_reshape=(-1, 3, 32, 32)
         )
