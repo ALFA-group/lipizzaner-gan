@@ -22,6 +22,10 @@ class GaussianDataLoader(DataLoader):
     def n_input_neurons(self):
         return N_VALUES_PER_RECORD
 
+    @property
+    def num_classes(self):
+        return None
+
 
 class GaussianDataSet(Dataset):
 

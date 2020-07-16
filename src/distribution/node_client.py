@@ -158,7 +158,7 @@ class NodeClient:
 
     @staticmethod
     def _parse_individual(json, create_genome):
-        return Individual.decode(create_genome,
+        individual = Individual.decode(create_genome,
                                  json['parameters'],
                                  is_local=False,
                                  learning_rate=json['learning_rate'],
@@ -167,13 +167,24 @@ class NodeClient:
                                  id=json['id'],
                                  iteration=json.get('iteration', None))
 
+        if hasattr(individual.genome, 'classification_layer'):
+            individual.genome.encoded_classification_layer_parameters = json['classification_layer_parameters']
+
+        return individual
+
     @staticmethod
     def _is_json_valid(json):
         return json and json['parameters'] and len(json['parameters']) > 0
 
     @staticmethod
     def _create_population(all_parameters, create_genome, population_type):
-        individuals = [Individual.decode(create_genome, parameters['parameters'],
+        individuals = []
+        for parameters in all_parameters:
+            if parameters and len(parameters) > 0:
+                individual = Individual.decode(create_genome, parameters['parameters'],
                                          source=parameters['source'])
-                       for parameters in all_parameters if parameters and len(parameters) > 0]
+                if hasattr(individual.genome, 'classification_layer'):
+                    individual.genome.encoded_classification_layer_parameters = \
+                        parameters['classification_layer_parameters']
+                individuals.append(individual)
         return Population(individuals, float('-inf'), population_type)

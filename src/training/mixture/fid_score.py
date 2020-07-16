@@ -27,6 +27,7 @@ from torch.nn.functional import adaptive_avg_pool2d
 
 from helpers.configuration_container import ConfigurationContainer
 from training.mixture.fid_mnist import MNISTCnn
+from training.mixture.fid_mnist_conv import MNISTConvCnn
 from training.mixture.fid_inception import InceptionV3
 from training.mixture.score_calculator import ScoreCalculator
 
@@ -50,7 +51,9 @@ class FIDCalculator(ScoreCalculator):
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+        self.dataset = self.cc.settings['dataloader']['dataset_name']
+        self.network = self.cc.settings['network']['name']
+        if self.dataset == 'mnist' or self.dataset == 'mnist_fashion':
             self.dims = 10    # For MNIST the dimension of feature map is 10
         else:
             self.dims = dims
@@ -61,21 +64,34 @@ class FIDCalculator(ScoreCalculator):
 
         :param imgs: PyTorch dataset containing the generated images. (Could be both grey or RGB images)
         :param exact: Currently has no effect for FID.
+        :return: FID and TVD
         """
         model = None
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
+        if self.dataset == 'mnist':    # Gray dataset
+            if self.network == 'ssgan_convolutional_mnist':
+                model = MNISTConvCnn()
+                model.load_state_dict(torch.load('./output/networks/mnist_conv_cnn.pt'))
+            else:
+                model = MNISTCnn()
+                model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+            compute_label_freqs = True
+        elif self.dataset == 'mnist_fashion':
             model = MNISTCnn()
-            model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+            model.load_state_dict(torch.load('./output/networks/fashion_mnist_cnn.pt'))
+            compute_label_freqs = True
         else:    # Other RGB dataset
             block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
             model = InceptionV3([block_idx])
+            compute_label_freqs = False
 
         if self.cuda:
             model.cuda()
-        m1, s1 = self._compute_statistics_of_path(self.imgs_original, model)
-        m2, s2 = self._compute_statistics_of_path(imgs, model)
+        m1, s1, freq1 = self._compute_statistics_of_path(self.imgs_original, model, compute_label_freqs)
+        m2, s2, freq2 = self._compute_statistics_of_path(imgs, model, compute_label_freqs)
 
-        return abs(self.calculate_frechet_distance(m1, s1, m2, s2)), 0
+        tvd = 0.5 * sum(abs(f1 - f2) for f1, f2 in zip(freq1, freq2))
+
+        return abs(self.calculate_frechet_distance(m1, s1, m2, s2)), tvd
 
     def get_activations(self, images, model):
         """Calculates the activations of the pool_3 layer for all images.
@@ -124,7 +140,7 @@ class FIDCalculator(ScoreCalculator):
 
             pred = model(batch)[0]
 
-            if self.cc.settings['dataloader']['dataset_name'] != 'mnist':
+            if self.dataset != 'mnist' and self.dataset != 'mnist_fashion':
                 # If model output is not scalar, apply global spatial average pooling.
                 # This happens if you choose a dimensionality not equal 2048.
                 if pred.shape[2] != 1 or pred.shape[3] != 1:
@@ -197,8 +213,15 @@ class FIDCalculator(ScoreCalculator):
         return (diff.dot(diff) + np.trace(sigma1) +
                 np.trace(sigma2) - 2 * tr_covmean)
 
-    def calculate_activation_statistics(self, images, model):
-        """Calculation of the statistics used by the FID.
+    def get_frequencies_of_activations(self, activations):
+        frequencies = 10 * [0]
+        for ac in activations:
+            frequencies[list(ac).index(max(list(ac)))] += 1
+        frequencies = [f / len(activations) for f in frequencies]
+        return frequencies
+
+    def calculate_activation_statistics(self, images, model, compute_label_freqs=False):
+        """Calculation of the statistics used by the FID and TVD.
         Params:
         -- images      : Numpy array of dimension (n_images, 3, hi, wi). The values
                          must lie between 0 and 1.
@@ -219,21 +242,29 @@ class FIDCalculator(ScoreCalculator):
         act = self.get_activations(images, model)
         mu = np.mean(act, axis=0)
         sigma = np.cov(act, rowvar=False)
-        return mu, sigma
 
-    def _compute_statistics_of_path(self, dataset, model):
+        frequencies = self.get_frequencies_of_activations(act) if compute_label_freqs else []
+
+        return mu, sigma, frequencies
+
+    def _compute_statistics_of_path(self, dataset, model, compute_label_freqs=False):
         imgs = []
         assert len(dataset) >= self.n_samples, 'Cannot draw enough samples from dataset'
 
         for i in range(self.n_samples):
             img = dataset[i]
-            if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+            if self.dataset == 'mnist':
+                if self.network == 'ssgan_convolutional_mnist':
+                    img = img.view(-1, 64, 64)
+                else:
+                    img = img.view(-1, 28, 28)
+            if self.dataset == 'mnist_fashion':
                 # Reshape to 2D images as required by MNISTCnn class
                 img = img.view(-1, 28, 28)
 
             imgs.append(img)
 
-        return self.calculate_activation_statistics(imgs, model)
+        return self.calculate_activation_statistics(imgs, model, compute_label_freqs)
 
     @property
     def is_reversed(self):

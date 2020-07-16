@@ -30,19 +30,27 @@ class DataLoader(ABC):
         self.dataset = dataset
         self.cc = ConfigurationContainer.instance()
         settings = self.cc.settings['dataloader']
+        self.dataset_name = settings.get('dataset_name', use_batch)
         self.use_batch = settings.get('use_batch', use_batch)
         self.batch_size = settings.get('batch_size', batch_size)
         self.n_batches = settings.get('n_batches', n_batches)
         self.shuffle = settings.get('shuffle', shuffle)
         self.sampling_ratio = settings.get('sampling_ratio', sampling_ratio)
-        self.cell_number = self.cc.settings['general']['distribution']['client_id']
+        cell_settings = self.cc.settings['general']['distribution']
+        self.cell_number = cell_settings.get('client_id', 0)
 
-    def load(self):
+    def load(self, train=True):
         # Image processing
 
         # Dataset
-        dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
-                               train=True,
+        if dataset_name == 'svhn':
+            dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
+                                   split=train,
+                                   transform=self.transform(),
+                                   download=True)
+        else:
+            dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
+                               train=train,
                                transform=self.transform(),
                                download=True)
 
@@ -82,4 +90,9 @@ class DataLoader(ABC):
     @property
     @abstractmethod
     def n_input_neurons(self):
+        pass
+
+    @property
+    @abstractmethod
+    def num_classes(self):
         pass

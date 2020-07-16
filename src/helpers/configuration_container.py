@@ -12,10 +12,13 @@ class ConfigurationContainer:
     class_maps = {
         'bceloss': ('torch.nn', 'BCELoss'),
         'mseloss': ('torch.nn', 'MSELoss'),
+        'celoss': ('torch.nn', 'CrossEntropyLoss'),
         'heuristicloss': ('networks.customized_loss.heuristic_loss', 'HeuristicLoss'),
         'mustangs': ('networks.customized_loss.mustangs_loss', 'MustangsLoss'),
         'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
+        'mnist_fashion': ('data.mnist_fashion_data_loader', 'MNISTFashionDataLoader'),
         'cifar': ('data.cifar10_data_loader', 'CIFAR10DataLoader'),
+        'svhn': ('data.svhn_data_loader', 'SVHNDataLoader'),
         'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
         'network_traffic': ('data.network_data_loader', 'NetworkDataLoader'),
         'gaussian': ('data.gaussian_data_loader', 'GaussianDataLoader'),
@@ -29,6 +32,12 @@ class ConfigurationContainer:
         'alternating_ea': ('training.ea.alternating_ea_trainer', 'AlternatingEATrainer'),
         'parallel_ea': ('training.ea.parallel_ea_trainer', 'ParallelEATrainer'),
         'four_layer_perceptron': ('networks.network_factory', 'FourLayerPerceptronFactory'),
+        'conv_mnist_unsupervised': ('networks.network_factory', 'ConvolutionalMNISTUnsupervised'),
+        'ssgan_perceptron': ('networks.network_factory', 'SSGANFourLayerPerceptronFactory'),
+        'ssgan_svhn': ('networks.network_factory', 'SSGANPerceptronSVHNFactory'),
+        'ssgan_convolutional': ('networks.network_factory', 'SSGANConvolutionalNetworkFactory'),
+        'ssgan_convolutional_mnist': ('networks.network_factory', 'SSGANConvolutionalMNISTNetworkFactory'),
+        'ssgan_conv_mnist_28x28': ('networks.network_factory', 'SSGANConvMNIST28x28NetworkFactory'),
         'convolutional': ('networks.network_factory', 'ConvolutionalNetworkFactory'),
         'mooc_net': ('networks.mooc_net', 'MOOCFourLayerPerceptronFactory'),
         'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),
@@ -43,10 +52,10 @@ class ConfigurationContainer:
         self.settings = {}
         self._output_dir = None
 
-    def create_instance(self, name, *args):
+    def create_instance(self, name, *args, **kwargs):
         module_name, class_name = self.class_maps[name]
         cls = getattr(importlib.import_module(module_name), class_name)
-        return cls(*args)
+        return cls(*args, **kwargs)
 
     # Encapsulated properties for often used settings
     @property

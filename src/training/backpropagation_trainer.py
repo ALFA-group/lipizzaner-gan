@@ -56,7 +56,7 @@ class BackpropagationTrainer(NeuralNetworkTrainer):
                 d_optimizer.step()
 
                 # =============== Train the generator ===============#
-                g_loss, fake_images = generator.compute_loss_against(discriminator, images)
+                g_loss, fake_images, _ = generator.compute_loss_against(discriminator, images)
 
                 discriminator.net.zero_grad()
                 generator.net.zero_grad()

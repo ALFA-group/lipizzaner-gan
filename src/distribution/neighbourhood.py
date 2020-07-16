@@ -21,11 +21,23 @@ class Neighbourhood:
         self.concurrent_populations = ConcurrentPopulations.instance()
 
         dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
+        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
         self.node_client = NodeClient(network_factory)
 
         self.grid_size, self.grid_position, self.local_node = self._load_topology_details()
         self.cell_number = self._load_cell_number()
+
+        num_clients = self.cc.settings['general']['distribution'].get('num_clients', None)
+        self.alpha = None
+        self.beta = None
+        if num_clients is not None:
+            if num_clients == 1:
+                self.alpha = 0.5
+                self.beta = 0.5
+            else:
+                self.alpha = self.cell_number / (num_clients - 1)
+                self.beta = 1 - self.alpha
+
         self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]
 

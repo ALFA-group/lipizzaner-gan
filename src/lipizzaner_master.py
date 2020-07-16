@@ -49,6 +49,9 @@ class LipizzanerMaster:
             clients = self.cc.settings['general']['distribution']['client_nodes']
         accessible_clients = self._accessible_clients(clients)
 
+        # Set settings parameter to use Loss Function Based Diversity
+        self.cc.settings['general']['distribution']['num_clients'] = len(accessible_clients)
+
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
                                   .format(len(accessible_clients)))
@@ -161,7 +164,7 @@ class LipizzanerMaster:
 
         # Initialize node client
         dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
+        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
         node_client = NodeClient(network_factory)
         db_logger = DbLogger()
 
@@ -187,6 +190,11 @@ class LipizzanerMaster:
                     filename = '{}{}.pkl'.format(DISCRIMINATOR_PREFIX, source)
                     torch.save(discriminator.genome.net.state_dict(),
                                os.path.join(output_dir, filename))
+                    if 'ssgan' in self.cc.settings['network']['name']:
+                        filename = '{}{}_classification_layer.pkl'.format(DISCRIMINATOR_PREFIX,
+                                                     source)
+                        torch.save(discriminator.genome.classification_layer.state_dict(),
+                                   os.path.join(output_dir, filename))
 
                 # Save images
                 dataset = MixedGeneratorDataset(generator_pop,

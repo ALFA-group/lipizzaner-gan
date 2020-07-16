@@ -47,6 +47,10 @@ class NetworkDataLoader(DataLoader):
     def n_input_neurons(self):
         return N_VALUES_PER_RECORD
 
+    @property
+    def num_classes(self):
+        return None
+
     def create_copy(self):
         return NetworkDataLoader(use_batch = self.use_batch, batch_size = self.batch_size, n_batches = self.n_batches, shuffle = self.shuffle)
 

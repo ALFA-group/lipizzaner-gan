@@ -191,6 +191,9 @@ class ClientAPI:
         if individual.iteration is not None:
             json_response['iteration'] = individual.iteration
 
+        if hasattr(individual.genome, 'classification_layer'):
+            json_response['classification_layer_parameters'] = individual.genome.encoded_classification_layer_parameters
+
         return json_response
 
     @staticmethod

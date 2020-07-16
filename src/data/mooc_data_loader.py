@@ -16,6 +16,10 @@ class MOOCDataLoader(DataLoader):
     def n_input_neurons(self):
         return MOOCDataSet.N_DIMENSIONS_PER_EXEMPLAR
 
+    @property
+    def num_classes(self):
+        return None
+
     def save_images(self, images, shape, filename):
         filename = "{}.csv".format(os.path.splitext(filename)[0])
         np.savetxt(filename, images.data.numpy(), delimiter=',')

@@ -20,6 +20,10 @@ class CircularToyDataLoader(DataLoader):
     def n_input_neurons(self):
         return N_VALUES_PER_RECORD
 
+    @property
+    def num_classes(self):
+        return None
+
     def save_images(self, images, shape, filename):
         self.dataset().save_images(images, filename)
 
