@@ -43,7 +43,7 @@ class DataLoader(ABC):
         # Image processing
 
         # Dataset
-        if dataset_name == 'svhn':
+        if self.dataset_name == 'svhn':
             dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
                                    split=train,
                                    transform=self.transform(),

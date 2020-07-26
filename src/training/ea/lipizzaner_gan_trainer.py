@@ -29,7 +29,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                  n_replacements=1, sigma=0.25, alpha=0.25, default_adam_learning_rate=0.001, calc_mixture=False,
                  mixture_sigma=0.01, score_sample_size=10000, discriminator_skip_each_nth_step=0,
                  enable_selection=True, fitness_sample_size=10000, calculate_net_weights_dist=False,
-                 fitness_mode='worst',  es_generations=10, es_score_sample_size=10000, es_random_init=False,
+                 fitness_mode='worst', es_score_sample_size=10000, es_random_init=False,
                  checkpoint_period=0):
 
         super().__init__(dataloader, network_factory, population_size, tournament_size, mutation_probability,
@@ -80,34 +80,38 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             # TODO: Add code for safe implementation & error handling
             raise KeyError("Fitness section must be defined in configuration file")
 
-        if 'score' in self.settings and self.settings['score'].get('enabled', calc_mixture):
+        n_iterations = self.cc.settings['trainer'].get('n_iterations', 0)
+
+        if ('score' in self.settings and self.settings['score'].get('enabled', calc_mixture)) or \
+                'optimize_mixture' in self.settings:
             self.score_calc = ScoreCalculatorFactory.create()
             self.score_sample_size = self.settings['score'].get('sample_size', score_sample_size)
             self.score = float('inf') if self.score_calc.is_reversed else float('-inf')
             self.mixture_generator_samples_mode = self.cc.settings['trainer']['mixture_generator_samples_mode']
-        elif 'optimize_mixture' in self.settings:
-            self.score_calc = ScoreCalculatorFactory.create()
-            self.score = float('inf') if self.score_calc.is_reversed else float('-inf')
         else:
             self.score_sample_size = score_sample_size
             self.score_calc = None
             self.score = 0
 
         if 'optimize_mixture' in self.settings:
-            self.optimize_weights_at_the_end = True
+            self.optimize_weights_at_the_end = self.settings['optimize_mixture'].get('enabled', True)
             self.score_sample_size = self.settings['optimize_mixture'].get('sample_size', es_score_sample_size)
-            self.es_generations = self.settings['optimize_mixture'].get('es_generations', es_generations)
+            self.es_generations = self.settings['optimize_mixture'].get('es_generations', n_iterations)
             self.es_random_init = self.settings['optimize_mixture'].get('es_random_init', es_random_init)
             self.mixture_sigma = self.settings['optimize_mixture'].get('mixture_sigma', mixture_sigma)
             self.mixture_generator_samples_mode = self.cc.settings['trainer']['mixture_generator_samples_mode']
         else:
-            self.optimize_weights_at_the_end = False
+            self.optimize_weights_at_the_end = True
+            self.score_sample_size = es_score_sample_size
+            self.es_generations = n_iterations
+            self.es_random_init = es_random_init
+            self.mixture_sigma = mixture_sigma
+            self.mixture_generator_samples_mode = self.cc.settings['trainer']['mixture_generator_samples_mode']
 
-        n_iterations = self.cc.settings['trainer'].get('n_iterations', 0)
+
         assert 0 <= checkpoint_period <= n_iterations, 'Checkpoint period paramenter (checkpoint_period) should be ' \
                                                        'between 0 and the number of iterations (n_iterations).'
         self.checkpoint_period = self.cc.settings['general'].get('checkpoint_period', checkpoint_period)
-
 
 
     def train(self, n_iterations, stop_event=None):
@@ -256,10 +260,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                       fitness_samples, self.fitness_mode,
                                       labels=fitness_labels, alpha=alpha, beta=beta, iter=iteration)
 
-
-            # Mutate mixture weights after selection
-            if not self.optimize_weights_at_the_end:
-                self.mutate_mixture_weights_with_score(input_data)  # self.score is updated here
+            self.compute_mixture_generative_score()
 
             stop_time = time()
 
@@ -280,27 +281,26 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                      self.neighbourhood.cell_number, self.neighbourhood.grid_position)
 
 
-        discriminator = self.concurrent_populations.discriminator.individuals[0].genome
-
+        # Evaluate the discriminators when addressing Semi-supervised Learning
         if 'ssgan' in self.cc.settings['network']['name']:
+            discriminator = self.concurrent_populations.discriminator.individuals[0].genome
             batch_size = self.dataloader.batch_size
             dataloader_loaded = self.dataloader.load(train=True)
-            self.test(discriminator, dataloader_loaded, train=True)
+            self.test_accuracy_discriminators(discriminator, dataloader_loaded, train=True)
 
             self.dataloader.batch_size = 100
             dataloader_loaded = self.dataloader.load(train=False)
-            self.test(discriminator, dataloader_loaded, train=False)
+            self.test_accuracy_discriminators(discriminator, dataloader_loaded, train=False)
 
             discriminators = [individual.genome for individual in self.neighbourhood.all_discriminators.individuals]
 
             for model in discriminators:
                 dataloader_loaded = self.dataloader.load(train=False)
-                self.test(model, dataloader_loaded, train=False)
+                self.test_accuracy_discriminators(model, dataloader_loaded, train=False)
 
             dataloader_loaded = self.dataloader.load(train=False)
-            self.test_majority_voting(discriminators, dataloader_loaded, train=False)
+            self.test_majority_voting_discriminators(discriminators, dataloader_loaded, train=False)
             self.dataloader.batch_size = batch_size
-
 
         if self.optimize_weights_at_the_end:
             self.optimize_generator_mixture_weights()
@@ -317,10 +317,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                            self.score, stop_time - start_time,
                                            path_real_images, path_fake_images)
 
-
         return self.result()
 
-    def test_majority_voting(self, models, test_loader, train=False):
+    def test_majority_voting_discriminators(self, models, test_loader, train=False):
         correct = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         train_or_test = 'Train' if train else 'Test'
@@ -352,7 +351,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         accuracy = 100.0 * float(correct / num_samples)
         self._logger.info(f'Majority Voting {train_or_test} Accuracy: {correct}/{num_samples} ({accuracy}%)')
 
-    def test(self, model, test_loader, train=False):
+    def test_accuracy_discriminators(self, model, test_loader, train=False):
         correct = 0
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         train_or_test = 'Train' if train else 'Test'
@@ -365,11 +364,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     data = data.view(-1, 1, 28, 28)
                 elif self.cc.settings['network']['name'] == 'ssgan_svhn':
                     data = data.view(-1, 3, 32, 32)
+                elif self.cc.settings['dataloader']['dataset_name'] == 'cifar':
+                    data = data.view(-1, 3, 64, 64)
                 else:
-                    if self.cc.settings['dataloader']['dataset_name'] == 'cifar':
-                        data = data.view(-1, 3, 64, 64)
-                    else:
-                        data = data.view(-1, 1, 64, 64)
+                    data = data.view(-1, 1, 64, 64)
                 output = model.classification_layer(model.net(data))
                 output = output.view(-1, 11)
                 pred = output.argmax(dim=1, keepdim=True)
@@ -567,59 +565,18 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     f"Iteration {iter},  Label Prediction Accuracy: {100 * accuracy}% "
                 )
 
-
-    def mutate_mixture_weights_with_score(self, input_data):
+    def compute_mixture_generative_score(self):
         # Not necessary for single-cell grids, as mixture must always be [1]
-        if self.neighbourhood.grid_size == 1:
-            if self.score_calc is not None:
-                self._logger.info('Calculating FID/inception score.')
-                best_generators = self.neighbourhood.best_generators
+        self._logger.info('Calculating score.')
+        best_generators = self.neighbourhood.best_generators
 
+        if True or self.neighbourhood.grid_size == 1:
+            if self.score_calc is not None:
                 dataset = MixedGeneratorDataset(best_generators,
                                                 self.neighbourhood.mixture_weights_generators,
                                                 self.score_sample_size,
                                                 self.cc.settings['trainer']['mixture_generator_samples_mode'])
                 self.score = self.score_calc.calculate(dataset)[0]
-        else:
-            # Mutate mixture weights
-            z = np.random.normal(loc=0, scale=self.mixture_sigma,
-                                 size=len(self.neighbourhood.mixture_weights_generators))
-            transformed = np.asarray([value for _, value in self.neighbourhood.mixture_weights_generators.items()])
-            transformed += z
-            # Don't allow negative values, normalize to sum of 1.0
-            transformed = np.clip(transformed, 0, None)
-            transformed /= np.sum(transformed)
-
-            new_mixture_weights_generators = OrderedDict(
-                zip(self.neighbourhood.mixture_weights_generators.keys(), transformed))
-
-            best_generators = self.neighbourhood.best_generators
-            dataset_before_mutation = MixedGeneratorDataset(best_generators,
-                                                            self.neighbourhood.mixture_weights_generators,
-                                                            self.score_sample_size,
-                                                            self.cc.settings['trainer'][
-                                                                'mixture_generator_samples_mode'])
-            dataset_after_mutation = MixedGeneratorDataset(best_generators,
-                                                           new_mixture_weights_generators,
-                                                           self.score_sample_size,
-                                                           self.cc.settings['trainer'][
-                                                               'mixture_generator_samples_mode'])
-
-            if self.score_calc is not None:
-                self._logger.info('Calculating FID/inception score.')
-
-                score_before_mutation = self.score_calc.calculate(dataset_before_mutation)[0]
-                score_after_mutation = self.score_calc.calculate(dataset_after_mutation)[0]
-
-                # For fid the lower the better, for inception_score, the higher the better
-                if (score_after_mutation < score_before_mutation and self.score_calc.is_reversed) \
-                        or (score_after_mutation > score_before_mutation and (not self.score_calc.is_reversed)):
-                    # Adopt the mutated mixture_weights only if the performance after mutation is better
-                    self.neighbourhood.mixture_weights_generators = new_mixture_weights_generators
-                    self.score = score_after_mutation
-                else:
-                    # Do not adopt the mutated mixture_weights here
-                    self.score = score_before_mutation
 
     def generate_random_fitness_samples(self, fitness_sample_size):
         """

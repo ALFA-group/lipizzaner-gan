@@ -42,8 +42,7 @@ class SVHNDataLoader(DataLoader):
             for _, label in dataset:
                 labels_list.append(label)
 
-            # Create a dictionary from labels to all their indices in the
-            # dataset
+            # Create a dictionary from labels to all their indices in the dataset
             labels = to_pytorch_variable(torch.LongTensor(labels_list))
             min_count = min(labels.bincount(minlength=self.num_classes)).item()
 

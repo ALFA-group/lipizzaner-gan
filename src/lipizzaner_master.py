@@ -201,7 +201,11 @@ class LipizzanerMaster:
                                                 weights_generator,
                                                 self.cc.settings['master']['score_sample_size'],
                                                 self.cc.settings['trainer']['mixture_generator_samples_mode'])
-                image_paths = self.save_samples(dataset, output_dir, dataloader)
+
+                if 'gaussian_' in self.cc.settings['dataloader']['dataset_name']:
+                    image_paths = self.save_samples(dataset, output_dir, dataloader, 100000, 10000)
+                else:
+                    image_paths = self.save_samples(dataset, output_dir, dataloader)
                 self._logger.info('Saved mixture result images of client {} to target directory {}.'
                                   .format(node_name, output_dir))
 

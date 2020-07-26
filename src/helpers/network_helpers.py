@@ -11,9 +11,10 @@ from contextlib import closing
 
 def primary_nic_info():
     # Works on docker containers
-    if 'eth0' in ni.interfaces():
-        return ni.ifaddresses('eth0')[ni.AF_INET][0]
-
+    if 'eth0' in ni.interfaces() and ni.AF_INET in ni.ifaddresses('eth0'):
+            return ni.ifaddresses('eth0')[ni.AF_INET][0]
+    elif 'lo' in ni.interfaces() and ni.AF_INET in ni.ifaddresses('lo'):
+            return ni.ifaddresses('lo')[ni.AF_INET][0]
     # Fallback if eth0 does not exist.
     # Not the primary way, because docker's overlay network is not the default gateway
     else:

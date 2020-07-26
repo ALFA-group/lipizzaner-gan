@@ -47,6 +47,7 @@ class NeuralNetworkTrainer(ABC):
         # Save max. 128 images unless configured otherwise
         sample_count = self.cc.settings['dataloader'].get('sample_count', False)
         batch_size = sample_count if sample_count else min(batch_size, 128)
+        batch_size = 10000 if 'gaussian_' in self.cc.settings['dataloader']['dataset_name'] else batch_size
 
         image_format = self.cc.settings['general']['logging']['image_format']
 
