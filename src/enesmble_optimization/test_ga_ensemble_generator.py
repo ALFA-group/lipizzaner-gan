@@ -24,7 +24,7 @@ if len(sys.argv) < 7:
     )
     print("\t <evolutionary approach>: reo-gen or nreo-gen")
     print("\t <fitness metric>: tvd or fid")
-    sys.exit(-1)
+    sys.exit()
 
 evolutionary_approach = sys.argv[1]
 fitness_metric = sys.argv[2]

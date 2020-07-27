@@ -24,7 +24,7 @@ if len(sys.argv) < 4:
     )
     print("\t <greedy mode>: iterative or random")
 
-    sys.exit(-1)
+    sys.exit()
 
 mode = sys.argv[1]
 ensemble_max_size = int(sys.argv[2])
