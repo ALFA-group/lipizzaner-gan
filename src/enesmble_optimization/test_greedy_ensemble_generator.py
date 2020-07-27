@@ -23,25 +23,23 @@ if len(sys.argv) < 4:
         "<max iterations without improvements> [<output file>]"
     )
     print("\t <greedy mode>: iterative or random")
+else:
+    mode = sys.argv[1]
+    ensemble_max_size = int(sys.argv[2])
+    max_time_without_improvements = int(sys.argv[3])
+    output_file = sys.argv[4] if len(sys.argv) == 5 else ""
 
-    sys.exit()
+    dataset = "mnist"
+    precision = 10
+    greedy = GreedyEnsembleGenerator(
+        dataset,
+        ensemble_max_size,
+        precision,
+        max_time_without_improvements,
+        generators_prefix="mnist-generator",
+        generators_path="./mnist-generators/",
+        mode=mode,
+        output_file=output_file,
+    )
 
-mode = sys.argv[1]
-ensemble_max_size = int(sys.argv[2])
-max_time_without_improvements = int(sys.argv[3])
-output_file = sys.argv[4] if len(sys.argv) == 5 else ""
-
-dataset = "mnist"
-precision = 10
-greedy = GreedyEnsembleGenerator(
-    dataset,
-    ensemble_max_size,
-    precision,
-    max_time_without_improvements,
-    generators_prefix="mnist-generator",
-    generators_path="./mnist-generators/",
-    mode=mode,
-    output_file=output_file,
-)
-
-greedy.create_ensemble()
+    greedy.create_ensemble()

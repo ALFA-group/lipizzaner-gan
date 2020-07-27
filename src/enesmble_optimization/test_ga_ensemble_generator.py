@@ -24,39 +24,36 @@ if len(sys.argv) < 7:
     )
     print("\t <evolutionary approach>: reo-gen or nreo-gen")
     print("\t <fitness metric>: tvd or fid")
-    sys.exit()
+else:
+    evolutionary_approach = sys.argv[1]
+    fitness_metric = sys.argv[2]
+    crossover_probability = float(sys.argv[3])
+    mutation_probability = float(sys.argv[4])
+    number_of_fitness_evaluations = int(sys.argv[5])
+    population_size = int(sys.argv[6])
+    output_file = sys.argv[7] if len(sys.argv) == 8 else ""
 
-evolutionary_approach = sys.argv[1]
-fitness_metric = sys.argv[2]
-crossover_probability = float(sys.argv[3])
-mutation_probability = float(sys.argv[4])
-number_of_fitness_evaluations = int(sys.argv[5])
-population_size = int(sys.argv[6])
-output_file = sys.argv[7] if len(sys.argv) == 8 else ""
+    generators_path = "./mnist-generators/"
+    generators_prefix = "mnist-generator"
+    number_of_generations = 0
+    dataset = "mnist"
+    show_info_iteration = 2
+    min_ensemble_size, max_ensemble_size = 5, 7
+    ga = GAEnsembleGenerator(
+        dataset,
+        min_ensemble_size,
+        max_ensemble_size,
+        generators_path,
+        generators_prefix,
+        fitness_metric,
+        evolutionary_approach,
+        population_size,
+        number_of_generations,
+        number_of_fitness_evaluations,
+        mutation_probability,
+        crossover_probability,
+        show_info_iteration,
+        output_file,
+    )
 
-
-generators_path = "./mnist-generators/"
-generators_prefix = "mnist-generator"
-number_of_generations = 0
-dataset = "mnist"
-show_info_iteration = 2
-min_ensemble_size, max_ensemble_size = 5, 7
-ga = GAEnsembleGenerator(
-    dataset,
-    min_ensemble_size,
-    max_ensemble_size,
-    generators_path,
-    generators_prefix,
-    fitness_metric,
-    evolutionary_approach,
-    population_size,
-    number_of_generations,
-    number_of_fitness_evaluations,
-    mutation_probability,
-    crossover_probability,
-    show_info_iteration,
-    output_file,
-)
-
-
-ga.evolutionary_loop()
+    ga.evolutionary_loop()
