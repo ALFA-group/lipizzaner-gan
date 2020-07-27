@@ -1,5 +1,6 @@
 numpy==1.14.2
-https://download.pytorch.org/whl/cu92/torch-0.4.1-cp36-cp36m-linux_x86_64.whl ; sys_platform == 'linux'
+#https://download.pytorch.org/whl/cu92/torch-0.4.1-cp36-cp36m-linux_x86_64.whl ; sys_platform == 'linux'
+http://download.pytorch.org/whl/cu90/torch-0.3.1-cp36-cp36m-linux_x86_64.whl ; sys_platform == 'linux'
 http://download.pytorch.org/whl/torch-0.3.1-cp35-cp35m-macosx_10_6_x86_64.whl ; sys_platform == 'darwin'
 torchvision==0.2.0
 losswise==2.0
