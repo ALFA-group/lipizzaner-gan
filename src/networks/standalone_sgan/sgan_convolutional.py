@@ -14,24 +14,38 @@ import time
 from networks.standalone_sgan.score_factory import ScoreCalculatorFactory
 
 directory_or_file_name = int(time.time() * 1000)
-logging.basicConfig(filename=f'networks/standalone_sgan/logs/log{directory_or_file_name}.log',
-                    level=logging.DEBUG,
-                    format='%(asctime)s %(message)s')
+logging.basicConfig(
+    filename=f"networks/standalone_sgan/logs/log{directory_or_file_name}.log",
+    level=logging.DEBUG,
+    format="%(asctime)s %(message)s",
+)
 os.makedirs("networks/standalone_sgan/images", exist_ok=True)
-os.makedirs(f"networks/standalone_sgan/images/output/{directory_or_file_name}", exist_ok=True)
+os.makedirs(
+    f"networks/standalone_sgan/images/output/{directory_or_file_name}", exist_ok=True,
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
 parser.add_argument("--batch_size", type=int, default=100, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
-parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
-parser.add_argument("--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=100, help="dimensionality of the latent space")
+parser.add_argument(
+    "--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient",
+)
+parser.add_argument(
+    "--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient",
+)
+parser.add_argument(
+    "--n_cpu", type=int, default=8, help="number of cpu threads to use during batch generation",
+)
+parser.add_argument(
+    "--latent_dim", type=int, default=100, help="dimensionality of the latent space",
+)
 parser.add_argument("--num_classes", type=int, default=10, help="number of classes for dataset")
 parser.add_argument("--img_size", type=int, default=28, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=1, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
+parser.add_argument(
+    "--sample_interval", type=int, default=400, help="interval between image sampling",
+)
 opt = parser.parse_args()
 
 cuda = True if torch.cuda.is_available() else False
@@ -61,7 +75,7 @@ class Generator(nn.Module):
             nn.BatchNorm2d(self.complexity),
             nn.ReLU(True),
             nn.ConvTranspose2d(self.complexity, 3, 4, 2, 1),
-            nn.Tanh()
+            nn.Tanh(),
         )
 
     def forward(self, noise):
@@ -89,15 +103,9 @@ class Discriminator(nn.Module):
 
         # Output layers
 
-        self.adv_layer = nn.Sequential(
-                            nn.Conv2d(self.complexity * 8, 1, 4, 1, 0),
-                            nn.Sigmoid()
-                        )
+        self.adv_layer = nn.Sequential(nn.Conv2d(self.complexity * 8, 1, 4, 1, 0), nn.Sigmoid())
 
-        self.aux_layer = nn.Sequential(
-            nn.Conv2d(self.complexity * 8, opt.num_classes + 1, 4, 1, 0),
-            nn.Softmax()
-        )
+        self.aux_layer = nn.Sequential(nn.Conv2d(self.complexity * 8, opt.num_classes + 1, 4, 1, 0), nn.Softmax(),)
 
     def forward(self, img):
         out = self.conv_blocks(img)
@@ -120,8 +128,7 @@ def noise(batch_size, data_size):
     """
     Returns a variable with the dimensions (batch_size, data_size containing gaussian noise
     """
-    shape = (batch_size,) + data_size if isinstance(data_size, tuple) else (
-        batch_size, data_size)
+    shape = (batch_size,) + data_size if isinstance(data_size, tuple) else (batch_size, data_size)
     return to_pytorch_variable(torch.randn(shape))
 
 
@@ -155,26 +162,14 @@ def load():
 
     # Dataset
     dataset = datasets.CIFAR10(
-        root=os.path.join('./networks/standalone_sgan/images'),
-        train=True,
-        transform=transform(),
-        download=True)
-    return torch.utils.data.DataLoader(dataset=dataset,
-                                       batch_size=opt.batch_size,
-                                       shuffle=True,
-                                       num_workers=0)
+        root=os.path.join("./networks/standalone_sgan/images"), train=True, transform=transform(), download=True,
+    )
+    return torch.utils.data.DataLoader(dataset=dataset, batch_size=opt.batch_size, shuffle=True, num_workers=0)
 
 
 def transform():
     return transforms.Compose(
-        [
-            transforms.Resize(64),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                (0.5, 0.5, 0.5),
-                (0.5, 0.5, 0.5)
-            )
-        ]
+        [transforms.Resize(64), transforms.ToTensor(), transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),]
     )
 
 
@@ -262,15 +257,29 @@ for epoch in range(opt.n_epochs):
 
         print(
             "[Epoch %d/%d] [Batch %d/%d] [D loss: %f, acc_class: %d%%, acc_real: %d%%, acc_fake: %d%%] [G loss: %f]"
-            % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), 100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc), g_loss.item())
+            % (
+                epoch,
+                opt.n_epochs,
+                i,
+                len(dataloader),
+                d_loss.item(),
+                100 * d_acc,
+                100 * real_acc,
+                100 * (1 - fake_acc),
+                g_loss.item(),
+            )
         )
 
-    save_images(Variable(gen_imgs), (1, 28, 28), f"networks/standalone_sgan/images/output/{directory_or_file_name}/{epoch}.png")
-    logging.info("[Epoch %d/%d] [D loss: %f, acc_class: %d%%, acc_real: %d%%, acc_fake: %d%%] [G loss: %f]"
-                 % (epoch, opt.n_epochs, d_loss.item(), 100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc), g_loss.item()))
+    save_images(
+        Variable(gen_imgs), (1, 28, 28), f"networks/standalone_sgan/images/output/{directory_or_file_name}/{epoch}.png",
+    )
+    logging.info(
+        "[Epoch %d/%d] [D loss: %f, acc_class: %d%%, acc_real: %d%%, acc_fake: %d%%] [G loss: %f]"
+        % (epoch, opt.n_epochs, d_loss.item(), 100 * d_acc, 100 * real_acc, 100 * (1 - fake_acc), g_loss.item(),)
+    )
 
-    score = float('-inf')
+    score = float("-inf")
     calc = ScoreCalculatorFactory.create()
-    logging.info('Score calculator: {}'.format(type(calc).__name__))
+    logging.info("Score calculator: {}".format(type(calc).__name__))
     score = calc.calculate(gen_imgs)
     logging.info(f"Score: ({score[0]}, {score[1]})")

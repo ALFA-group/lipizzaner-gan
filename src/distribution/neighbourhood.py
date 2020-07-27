@@ -15,19 +15,20 @@ from helpers.singleton import Singleton
 
 @Singleton
 class Neighbourhood:
-
     def __init__(self):
         self.cc = ConfigurationContainer.instance()
         self.concurrent_populations = ConcurrentPopulations.instance()
 
-        dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
+        dataloader = self.cc.create_instance(self.cc.settings["dataloader"]["dataset_name"])
+        network_factory = self.cc.create_instance(
+            self.cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
+        )
         self.node_client = NodeClient(network_factory)
 
-        self.grid_size, self.grid_position, self.local_node = self._load_topology_details()
+        (self.grid_size, self.grid_position, self.local_node,) = self._load_topology_details()
         self.cell_number = self._load_cell_number()
 
-        num_clients = self.cc.settings['general']['distribution'].get('num_clients', None)
+        num_clients = self.cc.settings["general"]["distribution"].get("num_clients", None)
         self.alpha = None
         self.beta = None
         if num_clients is not None:
@@ -42,8 +43,10 @@ class Neighbourhood:
         self.all_nodes = self.neighbours + [self.local_node]
 
         self.mixture_weights_generators = self._init_mixture_weights()
-        if self.cc.settings['trainer']['name'] == 'with_disc_mixture_wgan' \
-            or self.cc.settings['trainer']['name'] == 'with_disc_mixture_gan':
+        if (
+            self.cc.settings["trainer"]["name"] == "with_disc_mixture_wgan"
+            or self.cc.settings["trainer"]["name"] == "with_disc_mixture_gan"
+        ):
             self.mixture_weights_discriminators = self._init_mixture_weights()
         else:
             self.mixture_weights_discriminators = None
@@ -63,9 +66,11 @@ class Neighbourhood:
         neighbour_individuals = self.node_client.get_all_generators(self.neighbours)
         local_population = self.local_generators
 
-        return Population(individuals=neighbour_individuals + local_population.individuals,
-                          default_fitness=local_population.default_fitness,
-                          population_type=TYPE_GENERATOR)
+        return Population(
+            individuals=neighbour_individuals + local_population.individuals,
+            default_fitness=local_population.default_fitness,
+            population_type=TYPE_GENERATOR,
+        )
 
     @property
     def best_generators(self):
@@ -73,30 +78,34 @@ class Neighbourhood:
         local_population = self.local_generators
         best_local_individual = sorted(local_population.individuals, key=lambda x: x.fitness)[0]
 
-        return Population(individuals=best_neighbour_individuals + [best_local_individual],
-                          default_fitness=local_population.default_fitness,
-                          population_type=TYPE_GENERATOR)
+        return Population(
+            individuals=best_neighbour_individuals + [best_local_individual],
+            default_fitness=local_population.default_fitness,
+            population_type=TYPE_GENERATOR,
+        )
 
     @property
     def all_discriminators(self):
         neighbour_individuals = self.node_client.get_all_discriminators(self.neighbours)
         local_population = self.local_discriminators
 
-        return Population(individuals=neighbour_individuals + local_population.individuals,
-                          default_fitness=local_population.default_fitness,
-                          population_type=TYPE_DISCRIMINATOR)
+        return Population(
+            individuals=neighbour_individuals + local_population.individuals,
+            default_fitness=local_population.default_fitness,
+            population_type=TYPE_DISCRIMINATOR,
+        )
 
     @property
     def all_generator_parameters(self):
         neighbour_generators = self.node_client.load_generators_from_api(self.neighbours)
         local_parameters = [i.genome.encoded_parameters for i in self.local_generators.individuals]
-        return local_parameters + [n['parameters'] for n in neighbour_generators]
+        return local_parameters + [n["parameters"] for n in neighbour_generators]
 
     @property
     def all_discriminator_parameters(self):
         neighbour_discriminators = self.node_client.load_discriminators_from_api(self.neighbours)
         local_parameters = [i.genome.encoded_parameters for i in self.local_discriminators.individuals]
-        return local_parameters + [n['parameters'] for n in neighbour_discriminators]
+        return local_parameters + [n["parameters"] for n in neighbour_discriminators]
 
     @property
     def best_generator_parameters(self):
@@ -110,11 +119,12 @@ class Neighbourhood:
         client_nodes = self._all_nodes_on_grid()
 
         if len(client_nodes) != 1 and not is_square(len(client_nodes)):
-            raise Exception('Provide either one client node, or a square number of cells (to create a square grid).')
+            raise Exception("Provide either one client node, or a square number of cells (to create a square grid).")
 
         local_port = ClientEnvironment.port
-        matching_nodes = [node for node in client_nodes if
-                          is_local_host(node['address']) and int(node['port']) == local_port]
+        matching_nodes = [
+            node for node in client_nodes if is_local_host(node["address"]) and int(node["port"]) == local_port
+        ]
 
         if len(matching_nodes) == 1:
             dim = int(round(sqrt(len(client_nodes))))
@@ -123,8 +133,10 @@ class Neighbourhood:
             y = idx // dim
             return len(client_nodes), (x, y), matching_nodes[0]
         else:
-            raise Exception('This host is not specified as client in the configuration file, '
-                            'or too many clients match the condition.')
+            raise Exception(
+                "This host is not specified as client in the configuration file, "
+                "or too many clients match the condition."
+            )
 
     def _load_cell_number(self):
         x, y = self.grid_position
@@ -136,7 +148,7 @@ class Neighbourhood:
 
         nodes = self._all_nodes_on_grid()
         for node in nodes:
-            node['id'] = '{}:{}'.format(node['address'], node['port'])
+            node["id"] = "{}:{}".format(node["address"], node["port"])
 
         dim = int(round(sqrt(len(nodes))))
         x, y = self.grid_position
@@ -156,18 +168,18 @@ class Neighbourhood:
         return nodes[mask == 1].tolist()
 
     def _all_nodes_on_grid(self):
-        nodes = self.cc.settings['general']['distribution']['client_nodes']
+        nodes = self.cc.settings["general"]["distribution"]["client_nodes"]
         for node in nodes:
-            node['id'] = '{}:{}'.format(node['address'], node['port'])
+            node["id"] = "{}:{}".format(node["address"], node["port"])
         return nodes
 
     def _set_source(self, population):
         for individual in population.individuals:
-            individual.source = '{}:{}'.format(self.local_node['address'], self.local_node['port'])
+            individual.source = "{}:{}".format(self.local_node["address"], self.local_node["port"])
         return population
 
     def _init_mixture_weights(self):
-        node_ids = [node['id'] for node in self.all_nodes]
+        node_ids = [node["id"] for node in self.all_nodes]
         default_weight = 1 / len(node_ids)
         # Warning: Feature of order preservation in Dict is used in the mixture_weight
         #          initialized here because further code involves converting it to list

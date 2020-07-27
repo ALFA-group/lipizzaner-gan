@@ -9,7 +9,13 @@ from torch.nn.utils.weight_norm import WeightNorm
 from helpers.configuration_container import ConfigurationContainer
 
 from distribution.state_encoder import StateEncoder
-from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_splits, noise
+from helpers.pytorch_helpers import (
+    to_pytorch_variable,
+    is_cuda_enabled,
+    size_splits,
+    noise,
+)
+
 
 class CompetetiveNet(ABC):
     def __init__(self, loss_function, net, data_size, optimize_bias=True):
@@ -18,30 +24,32 @@ class CompetetiveNet(ABC):
         self.optimize_bias = optimize_bias
         self._logger = logging.getLogger(__name__)
         self.loss_function = loss_function
-        if self.loss_function.__class__.__name__ == 'MustangsLoss':
+        if self.loss_function.__class__.__name__ == "MustangsLoss":
             self.loss_function.set_network_name(self.name)
 
         try:
-            self.n_weights = np.sum([l.weight.numel() for l in self.net if hasattr(l, 'weight')])
+            self.n_weights = np.sum([layer.weight.numel() for layer in self.net if hasattr(layer, "weight")])
             # Calculate split positions; cumulative sum needed because split() expects positions, not chunk sizes
-            self.split_positions_weights = [l.weight.numel() for l in self.net if hasattr(l, 'weight')]
+            self.split_positions_weights = [layer.weight.numel() for layer in self.net if hasattr(layer, "weight")]
 
             if optimize_bias:
-                self.split_positions_biases = [l.bias.numel() for l in self.net if hasattr(l, 'bias')]
+                self.split_positions_biases = [layer.bias.numel() for layer in self.net if hasattr(layer, "bias")]
         except Exception as e:
             print(e)
 
     @abstractmethod
-    def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, log_class_distribution=False):
+    def compute_loss_against(
+        self, opponent, input, labels=None, alpha=None, beta=None, iter=None, log_class_distribution=False,
+    ):
         """
         :return: (computed_loss, output_data -> (optional), accuracy(s) -> (optional))
         """
         pass
 
     def clone(self):
-        return eval(self.__class__.__name__)(self.loss_function, copy.deepcopy(self.net),
-                                             self.data_size, self.optimize_bias)
+        return eval(self.__class__.__name__)(
+            self.loss_function, copy.deepcopy(self.net), self.data_size, self.optimize_bias,
+        )
 
     @property
     @abstractmethod
@@ -72,9 +80,11 @@ class CompetetiveNet(ABC):
         """
         :return: 1d-ndarray[nr_of_layers * (nr_of_weights_per_layer + nr_of_biases_per_layer)]
         """
-        weights = torch.cat([l.weight.data.view(l.weight.numel()) for l in self.net if hasattr(l, 'weight')])
+        weights = torch.cat(
+            [layer.weight.data.view(layer.weight.numel()) for layer in self.net if hasattr(layer, "weight")]
+        )
         if self.optimize_bias:
-            biases = torch.cat([l.bias.data for l in self.net if hasattr(l, 'bias')])
+            biases = torch.cat([layer.bias.data for layer in self.net if hasattr(layer, "bias")])
             return torch.cat((weights, biases))
         else:
             return weights
@@ -92,13 +102,13 @@ class CompetetiveNet(ABC):
 
         # Update weights
         layered_weights = size_splits(weights, self.split_positions_weights)
-        for i, layer in enumerate([l for l in self.net if hasattr(l, 'weight')]):
+        for i, layer in enumerate([layerr for layerr in self.net if hasattr(layerr, "weight")]):
             self._update_layer_field(layered_weights[i], layer.weight)
 
         # Update biases
         if self.optimize_bias:
             layered_biases = size_splits(biases, self.split_positions_biases)
-            for i, layer in enumerate([l for l in self.net if hasattr(l, 'bias')]):
+            for i, layer in enumerate([layerr for layerr in self.net if hasattr(layerr, "bias")]):
                 self._update_layer_field(layered_biases[i], layer.bias)
 
     @staticmethod
@@ -114,14 +124,15 @@ class CompetetiveNet(ABC):
 class GeneratorNet(CompetetiveNet):
     @property
     def name(self):
-        return 'Generator'
+        return "Generator"
 
     @property
     def default_fitness(self):
-        return float('-inf')
+        return float("-inf")
 
-    def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, log_class_distribution=False):
+    def compute_loss_against(
+        self, opponent, input, labels=None, alpha=None, beta=None, iter=None, log_class_distribution=False,
+    ):
         batch_size = input.size(0)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
@@ -134,20 +145,20 @@ class GeneratorNet(CompetetiveNet):
         return self.loss_function(outputs, real_labels), fake_images, None
 
 
-
 class DiscriminatorNet(CompetetiveNet):
-
-    def __init__(self, loss_function, net, data_size, optimize_bias=True, disc_output_reshape=None):
+    def __init__(
+        self, loss_function, net, data_size, optimize_bias=True, disc_output_reshape=None,
+    ):
         CompetetiveNet.__init__(self, loss_function, net, data_size, optimize_bias=optimize_bias)
         self.disc_output_reshape = disc_output_reshape
 
     @property
     def name(self):
-        return 'Discriminator'
+        return "Discriminator"
 
     @property
     def default_fitness(self):
-        return float('-inf')
+        return float("-inf")
 
     def clone(self):
         return DiscriminatorNet(
@@ -155,15 +166,16 @@ class DiscriminatorNet(CompetetiveNet):
             copy.deepcopy(self.net),
             self.data_size,
             self.optimize_bias,
-            disc_output_reshape=self.disc_output_reshape
+            disc_output_reshape=self.disc_output_reshape,
         )
 
-    def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, log_class_distribution=False):
+    def compute_loss_against(
+        self, opponent, input, labels=None, alpha=None, beta=None, iter=None, log_class_distribution=False,
+    ):
 
         # If HeuristicLoss is applied in the Generator, the Discriminator applies BCELoss
-        if self.loss_function.__class__.__name__ == 'MustangsLoss':
-            if 'HeuristicLoss' in self.loss_function.get_applied_loss_name():
+        if self.loss_function.__class__.__name__ == "MustangsLoss":
+            if "HeuristicLoss" in self.loss_function.get_applied_loss_name():
                 self.loss_function.set_applied_loss(torch.nn.BCELoss())
 
         # Compute loss using real images
@@ -192,18 +204,17 @@ class DiscriminatorNet(CompetetiveNet):
 class GeneratorNetSequential(CompetetiveNet):
     @property
     def name(self):
-        return 'GeneratorSequential'
+        return "GeneratorSequential"
 
     @property
     def default_fitness(self):
-        return float('-inf')
+        return float("-inf")
 
-    def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, log_class_distribution=False):
+    def compute_loss_against(
+        self, opponent, input, labels=None, alpha=None, beta=None, iter=None, log_class_distribution=False,
+    ):
         batch_size = input.size(0)
         sequence_length = input.size(1)
-        num_inputs = input.size(2)
-        # batch_size = input.shape[0]
 
         # Define differently based on whether we're evaluating entire sequences as true or false, vs. individual messages.
         real_labels = to_pytorch_variable(torch.ones(batch_size))
@@ -211,7 +222,7 @@ class GeneratorNetSequential(CompetetiveNet):
         z = noise(batch_size, self.data_size)
 
         # Repeats the noise to match the shape
-        new_z = z.unsqueeze(1).repeat(1,sequence_length,1)
+        new_z = z.unsqueeze(1).repeat(1, sequence_length, 1)
         fake_sequences = self.net(new_z)
 
         outputs_intermediate = opponent.net(fake_sequences)
@@ -226,20 +237,20 @@ class GeneratorNetSequential(CompetetiveNet):
 class DiscriminatorNetSequential(CompetetiveNet):
     @property
     def name(self):
-        return 'DiscriminatorSequential'
+        return "DiscriminatorSequential"
 
     @property
     def default_fitness(self):
-        return float('-inf')
+        return float("-inf")
 
-    def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, log_class_distribution=False):
+    def compute_loss_against(
+        self, opponent, input, labels=None, alpha=None, beta=None, iter=None, log_class_distribution=False,
+    ):
         # Compute BCE_Loss using real images where BCE_Loss(x, y): - y * log(D(x)) - (1-y) * log(1 - D(x))
         # Second term of the loss is always zero since real_labels == 1
 
         batch_size = input.size(0)
         sequence_length = input.size(1)
-        num_inputs = input.size(2)
 
         real_labels = to_pytorch_variable(torch.ones(batch_size))
         fake_labels = to_pytorch_variable(torch.zeros(batch_size))
@@ -253,7 +264,7 @@ class DiscriminatorNetSequential(CompetetiveNet):
         # Compute BCELoss using fake images
         # First term of the loss is always zero since fake_labels == 0
         z = noise(batch_size, self.data_size)
-        new_z = z.unsqueeze(1).repeat(1,sequence_length,1)
+        new_z = z.unsqueeze(1).repeat(1, sequence_length, 1)
 
         fake_images = opponent.net(new_z)
         outputs_full = self.net(fake_images)
@@ -266,29 +277,36 @@ class DiscriminatorNetSequential(CompetetiveNet):
 
 
 class SSDiscriminatorNet(DiscriminatorNet):
-
-    def __init__(self, label_pred_loss, num_classes, net, classification_layer, data_size,
-                 optimize_bias=True, disc_output_reshape=None):
+    def __init__(
+        self,
+        label_pred_loss,
+        num_classes,
+        net,
+        classification_layer,
+        data_size,
+        optimize_bias=True,
+        disc_output_reshape=None,
+    ):
         DiscriminatorNet.__init__(self, label_pred_loss, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
         self.classification_layer = classification_layer.cuda() if is_cuda_enabled() else classification_layer
         self.disc_output_reshape = disc_output_reshape
 
         cc = ConfigurationContainer.instance()
-        self.instance_noise_mean = cc.settings['network'].get('in_mean', 0.0)
-        self.instance_noise_std_dev = cc.settings['network'].get('in_std', 1e-10)
-        self.instance_noise_std_decay_rate = cc.settings['network'].get('in_std_decay_rate', 0.0)
-        self.instance_noise_std_dev_min = cc.settings['network'].get('in_std_min', 1e-10)
-        self.instance_noise_fake_image_decay = cc.settings['network'].get('in_fake_decay', False)
-        self.label_rate = cc.settings['dataloader'].get('label_rate', 1)
+        self.instance_noise_mean = cc.settings["network"].get("in_mean", 0.0)
+        self.instance_noise_std_dev = cc.settings["network"].get("in_std", 1e-10)
+        self.instance_noise_std_decay_rate = cc.settings["network"].get("in_std_decay_rate", 0.0)
+        self.instance_noise_std_dev_min = cc.settings["network"].get("in_std_min", 1e-10)
+        self.instance_noise_fake_image_decay = cc.settings["network"].get("in_fake_decay", False)
+        self.label_rate = cc.settings["dataloader"].get("label_rate", 1)
 
     @property
     def name(self):
-        return 'SemiSupervisedDiscriminator'
+        return "SemiSupervisedDiscriminator"
 
     @property
     def default_fitness(self):
-        return float('-inf')
+        return float("-inf")
 
     @property
     def encoded_classification_layer_parameters(self):
@@ -314,7 +332,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
             copy.deepcopy(self.classification_layer),
             self.data_size,
             self.optimize_bias,
-            disc_output_reshape=self.disc_output_reshape
+            disc_output_reshape=self.disc_output_reshape,
         )
 
     def _get_labeled_mask(self, batch_size):
@@ -323,24 +341,18 @@ class SSDiscriminatorNet(DiscriminatorNet):
         label_mask[range(label_count)] = 1.0
         return label_mask
 
-    def _log_classification_distribution(self, ground_truth, label_mask, labels,
-                                         num_usable_labels, pred_labels):
+    def _log_classification_distribution(self, ground_truth, label_mask, labels, num_usable_labels, pred_labels):
         frequencies = labels.bincount(minlength=self.num_classes).float()
         frequencies[frequencies == 0.0] = 1e-10
         frequencies = frequencies.data.cpu().numpy()
         usable_labels = label_mask * labels.float()
 
-        label_data_per_class = usable_labels.long().bincount(
-            minlength=self.num_classes
-        )
+        label_data_per_class = usable_labels.long().bincount(minlength=self.num_classes)
         label_data_per_class[0] = num_usable_labels - label_data_per_class[1:].sum()
         predicted_frequencies = np.bincount(
-            pred_labels[np.where(pred_labels == ground_truth)],
-            minlength=self.num_classes
+            pred_labels[np.where(pred_labels == ground_truth)], minlength=self.num_classes,
         )
-        classification_rate_per_class = torch.from_numpy(
-            predicted_frequencies * 100.0 / frequencies
-        )
+        classification_rate_per_class = torch.from_numpy(predicted_frequencies * 100.0 / frequencies)
 
         labels = to_pytorch_variable(torch.tensor([i for i in range(0, self.num_classes)]))
         statistics = zip(labels, label_data_per_class, classification_rate_per_class)
@@ -350,8 +362,9 @@ class SSDiscriminatorNet(DiscriminatorNet):
             stats += f"\n{label}, {label_data}, {classification_rate}"
         self._logger.info(stats)
 
-    def compute_loss_against(self, opponent, input, labels=None, alpha=None,
-                             beta=None, iter=None, log_class_distribution=False):
+    def compute_loss_against(
+        self, opponent, input, labels=None, alpha=None, beta=None, iter=None, log_class_distribution=False,
+    ):
         batch_size = input.size(0)
         tensor = torch.Tensor(batch_size)
         tensor.fill_(self.num_classes)
@@ -370,10 +383,15 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         # Adding instance noise to prevent Discriminator from getting too strong
         if iter is not None:
-            std = max(self.instance_noise_std_dev_min, self.instance_noise_std_dev - iter * self.instance_noise_std_decay_rate)
+            std = max(
+                self.instance_noise_std_dev_min,
+                self.instance_noise_std_dev - iter * self.instance_noise_std_decay_rate,
+            )
         else:
             std = self.instance_noise_std_dev
-        input_perturbation = to_pytorch_variable(torch.empty(input.shape).normal_(mean=self.instance_noise_mean, std=std))
+        input_perturbation = to_pytorch_variable(
+            torch.empty(input.shape).normal_(mean=self.instance_noise_mean, std=std)
+        )
         input = input + input_perturbation
 
         if self.disc_output_reshape is not None:
@@ -383,7 +401,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
         network_output = network_output.view(batch_size, -1)
 
         # Real Supervised Loss
-        supervised_loss_function = CrossEntropyLoss(reduction='none')
+        supervised_loss_function = CrossEntropyLoss(reduction="none")
         supervised_loss = supervised_loss_function(network_output, labels)
         num_usable_labels = torch.sum(label_mask)
         _logger = logging.getLogger(__name__)
@@ -408,7 +426,7 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
         if log_class_distribution:
             self._log_classification_distribution(
-                ground_truth, label_mask, labels, num_usable_labels.long(), predicted_labels
+                ground_truth, label_mask, labels, num_usable_labels.long(), predicted_labels,
             )
 
         # Fake Unsupervised Loss
@@ -416,7 +434,10 @@ class SSDiscriminatorNet(DiscriminatorNet):
         fake_images = opponent.net(z)
 
         if self.instance_noise_fake_image_decay and iter is not None:
-            std = max(self.instance_noise_std_dev_min, self.instance_noise_std_dev - iter * self.instance_noise_std_decay_rate)
+            std = max(
+                self.instance_noise_std_dev_min,
+                self.instance_noise_std_dev - iter * self.instance_noise_std_decay_rate,
+            )
         else:
             std = self.instance_noise_std_dev
         fake_image_perturbation = to_pytorch_variable(
@@ -437,28 +458,37 @@ class SSDiscriminatorNet(DiscriminatorNet):
 
 
 class SSGeneratorNet(GeneratorNet):
-
-    def __init__(self, loss_function, num_classes, net, data_size,
-                 optimize_bias=True, use_feature_matching=False):
+    def __init__(
+        self, loss_function, num_classes, net, data_size, optimize_bias=True, use_feature_matching=False,
+    ):
         GeneratorNet.__init__(self, loss_function, net, data_size, optimize_bias=optimize_bias)
         self.num_classes = num_classes
         self.use_feature_matching = use_feature_matching
 
     @property
     def name(self):
-        return 'SemiSupervisedGenerator'
+        return "SemiSupervisedGenerator"
 
     def clone(self):
-        return SSGeneratorNet(self.loss_function,
-                              self.num_classes,
-                              copy.deepcopy(self.net),
-                              self.data_size,
-                              self.optimize_bias,
-                              use_feature_matching=self.use_feature_matching)
+        return SSGeneratorNet(
+            self.loss_function,
+            self.num_classes,
+            copy.deepcopy(self.net),
+            self.data_size,
+            self.optimize_bias,
+            use_feature_matching=self.use_feature_matching,
+        )
 
-    def compute_loss_against(self, opponent: SSDiscriminatorNet, input,
-                             labels=None, alpha=None, beta=None, iter=None,
-                             log_class_distribution=False):
+    def compute_loss_against(
+        self,
+        opponent: SSDiscriminatorNet,
+        input,
+        labels=None,
+        alpha=None,
+        beta=None,
+        iter=None,
+        log_class_distribution=False,
+    ):
         batch_size = input.size(0)
 
         z = noise(batch_size, self.data_size)

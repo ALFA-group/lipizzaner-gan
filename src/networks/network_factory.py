@@ -13,11 +13,11 @@ from networks.competetive_net import (
     GeneratorNetSequential,
     DiscriminatorNetSequential,
     SSDiscriminatorNet,
-    SSGeneratorNet
+    SSGeneratorNet,
 )
 
-class NetworkFactory(ABC):
 
+class NetworkFactory(ABC):
     def __init__(self, input_data_size, num_classes=None, loss_function=None):
         """
         :param loss_function: The loss function computing the network error, e.g. BCELoss. Read from config if not set.
@@ -26,14 +26,13 @@ class NetworkFactory(ABC):
         """
         cc = ConfigurationContainer.instance()
         if loss_function is None:
-            self.loss_function = cc.create_instance(cc.settings['network']['loss'])
+            self.loss_function = cc.create_instance(cc.settings["network"]["loss"])
         else:
             self.loss_function = loss_function
 
         self.input_data_size = input_data_size
 
         self.num_classes = num_classes
-
 
     @abstractmethod
     def create_generator(self, parameters=None):
@@ -62,6 +61,7 @@ class NetworkFactory(ABC):
     def gen_input_size(self):
         pass
 
+
 class RNNFactory(NetworkFactory):
     @property
     def gen_input_size(self):
@@ -71,7 +71,7 @@ class RNNFactory(NetworkFactory):
         net = GeneratorNetSequential(
             self.loss_function,
             SimpleRNN(self.gen_input_size, self.input_data_size, self.gen_input_size),
-            self.gen_input_size
+            self.gen_input_size,
         )
 
         if parameters is not None:
@@ -83,9 +83,7 @@ class RNNFactory(NetworkFactory):
 
     def create_discriminator(self, parameters=None, encoded_parameters=None):
         net = DiscriminatorNetSequential(
-            self.loss_function,
-            SimpleRNN(self.input_data_size, 1, self.gen_input_size),
-            self.gen_input_size
+            self.loss_function, SimpleRNN(self.input_data_size, 1, self.gen_input_size), self.gen_input_size,
         )
 
         if parameters is not None:
@@ -95,8 +93,8 @@ class RNNFactory(NetworkFactory):
 
         return net
 
-class CircularProblemFactory(NetworkFactory):
 
+class CircularProblemFactory(NetworkFactory):
     @property
     def gen_input_size(self):
         return 256
@@ -109,8 +107,10 @@ class CircularProblemFactory(NetworkFactory):
                 nn.Tanh(),
                 nn.Linear(128, 128),
                 nn.Tanh(),
-                nn.Linear(128, self.input_data_size)
-            ), self.gen_input_size)
+                nn.Linear(128, self.input_data_size),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -128,8 +128,10 @@ class CircularProblemFactory(NetworkFactory):
                 nn.Linear(128, 128),
                 nn.Tanh(),
                 nn.Linear(128, 1),
-                nn.Sigmoid()),
-            self.gen_input_size)
+                nn.Sigmoid(),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -140,7 +142,6 @@ class CircularProblemFactory(NetworkFactory):
 
 
 class FourLayerPerceptronFactory(NetworkFactory):
-
     @property
     def gen_input_size(self):
         return 64
@@ -155,7 +156,10 @@ class FourLayerPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 256),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, self.input_data_size),
-                nn.Tanh()), self.gen_input_size)
+                nn.Tanh(),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -174,7 +178,10 @@ class FourLayerPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 256),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 1),
-                nn.Sigmoid()), self.gen_input_size)
+                nn.Sigmoid(),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -209,9 +216,10 @@ class ConvolutionalNetworkFactory(NetworkFactory):
                 nn.BatchNorm2d(self.complexity),
                 nn.ReLU(True),
                 nn.ConvTranspose2d(self.complexity, 3, 4, 2, 1),
-                nn.Tanh()
+                nn.Tanh(),
             ),
-            self.gen_input_size)
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -238,9 +246,10 @@ class ConvolutionalNetworkFactory(NetworkFactory):
                 nn.BatchNorm2d(self.complexity * 8),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 8, 1, 4, 1, 0),
-                nn.Sigmoid()
+                nn.Sigmoid(),
             ),
-            self.gen_input_size)
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -282,7 +291,7 @@ class SimpleRNN(nn.Module):
         hidden = None
         for step in range(steps):
             # Get only one step of the function
-            input = inputs[:,step,:].unsqueeze(1)
+            input = inputs[:, step, :].unsqueeze(1)
 
             # Go through inp layer
             intermediate = self.inp(input.float())
@@ -321,9 +330,10 @@ class ConvolutionalMNISTUnsupervised(NetworkFactory):
                 nn.BatchNorm2d(self.complexity),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.ConvTranspose2d(self.complexity, 1, 4, 2, 3),
-                nn.Tanh()
+                nn.Tanh(),
             ),
-            self.gen_input_size)
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -347,10 +357,10 @@ class ConvolutionalMNISTUnsupervised(NetworkFactory):
                 nn.BatchNorm2d(self.complexity * 4),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 4, 1, 4, 1, 0),
-                nn.Sigmoid()
+                nn.Sigmoid(),
             ),
             self.gen_input_size,
-            disc_output_reshape=(-1, 1, 28, 28)
+            disc_output_reshape=(-1, 1, 28, 28),
         )
 
         if parameters is not None:
@@ -370,7 +380,6 @@ class ConvolutionalMNISTUnsupervised(NetworkFactory):
 
 
 class SSGANFourLayerPerceptronFactory(NetworkFactory):
-
     @property
     def gen_input_size(self):
         return 128
@@ -387,7 +396,10 @@ class SSGANFourLayerPerceptronFactory(NetworkFactory):
                 nn.Dropout(0.1),
                 nn.LeakyReLU(0.2),
                 nn.Linear(512, self.input_data_size),
-                nn.Tanh()), self.gen_input_size)
+                nn.Tanh(),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -409,7 +421,7 @@ class SSGANFourLayerPerceptronFactory(NetworkFactory):
                 nn.Dropout(0.1),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 512),
-                nn.LeakyReLU(0.2)
+                nn.LeakyReLU(0.2),
             ),
             Sequential(nn.Linear(512, self.num_classes + 1)),
             self.gen_input_size,
@@ -449,10 +461,10 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
                 nn.BatchNorm2d(self.complexity),
                 nn.ReLU(True),
                 nn.ConvTranspose2d(self.complexity, 3, 4, 2, 1),
-                nn.Tanh()
+                nn.Tanh(),
             ),
             self.gen_input_size,
-            use_feature_matching=True
+            use_feature_matching=True,
         )
 
         if parameters is not None:
@@ -516,6 +528,7 @@ class SSGANConvolutionalNetworkFactory(NetworkFactory):
             m.weight.data.normal_(0, 0.02)
             m.bias.data.zero_()
 
+
 class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
 
     complexity = 128
@@ -542,9 +555,10 @@ class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
                 nn.BatchNorm2d(self.complexity),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.ConvTranspose2d(self.complexity, 1, 4, 2, 1),
-                nn.Tanh()
+                nn.Tanh(),
             ),
-            self.gen_input_size)
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -573,7 +587,7 @@ class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.Conv2d(self.complexity * 4, self.complexity * 8, 4, 2, 1),
                 nn.BatchNorm2d(self.complexity * 8),
-                nn.LeakyReLU(0.2, inplace=True)
+                nn.LeakyReLU(0.2, inplace=True),
             ),
             Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
@@ -593,6 +607,7 @@ class SSGANConvolutionalMNISTNetworkFactory(NetworkFactory):
         if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
             m.weight.data.normal_(0, 0.02)
             m.bias.data.zero_()
+
 
 class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
 
@@ -617,9 +632,10 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
                 nn.BatchNorm2d(self.complexity),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.ConvTranspose2d(self.complexity, 1, 4, 2, 3),
-                nn.Tanh()
+                nn.Tanh(),
             ),
-            self.gen_input_size)
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -646,7 +662,7 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
             ),
             Sequential(nn.Conv2d(self.complexity * 4, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
-            disc_output_reshape=(-1, 1, 28, 28)
+            disc_output_reshape=(-1, 1, 28, 28),
         )
 
         if parameters is not None:
@@ -663,6 +679,7 @@ class SSGANConvMNIST28x28NetworkFactory(NetworkFactory):
         if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
             m.weight.data.normal_(0, 0.02)
             m.bias.data.zero_()
+
 
 class SSGANPerceptronSVHNFactory(NetworkFactory):
     complexity = 128
@@ -686,10 +703,10 @@ class SSGANPerceptronSVHNFactory(NetworkFactory):
                 nn.BatchNorm2d(self.complexity),
                 nn.LeakyReLU(0.2, inplace=True),
                 nn.ConvTranspose2d(self.complexity, 3, 4, 2, 1),
-                nn.Tanh()
+                nn.Tanh(),
             ),
             self.gen_input_size,
-            use_feature_matching=True
+            use_feature_matching=True,
         )
 
         if parameters is not None:
@@ -732,7 +749,7 @@ class SSGANPerceptronSVHNFactory(NetworkFactory):
             ),
             Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
-            disc_output_reshape=(-1, 3, 32, 32)
+            disc_output_reshape=(-1, 3, 32, 32),
         )
 
         if parameters is not None:

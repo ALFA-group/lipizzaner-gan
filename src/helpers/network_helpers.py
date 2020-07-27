@@ -8,41 +8,44 @@ from netaddr import IPNetwork
 from contextlib import closing
 
 
-
 def primary_nic_info():
     # Works on docker containers
-    if 'eth0' in ni.interfaces() and ni.AF_INET in ni.ifaddresses('eth0'):
-            return ni.ifaddresses('eth0')[ni.AF_INET][0]
-    elif 'lo' in ni.interfaces() and ni.AF_INET in ni.ifaddresses('lo'):
-            return ni.ifaddresses('lo')[ni.AF_INET][0]
+    if "eth0" in ni.interfaces() and ni.AF_INET in ni.ifaddresses("eth0"):
+        return ni.ifaddresses("eth0")[ni.AF_INET][0]
+    elif "lo" in ni.interfaces() and ni.AF_INET in ni.ifaddresses("lo"):
+        return ni.ifaddresses("lo")[ni.AF_INET][0]
     # Fallback if eth0 does not exist.
     # Not the primary way, because docker's overlay network is not the default gateway
     else:
-        nic = ni.gateways()['default'][ni.AF_INET][1]
+        nic = ni.gateways()["default"][ni.AF_INET][1]
         return ni.ifaddresses(nic)[ni.AF_INET][0]
 
 
 def local_private_ip():
-    return primary_nic_info()['addr']
+    return primary_nic_info()["addr"]
 
 
 def local_public_ip():
     # Some servers like AWS have both public and private IP addresses
     try:
-        return get('https://api.ipify.org').text
+        return get("https://api.ipify.org").text
     except:
         return None
 
 
 def local_submask():
-    return primary_nic_info()['netmask']
+    return primary_nic_info()["netmask"]
 
 
 def is_local_host(address):
     # For servers like AWS, public IP is required for communciation between
     # different instances
-    return address == 'localhost' or address == '127.0.0.1' \
-            or address == local_private_ip() or address == local_public_ip()
+    return (
+        address == "localhost"
+        or address == "127.0.0.1"
+        or address == local_private_ip()
+        or address == local_public_ip()
+    )
 
 
 def is_port_open(port):
@@ -59,7 +62,7 @@ def is_port_open(port):
 
 def get_network_devices(pool_size=255):
     def pinger(job_q, results_q):
-        dev_null = open(os.devnull, 'w')
+        dev_null = open(os.devnull, "w")
         while True:
             ip = job_q.get()
 
@@ -67,15 +70,14 @@ def get_network_devices(pool_size=255):
                 break
 
             try:
-                subprocess.check_call(['ping', '-c1', ip],
-                                      stdout=dev_null)
+                subprocess.check_call(["ping", "-c1", ip], stdout=dev_null)
                 results_q.put(ip)
             except Exception:
                 pass
 
     ip_list = list()
 
-    network = '{}/{}'.format(local_private_ip(), local_submask())
+    network = "{}/{}".format(local_private_ip(), local_submask())
 
     # prepare the jobs queue
     jobs = multiprocessing.Queue()

@@ -10,40 +10,40 @@ import importlib
 @Singleton
 class ConfigurationContainer:
     class_maps = {
-        'bceloss': ('torch.nn', 'BCELoss'),
-        'mseloss': ('torch.nn', 'MSELoss'),
-        'celoss': ('torch.nn', 'CrossEntropyLoss'),
-        'heuristicloss': ('networks.customized_loss.heuristic_loss', 'HeuristicLoss'),
-        'mustangs': ('networks.customized_loss.mustangs_loss', 'MustangsLoss'),
-        'mnist': ('data.mnist_data_loader', 'MNISTDataLoader'),
-        'mnist_fashion': ('data.mnist_fashion_data_loader', 'MNISTFashionDataLoader'),
-        'cifar': ('data.cifar10_data_loader', 'CIFAR10DataLoader'),
-        'svhn': ('data.svhn_data_loader', 'SVHNDataLoader'),
-        'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
-        'network_traffic': ('data.network_data_loader', 'NetworkDataLoader'),
-        'gaussian': ('data.gaussian_data_loader', 'GaussianDataLoader'),
-        'gaussian_circle': ('data.gaussian_2d_data_loader', 'CircularToyDataLoader'),
-        'gaussian_grid': ('data.gaussian_2d_data_loader', 'GridToyDataLoader'),
-        'mooc': ('data.mooc_data_loader', 'MOOCDataLoader'),
-        'mooc_file': ('data.mooc_data_loader', 'MOOCFileDataLoader'),
-        'backprop': ('training.backpropagation_trainer', 'BackpropagationTrainer'),
-        'sequential_nes': ('training.nes.sequential_nes_trainer', 'SequentialNESTrainer'),
-        'parallel_nes': ('training.nes.parallel_nes_trainer', 'ParallelNESTrainer'),
-        'alternating_ea': ('training.ea.alternating_ea_trainer', 'AlternatingEATrainer'),
-        'parallel_ea': ('training.ea.parallel_ea_trainer', 'ParallelEATrainer'),
-        'four_layer_perceptron': ('networks.network_factory', 'FourLayerPerceptronFactory'),
-        'conv_mnist_unsupervised': ('networks.network_factory', 'ConvolutionalMNISTUnsupervised'),
-        'ssgan_perceptron': ('networks.network_factory', 'SSGANFourLayerPerceptronFactory'),
-        'ssgan_svhn': ('networks.network_factory', 'SSGANPerceptronSVHNFactory'),
-        'ssgan_convolutional': ('networks.network_factory', 'SSGANConvolutionalNetworkFactory'),
-        'ssgan_convolutional_mnist': ('networks.network_factory', 'SSGANConvolutionalMNISTNetworkFactory'),
-        'ssgan_conv_mnist_28x28': ('networks.network_factory', 'SSGANConvMNIST28x28NetworkFactory'),
-        'convolutional': ('networks.network_factory', 'ConvolutionalNetworkFactory'),
-        'mooc_net': ('networks.mooc_net', 'MOOCFourLayerPerceptronFactory'),
-        'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),
-        'rnn': ('networks.network_factory', 'RNNFactory'),
-        'lipizzaner_gan': ('training.ea.lipizzaner_gan_trainer', 'LipizzanerGANTrainer'),
-        'lipizzaner_wgan': ('training.ea.lipizzaner_wgan_trainer', 'LipizzanerWGANTrainer'),
+        "bceloss": ("torch.nn", "BCELoss"),
+        "mseloss": ("torch.nn", "MSELoss"),
+        "celoss": ("torch.nn", "CrossEntropyLoss"),
+        "heuristicloss": ("networks.customized_loss.heuristic_loss", "HeuristicLoss",),
+        "mustangs": ("networks.customized_loss.mustangs_loss", "MustangsLoss"),
+        "mnist": ("data.mnist_data_loader", "MNISTDataLoader"),
+        "mnist_fashion": ("data.mnist_fashion_data_loader", "MNISTFashionDataLoader",),
+        "cifar": ("data.cifar10_data_loader", "CIFAR10DataLoader"),
+        "svhn": ("data.svhn_data_loader", "SVHNDataLoader"),
+        "celeba": ("data.celeba_data_loader", "CelebADataLoader"),
+        "network_traffic": ("data.network_data_loader", "NetworkDataLoader"),
+        "gaussian": ("data.gaussian_data_loader", "GaussianDataLoader"),
+        "gaussian_circle": ("data.gaussian_2d_data_loader", "CircularToyDataLoader",),
+        "gaussian_grid": ("data.gaussian_2d_data_loader", "GridToyDataLoader"),
+        "mooc": ("data.mooc_data_loader", "MOOCDataLoader"),
+        "mooc_file": ("data.mooc_data_loader", "MOOCFileDataLoader"),
+        "backprop": ("training.backpropagation_trainer", "BackpropagationTrainer",),
+        "sequential_nes": ("training.nes.sequential_nes_trainer", "SequentialNESTrainer",),
+        "parallel_nes": ("training.nes.parallel_nes_trainer", "ParallelNESTrainer",),
+        "alternating_ea": ("training.ea.alternating_ea_trainer", "AlternatingEATrainer",),
+        "parallel_ea": ("training.ea.parallel_ea_trainer", "ParallelEATrainer",),
+        "four_layer_perceptron": ("networks.network_factory", "FourLayerPerceptronFactory",),
+        "conv_mnist_unsupervised": ("networks.network_factory", "ConvolutionalMNISTUnsupervised",),
+        "ssgan_perceptron": ("networks.network_factory", "SSGANFourLayerPerceptronFactory",),
+        "ssgan_svhn": ("networks.network_factory", "SSGANPerceptronSVHNFactory",),
+        "ssgan_convolutional": ("networks.network_factory", "SSGANConvolutionalNetworkFactory",),
+        "ssgan_convolutional_mnist": ("networks.network_factory", "SSGANConvolutionalMNISTNetworkFactory",),
+        "ssgan_conv_mnist_28x28": ("networks.network_factory", "SSGANConvMNIST28x28NetworkFactory",),
+        "convolutional": ("networks.network_factory", "ConvolutionalNetworkFactory",),
+        "mooc_net": ("networks.mooc_net", "MOOCFourLayerPerceptronFactory"),
+        "circular_problem_perceptron": ("networks.network_factory", "CircularProblemFactory",),
+        "rnn": ("networks.network_factory", "RNNFactory"),
+        "lipizzaner_gan": ("training.ea.lipizzaner_gan_trainer", "LipizzanerGANTrainer",),
+        "lipizzaner_wgan": ("training.ea.lipizzaner_wgan_trainer", "LipizzanerWGANTrainer",),
     }
 
     _logger = logging.getLogger(__name__)
@@ -63,9 +63,11 @@ class ConfigurationContainer:
         """
         :return: true if losswise sections exist and status is set to enabled
         """
-        return 'losswise' in self.settings['general'] \
-               and 'enabled' in self.settings['general']['losswise'] \
-               and self.settings['general']['losswise']['enabled']
+        return (
+            "losswise" in self.settings["general"]
+            and "enabled" in self.settings["general"]["losswise"]
+            and self.settings["general"]["losswise"]["enabled"]
+        )
 
     @property
     def output_dir(self):
@@ -83,9 +85,12 @@ class ConfigurationContainer:
         self._output_dir = value
 
     def _load_output_dir(self):
-        output = self.settings['general']['output_dir'] if 'output_dir' in self.settings['general'] else 'output'
-        subdir = self.settings['trainer']['method']['name'] if 'method' in self.settings['trainer'] else \
-            self.settings['trainer']['name']
+        output = self.settings["general"]["output_dir"] if "output_dir" in self.settings["general"] else "output"
+        subdir = (
+            self.settings["trainer"]["method"]["name"]
+            if "method" in self.settings["trainer"]
+            else self.settings["trainer"]["name"]
+        )
         directory = os.path.join(output, subdir)
 
         if not os.path.exists(directory):

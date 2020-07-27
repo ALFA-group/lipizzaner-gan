@@ -13,12 +13,15 @@ from torch.utils.data import Sampler, SubsetRandomSampler
 from helpers.reproducible_helpers import set_random_seed
 import random
 
+
 class DataLoader(ABC):
     """
     Abstract base class for all dataloaders, cannot be instanced.
     """
 
-    def __init__(self, dataset, use_batch=True, batch_size=100, n_batches=0, shuffle=False, sampling_ratio=1):
+    def __init__(
+        self, dataset, use_batch=True, batch_size=100, n_batches=0, shuffle=False, sampling_ratio=1,
+    ):
         """
         :param dataset: Dataset from torchvision.datasets.*, e.g. MNIST or CIFAR10
         :param use_batch: If set to False, all data records will be returned (without mini-batching). Read from config if set there.
@@ -29,36 +32,42 @@ class DataLoader(ABC):
         """
         self.dataset = dataset
         self.cc = ConfigurationContainer.instance()
-        settings = self.cc.settings['dataloader']
-        self.dataset_name = settings.get('dataset_name', use_batch)
-        self.use_batch = settings.get('use_batch', use_batch)
-        self.batch_size = settings.get('batch_size', batch_size)
-        self.n_batches = settings.get('n_batches', n_batches)
-        self.shuffle = settings.get('shuffle', shuffle)
-        self.sampling_ratio = settings.get('sampling_ratio', sampling_ratio)
-        cell_settings = self.cc.settings['general']['distribution']
-        self.cell_number = cell_settings.get('client_id', 0)
+        settings = self.cc.settings["dataloader"]
+        self.dataset_name = settings.get("dataset_name", use_batch)
+        self.use_batch = settings.get("use_batch", use_batch)
+        self.batch_size = settings.get("batch_size", batch_size)
+        self.n_batches = settings.get("n_batches", n_batches)
+        self.shuffle = settings.get("shuffle", shuffle)
+        self.sampling_ratio = settings.get("sampling_ratio", sampling_ratio)
+        cell_settings = self.cc.settings["general"]["distribution"]
+        self.cell_number = cell_settings.get("client_id", 0)
 
     def load(self, train=True):
         # Image processing
 
         # Dataset
-        if self.dataset_name == 'svhn':
-            dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
-                                   split=train,
-                                   transform=self.transform(),
-                                   download=True)
+        if self.dataset_name == "svhn":
+            dataset = self.dataset(
+                root=os.path.join(self.cc.settings["general"]["output_dir"], "data"),
+                split=train,
+                transform=self.transform(),
+                download=True,
+            )
         else:
-            dataset = self.dataset(root=os.path.join(self.cc.settings['general']['output_dir'], 'data'),
-                               train=train,
-                               transform=self.transform(),
-                               download=True)
+            dataset = self.dataset(
+                root=os.path.join(self.cc.settings["general"]["output_dir"], "data"),
+                train=train,
+                transform=self.transform(),
+                download=True,
+            )
 
         if self.sampling_ratio >= 1:
             self.sampler = None
         else:
-            set_random_seed(self.cc.settings['general']['seed'] + self.cell_number,
-                            self.cc.settings['trainer']['params']['score']['cuda'])
+            set_random_seed(
+                self.cc.settings["general"]["seed"] + self.cell_number,
+                self.cc.settings["trainer"]["params"]["score"]["cuda"],
+            )
             dataset_size = len(dataset)
             sample_size = int(dataset_size * self.sampling_ratio)
             mask = random.sample(range(dataset_size), sample_size)
@@ -66,16 +75,18 @@ class DataLoader(ABC):
             self.sampler = torch.utils.data.SubsetRandomSampler(mask)
             self.shuffle = False
 
-        return torch.utils.data.DataLoader(dataset=dataset,
-                                           batch_size=self.batch_size if self.use_batch else len(dataset),
-                                           shuffle=self.shuffle,
-                                           num_workers=self.cc.settings['general']['num_workers'],
-                                           sampler=self.sampler)
-
+        return torch.utils.data.DataLoader(
+            dataset=dataset,
+            batch_size=self.batch_size if self.use_batch else len(dataset),
+            shuffle=self.shuffle,
+            num_workers=self.cc.settings["general"]["num_workers"],
+            sampler=self.sampler,
+        )
 
     def transform(self):
-        return transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5),
-                                                                               std=(0.5, 0.5, 0.5))])
+        return transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),]
+        )
 
     def transpose_data(self, data):
         return data.view(self.batch_size, -1)

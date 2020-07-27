@@ -6,11 +6,11 @@ corresponding to a client are copied to a dedicated file such as generator.txt,
 discriminator.txt and fid.txt respectively (as indicated in the code below)
 following which the required plots are obtained
 """
-
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib import pyplot as plt
 import time
+import matplotlib
+from matplotlib import pyplot as plt
+
+matplotlib.use("Agg")
 
 
 n_iterations = 200
@@ -43,15 +43,15 @@ def plot_loss():
     read_output_from_file("discriminator.txt", f_discriminator)
 
     # Plot generator loss
-    plt.plot(x, f_generator, label='generator')
+    plt.plot(x, f_generator, label="generator")
     # Plot discriminator loss
-    plt.plot(x, f_discriminator, label='discriminator')
+    plt.plot(x, f_discriminator, label="discriminator")
 
     plt.xlabel("Epoch")
     plt.ylabel("Loss")
     # Show legend
     plt.legend()
-    plt.savefig(f'../plots/plot_{time_start}.png')
+    plt.savefig(f"../plots/plot_{time_start}.png")
 
 
 def plot_fid_is():
@@ -67,7 +67,8 @@ def plot_fid_is():
     # Change the ylabel to Inception Score when appropriate
     plt.ylabel("'FID Score'")
     # Change filename to start with is_ when using Inception Score
-    plt.savefig(f'../plots/fid_{time_start}.png')
+    plt.savefig(f"../plots/fid_{time_start}.png")
+
 
 # Plot g/d loss
 plot_loss()

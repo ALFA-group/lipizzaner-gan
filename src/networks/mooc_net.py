@@ -6,7 +6,6 @@ from networks.competetive_net import DiscriminatorNet, GeneratorNet
 
 
 class MOOCFourLayerPerceptronFactory(NetworkFactory):
-
     @property
     def gen_input_size(self):
         return 64
@@ -20,7 +19,10 @@ class MOOCFourLayerPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 256),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, self.input_data_size),
-                nn.Tanh()), self.gen_input_size)
+                nn.Tanh(),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -38,7 +40,10 @@ class MOOCFourLayerPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 256),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 1),
-                nn.Sigmoid()), self.gen_input_size)
+                nn.Sigmoid(),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -46,5 +51,3 @@ class MOOCFourLayerPerceptronFactory(NetworkFactory):
             net.encoded_parameters = encoded_parameters
 
         return net
-
-

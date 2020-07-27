@@ -24,7 +24,9 @@ class ParallelEATrainer(EvolutionaryAlgorithmTrainer):
                 self.mutate_gaussian(new_population_generator)
                 self.mutate_gaussian(new_population_discriminator)
 
-                self.evaluate_fitness_against_population(new_population_generator, new_population_discriminator, input_var)
+                self.evaluate_fitness_against_population(
+                    new_population_generator, new_population_discriminator, input_var,
+                )
 
                 self.population_gen.replacement(new_population_generator, self._n_replacements)
                 self.population_dis.replacement(new_population_discriminator, self._n_replacements)
@@ -41,5 +43,7 @@ class ParallelEATrainer(EvolutionaryAlgorithmTrainer):
 
         self.lw_cache.end_session()
 
-        return (self.population_gen.individuals[0].genome, self.population_gen.individuals[0].fitness), (
-            self.population_dis.individuals[0].genome, self.population_dis.individuals[0].fitness)
+        return (
+            (self.population_gen.individuals[0].genome, self.population_gen.individuals[0].fitness,),
+            (self.population_dis.individuals[0].genome, self.population_dis.individuals[0].fitness,),
+        )

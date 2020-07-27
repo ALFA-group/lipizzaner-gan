@@ -10,26 +10,38 @@ test_greedy_ensemble_generator.py contains the code to test the greedy approache
 
 import pathlib
 import sys
-sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.absolute())) # To change the folder path to use Lipizzaner files
+
+sys.path.insert(
+    0, str(pathlib.Path(__file__).parent.parent.absolute())
+)  # To change the folder path to use Lipizzaner files
 from greedy_for_ensemble_generator import GreedyEnsembleGenerator
 
 if len(sys.argv) < 4:
-    print('Error: More parameters required')
-    print('Usage: python test_greedy_ensemble_generator.py <greedy mode> <ensemble size> '
-          '<max iterations without improvements> [<output file>]')
-    print('\t <greedy mode>: iterative or random')
+    print("Error: More parameters required")
+    print(
+        "Usage: python test_greedy_ensemble_generator.py <greedy mode> <ensemble size> "
+        "<max iterations without improvements> [<output file>]"
+    )
+    print("\t <greedy mode>: iterative or random")
 
     sys.exit(-1)
 
 mode = sys.argv[1]
 ensemble_max_size = int(sys.argv[2])
 max_time_without_improvements = int(sys.argv[3])
-output_file = sys.argv[4] if len(sys.argv) == 5 else ''
+output_file = sys.argv[4] if len(sys.argv) == 5 else ""
 
-dataset = 'mnist'
+dataset = "mnist"
 precision = 10
-greedy = GreedyEnsembleGenerator(dataset, ensemble_max_size, precision, max_time_without_improvements,
-                                 generators_prefix='mnist-generator', generators_path='./mnist-generators/',
-                                 mode=mode, output_file=output_file)
+greedy = GreedyEnsembleGenerator(
+    dataset,
+    ensemble_max_size,
+    precision,
+    max_time_without_improvements,
+    generators_prefix="mnist-generator",
+    generators_path="./mnist-generators/",
+    mode=mode,
+    output_file=output_file,
+)
 
 greedy.create_ensemble()

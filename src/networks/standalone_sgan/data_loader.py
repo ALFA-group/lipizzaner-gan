@@ -14,7 +14,9 @@ class DataLoader(ABC):
     Abstract base class for all dataloaders, cannot be instanced.
     """
 
-    def __init__(self, dataset, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
+    def __init__(
+        self, dataset, use_batch=True, batch_size=100, n_batches=0, shuffle=False,
+    ):
         """
         :param dataset: Dataset from torchvision.datasets.*, e.g. MNIST or CIFAR10
         :param use_batch: If set to False, all data records will be returned (without mini-batching). Read from config if set there.
@@ -33,18 +35,23 @@ class DataLoader(ABC):
         # Image processing
 
         # Dataset
-        dataset = self.dataset(root=os.path.join("./networks/standalone_sgan/output", 'data'),
-                               train=True,
-                               transform=self.transform(),
-                               download=True)
-        return torch.utils.data.DataLoader(dataset=dataset,
-                                           batch_size=self.batch_size if self.use_batch else len(dataset),
-                                           shuffle=self.shuffle,
-                                           num_workers=0)
+        dataset = self.dataset(
+            root=os.path.join("./networks/standalone_sgan/output", "data"),
+            train=True,
+            transform=self.transform(),
+            download=True,
+        )
+        return torch.utils.data.DataLoader(
+            dataset=dataset,
+            batch_size=self.batch_size if self.use_batch else len(dataset),
+            shuffle=self.shuffle,
+            num_workers=0,
+        )
 
     def transform(self):
-        return transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5),
-                                                                               std=(0.5, 0.5, 0.5))])
+        return transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),]
+        )
 
     def transpose_data(self, data):
         return data.view(self.batch_size, -1)

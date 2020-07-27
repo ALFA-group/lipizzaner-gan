@@ -23,14 +23,14 @@ class Population:
 
         if is_logging:
             sorted_individuals_names = [individual.name for individual in self.individuals]
-            self._logger.info('Current local sorted population is {}'.format(sorted_individuals_names))
+            self._logger.info("Current local sorted population is {}".format(sorted_individuals_names))
 
     def replacement(self, new_population, n_replacements=1, is_logging=False):
         new_population.sort_population()
         self.sort_population()
 
-        replacer_individuals_names = []    # Individuals who replace others
-        replacee_individuals_names = []    # Individuals who are replaced by others
+        replacer_individuals_names = []  # Individuals who replace others
+        replacee_individuals_names = []  # Individuals who are replaced by others
 
         # TODO break out early
         for i in range(n_replacements):
@@ -43,15 +43,16 @@ class Population:
                 self.individuals[j].is_local = True
 
         if is_logging:
-            self._logger.info('Replacers are {}'.format(replacer_individuals_names))
-            self._logger.info('Replacees are {}'.format(replacee_individuals_names))
+            self._logger.info("Replacers are {}".format(replacer_individuals_names))
+            self._logger.info("Replacees are {}".format(replacee_individuals_names))
 
     @property
     def net_weights_dist(self):
         net_weights_dist = []
         for ind1, ind2 in itertools.combinations(self.individuals, 2):
             # Each tuple is of format (ind1, ind2, value)
-            net_weights_dist.append((ind1.name, ind2.name,
-                                     calculate_net_weights_dist(ind1.genome.net, ind2.genome.net)))
+            net_weights_dist.append(
+                (ind1.name, ind2.name, calculate_net_weights_dist(ind1.genome.net, ind2.genome.net),)
+            )
 
         return net_weights_dist

@@ -34,7 +34,9 @@ class FIDCalculator(ScoreCalculator):
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False):
+    def __init__(
+        self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False,
+    ):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10
         :param batch_size: Batch size that will be used, 64 is recommended.
@@ -97,8 +99,7 @@ class FIDCalculator(ScoreCalculator):
 
         d0 = len(images)
         if self.batch_size > d0:
-            print(('Warning: batch size is bigger than the data size. '
-                   'Setting batch size to data size'))
+            print(("Warning: batch size is bigger than the data size. " "Setting batch size to data size"))
             self.batch_size = d0
 
         n_batches = d0 // self.batch_size
@@ -107,8 +108,9 @@ class FIDCalculator(ScoreCalculator):
         pred_arr = np.empty((n_used_imgs, self.dims))
         for i in range(n_batches):
             if self.verbose:
-                print('\rPropagating batch %d/%d' % (i + 1, n_batches),
-                      end='', flush=True)
+                print(
+                    "\rPropagating batch %d/%d" % (i + 1, n_batches), end="", flush=True,
+                )
             start = i * self.batch_size
             end = start + self.batch_size
 
@@ -131,7 +133,7 @@ class FIDCalculator(ScoreCalculator):
             pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
         if self.verbose:
-            print(' done')
+            print(" done")
 
         return pred_arr
 
@@ -163,18 +165,15 @@ class FIDCalculator(ScoreCalculator):
         sigma1 = np.atleast_2d(sigma1)
         sigma2 = np.atleast_2d(sigma2)
 
-        assert mu1.shape == mu2.shape, \
-            'Training and test mean vectors have different lengths'
-        assert sigma1.shape == sigma2.shape, \
-            'Training and test covariances have different dimensions'
+        assert mu1.shape == mu2.shape, "Training and test mean vectors have different lengths"
+        assert sigma1.shape == sigma2.shape, "Training and test covariances have different dimensions"
 
         diff = mu1 - mu2
 
         # Product might be almost singular
         covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
         if not np.isfinite(covmean).all():
-            msg = ('fid calculation produces singular product; '
-                   'adding %s to diagonal of cov estimates') % eps
+            msg = ("fid calculation produces singular product; " "adding %s to diagonal of cov estimates") % eps
             print(msg)
             offset = np.eye(sigma1.shape[0]) * eps
             covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
@@ -186,14 +185,13 @@ class FIDCalculator(ScoreCalculator):
                 # raise ValueError('Imaginary component {}'.format(m))
 
                 # Temporarily ignore the error, and log it for reminder that imaginary component appears
-                self._logger.info('ValueError (but ignored): Imaginary component {}'.format(m))
+                self._logger.info("ValueError (but ignored): Imaginary component {}".format(m))
 
             covmean = covmean.real
 
         tr_covmean = np.trace(covmean)
 
-        return (diff.dot(diff) + np.trace(sigma1) +
-                np.trace(sigma2) - 2 * tr_covmean)
+        return diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2 * tr_covmean
 
     def calculate_activation_statistics(self, images, model):
         """Calculation of the statistics used by the FID.
@@ -221,7 +219,7 @@ class FIDCalculator(ScoreCalculator):
 
     def _compute_statistics_of_path(self, dataset, model):
         imgs = []
-        assert len(dataset) >= self.n_samples, 'Cannot draw enough samples from dataset'
+        assert len(dataset) >= self.n_samples, "Cannot draw enough samples from dataset"
 
         for i in range(self.n_samples):
             img = dataset[i]

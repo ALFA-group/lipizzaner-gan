@@ -20,4 +20,3 @@ It uses ASP.NET Core for the backend and Angular for the frontend code.
 8. Run the app with `dotnet run`
 
 This application was built with the ASP.NET Core Angular template, details about it can be found [here](https://docs.microsoft.com/en-us/aspnet/core/spa/angular?view=aspnetcore-2.1&tabs=visual-studio).
-    

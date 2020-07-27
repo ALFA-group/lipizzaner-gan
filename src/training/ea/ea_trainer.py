@@ -19,8 +19,17 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
     def train(self, n_iterations, stop_event=None):
         pass
 
-    def __init__(self, dataloader, network_factory, population_size=10, tournament_size=2, mutation_probability=0.9,
-                 n_replacements=1, sigma=0.25, alpha=0.25):
+    def __init__(
+        self,
+        dataloader,
+        network_factory,
+        population_size=10,
+        tournament_size=2,
+        mutation_probability=0.9,
+        n_replacements=1,
+        sigma=0.25,
+        alpha=0.25,
+    ):
         """
         :param population_size: Number of elements per population. Read from config if set there.
         :param tournament_size: Number of elements per tournament selection. Read from config if set there.
@@ -30,14 +39,14 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
         :param alpha: Learning rate. Read from config if set there.
         """
 
-        self.settings = ConfigurationContainer.instance().settings['trainer']['params']
+        self.settings = ConfigurationContainer.instance().settings["trainer"]["params"]
 
-        self._alpha = self.settings.get('alpha', alpha)
-        self._sigma = self.settings.get('sigma', sigma)
-        self._n_replacements = self.settings.get('n_replacements', n_replacements)
-        self._mutation_probability = self.settings.get('mutation_probability', mutation_probability)
-        self._population_size = self.settings.get('population_size', population_size)
-        self._tournament_size = self.settings.get('tournament_size', tournament_size)
+        self._alpha = self.settings.get("alpha", alpha)
+        self._sigma = self.settings.get("sigma", sigma)
+        self._n_replacements = self.settings.get("n_replacements", n_replacements)
+        self._mutation_probability = self.settings.get("mutation_probability", mutation_probability)
+        self._population_size = self.settings.get("population_size", population_size)
+        self._tournament_size = self.settings.get("tournament_size", tournament_size)
 
         super().__init__(dataloader, network_factory)
 
@@ -50,7 +59,7 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
 
         # Calculate graussian distributed param mutations
         individual_len = len(population.individuals[0].genome.parameters)
-        deltas = np.random.normal(loc=0, scale=self._sigma, size=(len(population.individuals), individual_len))
+        deltas = np.random.normal(loc=0, scale=self._sigma, size=(len(population.individuals), individual_len),)
 
         # Set delta values to 0 with p(1 - mutation_probability).
         # Done with numpy because PyTorch's boolean indexing is broken.
@@ -63,12 +72,14 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
             individual.genome.parameters = params
 
     def tournament_selection(self, population, population_type, is_logging=False):
-        assert 0 < self._tournament_size <= len(population.individuals), \
-            "Invalid tournament size: {}".format(self._tournament_size)
+        assert 0 < self._tournament_size <= len(population.individuals), "Invalid tournament size: {}".format(
+            self._tournament_size
+        )
 
         competition_population = Population(individuals=[], default_fitness=population.default_fitness)
-        new_population = Population(individuals=[], default_fitness=population.default_fitness,
-                                    population_type=population_type)
+        new_population = Population(
+            individuals=[], default_fitness=population.default_fitness, population_type=population_type,
+        )
 
         # Iterate until there are enough tournament winners selected
         while len(new_population.individuals) < self._population_size:
@@ -90,15 +101,16 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
 
         if is_logging:
             new_individuals_names = [individual.name for individual in new_population.individuals]
-            self._logger.info('{} are selected from tournament selection'.format(new_individuals_names))
+            self._logger.info("{} are selected from tournament selection".format(new_individuals_names))
 
         return new_population
 
     def initialize_populations(self):
         populations = [None] * 2
         populations[TYPE_GENERATOR] = Population(individuals=[], default_fitness=0, population_type=TYPE_GENERATOR)
-        populations[TYPE_DISCRIMINATOR] = Population(individuals=[], default_fitness=0,
-                                                     population_type=TYPE_DISCRIMINATOR)
+        populations[TYPE_DISCRIMINATOR] = Population(
+            individuals=[], default_fitness=0, population_type=TYPE_DISCRIMINATOR,
+        )
 
         for i in range(self._population_size):
             gen, dis = self.network_factory.create_both()
@@ -116,14 +128,20 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
             for j in range(len(population_gen.individuals)):
                 # Fitness values need to be calculated for both generator and discriminator,
                 # because the respective methods may differ depending on the problem.
-                fitness_disc = float(population_dis.individuals[i].genome.compute_loss_against(
-                    population_gen.individuals[j].genome, input_data)[0])
+                fitness_disc = float(
+                    population_dis.individuals[i].genome.compute_loss_against(
+                        population_gen.individuals[j].genome, input_data
+                    )[0]
+                )
 
                 if fitness_disc > population_dis.individuals[i].fitness:
                     population_dis.individuals[i].fitness = fitness_disc
 
-                fitness_gen = float(population_gen.individuals[j].genome.compute_loss_against(
-                    population_dis.individuals[i].genome, input_data)[0])
+                fitness_gen = float(
+                    population_gen.individuals[j].genome.compute_loss_against(
+                        population_dis.individuals[i].genome, input_data
+                    )[0]
+                )
 
                 if fitness_gen > population_gen.individuals[j].fitness:
                     population_gen.individuals[j].fitness = fitness_gen

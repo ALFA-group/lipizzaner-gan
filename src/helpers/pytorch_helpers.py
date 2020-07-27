@@ -22,14 +22,13 @@ def noise(batch_size, data_size):
     """
     Returns a variable with the dimensions (batch_size, data_size containing gaussian noise
     """
-    shape = (batch_size,) + data_size if isinstance(data_size, tuple) else (
-        batch_size, data_size)
+    shape = (batch_size,) + data_size if isinstance(data_size, tuple) else (batch_size, data_size)
     return to_pytorch_variable(torch.randn(shape))
 
 
 def is_cuda_enabled():
     cc = ConfigurationContainer.instance()
-    return is_cuda_available() and cc.settings['trainer']['params']['score']['cuda']
+    return is_cuda_available() and cc.settings["trainer"]["params"]["score"]["cuda"]
 
 
 def is_cuda_available():
@@ -53,8 +52,7 @@ def size_splits(tensor, split_sizes, dim=0):
 
     splits = torch.cumsum(torch.Tensor([0] + split_sizes), dim=0)[:-1]
 
-    return tuple(tensor.narrow(int(dim), int(start), int(length))
-                 for start, length in zip(splits, split_sizes))
+    return tuple(tensor.narrow(int(dim), int(start), int(length)) for start, length in zip(splits, split_sizes))
 
 
 def calculate_net_weights_dist(net1, net2):
@@ -69,7 +67,7 @@ def calculate_net_weights_dist(net1, net2):
     """
     l2_dist = 0
     for net1_layer_weights, net2_layer_weights in zip(net1.parameters(), net2.parameters()):
-        l2_dist += torch.sum((net1_layer_weights - net2_layer_weights)**2)
+        l2_dist += torch.sum((net1_layer_weights - net2_layer_weights) ** 2)
     result = torch.sqrt(l2_dist).data.cpu().numpy()
     if result is np.ndarray:
         return result[0]

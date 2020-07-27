@@ -5,7 +5,7 @@ the following paper:
 Abdullah Al-Dujaili, Tom Schmiedlechner, Erik Hemberg, Una-May O'Reilly, “Towards distributed coevolutionary GANs,” AAAI 2018 Fall Symposium, 2018.
 ```
 
-To re-run the experiments: 
+To re-run the experiments:
 
 ```
 $ source activate lipizzaner
@@ -18,5 +18,3 @@ To visualize the interval generator and the discriminator solutions with respect
 ```
 $ python opt_disc.py
 ```
-
-

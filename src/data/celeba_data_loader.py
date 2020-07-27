@@ -16,7 +16,6 @@ from helpers.pytorch_helpers import denorm
 
 
 class CelebADataLoader(DataLoader):
-
     def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
         super().__init__(CelebADataSet, use_batch, batch_size, n_batches, shuffle)
 
@@ -29,8 +28,13 @@ class CelebADataLoader(DataLoader):
         return None
 
     def transform(self):
-        return transforms.Compose([transforms.Resize([64,64]), transforms.ToTensor(),
-                                   transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+        return transforms.Compose(
+            [
+                transforms.Resize([64, 64]),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+            ]
+        )
 
     def save_images(self, images, shape, filename):
         data = images.data if isinstance(images, Variable) else images
@@ -44,9 +48,9 @@ class CelebADataSet(ImageFolder):
 
     _logger = logging.getLogger(__name__)
 
-    file_id = '0B7EVK8r0v71pZjFTYXZWM3FlRnM'
-    filename = 'img_align_celeba.zip'
-    base_folder = 'img_align_celeba'
+    file_id = "0B7EVK8r0v71pZjFTYXZWM3FlRnM"
+    filename = "img_align_celeba.zip"
+    base_folder = "img_align_celeba"
 
     def __init__(self, root, transform=None, target_transform=None, download=True, **kwargs):
         target_dir = os.path.join(root, self.base_folder)
@@ -62,19 +66,19 @@ class CelebADataSet(ImageFolder):
         import zipfile
 
         if self._already_downloaded(target_dir):
-            self._logger.info('CelebA dataset is already downloaded and extracted.')
+            self._logger.info("CelebA dataset is already downloaded and extracted.")
             return
 
-        self._logger.info('CelebA dataset has to be downloaded, this may take some time...')
+        self._logger.info("CelebA dataset has to be downloaded, this may take some time...")
         pathlib.Path(target_dir).mkdir(parents=True, exist_ok=True)
 
         self._download_file_from_google_drive(self.file_id, os.path.join(target_dir, self.filename))
-        self._logger.info('Download finished, extracting...')
+        self._logger.info("Download finished, extracting...")
 
         with zipfile.ZipFile(os.path.join(target_dir, self.filename), "r") as zip_ref:
             zip_ref.extractall(target_dir)
 
-        self._logger.info('File successfully extracted.')
+        self._logger.info("File successfully extracted.")
 
     @staticmethod
     def _already_downloaded(target_dir):
@@ -84,7 +88,7 @@ class CelebADataSet(ImageFolder):
     def _download_file_from_google_drive(id, destination):
         def get_confirm_token(response):
             for key, value in response.cookies.items():
-                if key.startswith('download_warning'):
+                if key.startswith("download_warning"):
                     return value
 
             return None
@@ -101,11 +105,11 @@ class CelebADataSet(ImageFolder):
 
         session = requests.Session()
 
-        response = session.get(URL, params={'id': id}, stream=True)
+        response = session.get(URL, params={"id": id}, stream=True)
         token = get_confirm_token(response)
 
         if token:
-            params = {'id': id, 'confirm': token}
+            params = {"id": id, "confirm": token}
             response = session.get(URL, params=params, stream=True)
 
         save_response_content(response, destination)
