@@ -35,7 +35,7 @@ class FIDCalculator(ScoreCalculator):
     _logger = logging.getLogger(__name__)
 
     def __init__(
-        self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False,
+        self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False, dataset_name="mnist"
     ):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10
@@ -44,17 +44,19 @@ class FIDCalculator(ScoreCalculator):
         :param dims: Dimensionality of Inception features to use. By default, uses pool3 features.
         :param n_samples: In the paper, min. 10k samples are suggested.
         :param verbose: Verbose logging
+        :param dataset_name: Dataset used
         """
         self.imgs_original = imgs_original
         self.batch_size = batch_size
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
-        # For MNIST
-        # self.dims = 10
+        self.dataset_name = dataset_name
 
-        # For CIFAR
-        self.dims = 2048
+        if self.dataset_name == "mnist":
+            self.dims = 10  # For MNIST
+        elif self.dataset_name == "cifar10":
+            self.dims = 2048  # For CIFAR10
 
     def calculate(self, imgs, exact=True):
         """
@@ -63,13 +65,12 @@ class FIDCalculator(ScoreCalculator):
         :param imgs: PyTorch dataset containing the generated images. (Could be both grey or RGB images)
         :param exact: Currently has no effect for FID.
         """
-        # For MNIST
-        # model = MNISTCnn()
-        # model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
-
-        # For CIFAR
-        block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
-        model = InceptionV3([block_idx])
+        if self.dataset_name == "mnist":  # For MNIST
+            model = MNISTCnn()
+            model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
+        elif self.dataset_name == "cifar10":  # For CIFACIFAR
+            block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
+            model = InceptionV3([block_idx])
 
         if self.cuda:
             model.cuda()
@@ -126,9 +127,9 @@ class FIDCalculator(ScoreCalculator):
 
             pred = model(batch)[0]
 
-            # For CIFAR
-            if pred.shape[2] != 1 or pred.shape[3] != 1:
-                pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
+            if self.dataset_name == "cifar10":  # For CIFACIFAR
+                if pred.shape[2] != 1 or pred.shape[3] != 1:
+                    pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
 
             pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
@@ -224,8 +225,8 @@ class FIDCalculator(ScoreCalculator):
         for i in range(self.n_samples):
             img = dataset[i]
 
-            # For MNIST
-            # img = img.view(-1, 28, 28)
+            if self.dataset_name == "mnist":  # For MNIST
+                img = img.view(-1, 28, 28)
 
             imgs.append(img)
 

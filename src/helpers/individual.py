@@ -1,3 +1,4 @@
+import os
 import copy
 
 import torch
@@ -71,3 +72,17 @@ class Individual:
     def name(self):
         """ Uniquely identify an individual (for further logging purpose) """
         return "Iteration{}:{}:{}".format(self.iteration, self.source, self.id)
+
+    def save_genome(self, network_prefix, output_dir, include_classification_layer=False):
+        """ Saves the network defined by the genome """
+        self.source.replace(":", "-")
+        filename = "{}{}.pkl".format(network_prefix, self.source)
+        torch.save(
+            self.genome.net.state_dict(), os.path.join(output_dir, filename),
+        )
+        if include_classification_layer:
+            torch.save(
+                self.genome.classification_layer.state_dict(),
+                os.path.join(output_dir, "{}{}_classification_layer.pkl".format(network_prefix, self.source)),
+            )
+        return filename

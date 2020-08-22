@@ -75,9 +75,9 @@ Source code files in `enesmble_optimization/` folder:
 the previously presented classes.
 - greedy_for_ensemble_generator.py: It implements both Greedy methods, iterative and random (GreedyEnsembleGenerator class).
 
-In order to test these methods, we provide test cases that use ten generators previously trained to generate MNIST samples.
-- test_ga_ensemble_generator.py: It allows testing the EA methods (i.e., NREO-GEN and REO-GEN)
-- test_greedy_ensemble_generator.py: It allows testing the Greedy methods.
+In order to try these methods, we provide trying cases that use ten generators previously trained to generate MNIST samples.
+- try_ga_ensemble_generator.py: It allows trying the EA methods (i.e., NREO-GEN and REO-GEN)
+- try_greedy_ensemble_generator.py: It allows trying the Greedy methods.
 
 Auxiliary files:
 - create-generators-folder.py allows the creation of a folder that contains all the generators used to create the

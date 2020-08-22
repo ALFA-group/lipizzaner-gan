@@ -45,14 +45,13 @@ class CelebADataLoader(DataLoader):
 
 
 class CelebADataSet(ImageFolder):
-
-    _logger = logging.getLogger(__name__)
-
-    file_id = "0B7EVK8r0v71pZjFTYXZWM3FlRnM"
-    filename = "img_align_celeba.zip"
-    base_folder = "img_align_celeba"
-
     def __init__(self, root, transform=None, target_transform=None, download=True, **kwargs):
+        self._logger = logging.getLogger(__name__)
+
+        self.file_id = "0B7EVK8r0v71pZjFTYXZWM3FlRnM"
+        self.filename = "img_align_celeba.zip"
+        self.base_folder = "img_align_celeba"
+
         target_dir = os.path.join(root, self.base_folder)
         try:
             if download:

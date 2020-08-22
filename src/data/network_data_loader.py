@@ -5,6 +5,8 @@ import torch
 from torch.utils.data import Dataset
 import matplotlib
 
+matplotlib.use("Agg")
+
 from helpers.pytorch_helpers import to_pytorch_variable
 
 import matplotlib.pylab as plt
@@ -13,8 +15,6 @@ import numpy as np
 sys.path.append("../")
 sys.path.append("./network_data")
 from data.data_loader import DataLoader
-
-matplotlib.use("Agg")
 
 
 N_RECORDS = 42

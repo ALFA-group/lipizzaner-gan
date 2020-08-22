@@ -181,26 +181,13 @@ class LipizzanerMaster:
                 output_dir = self.get_and_create_output_dir(node)
 
                 for generator in generator_pop.individuals:
-                    source = generator.source.replace(":", "-")
-                    filename = "{}{}.pkl".format(GENERATOR_PREFIX, source)
-                    torch.save(
-                        generator.genome.net.state_dict(), os.path.join(output_dir, "generator-{}.pkl".format(source)),
-                    )
-
+                    filename = generator.save_genome(GENERATOR_PREFIX, output_dir,)
                     with open(os.path.join(output_dir, "mixture.yml"), "a") as file:
                         file.write("{}: {}\n".format(filename, weights_generator[generator.source]))
 
                 for discriminator in discriminator_pop.individuals:
-                    source = discriminator.source.replace(":", "-")
-                    filename = "{}{}.pkl".format(DISCRIMINATOR_PREFIX, source)
-                    torch.save(
-                        discriminator.genome.net.state_dict(), os.path.join(output_dir, filename),
-                    )
-                    if "ssgan" in self.cc.settings["network"]["name"]:
-                        filename = "{}{}_classification_layer.pkl".format(DISCRIMINATOR_PREFIX, source)
-                        torch.save(
-                            discriminator.genome.classification_layer.state_dict(), os.path.join(output_dir, filename),
-                        )
+                    filename = discriminator.save_genome(DISCRIMINATOR_PREFIX, output_dir, True)
+                    # "ssgan" in self.cc.settings["network"]["name"])
 
                 # Save images
                 dataset = MixedGeneratorDataset(

@@ -32,19 +32,21 @@ class ScoreCalculatorFactory:
                 transforms.ToTensor(),
                 transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
             ]
-            # if cc.settings['dataloader']['dataset_name'] != 'mnist' and cc.settings['dataloader']['dataset_name'] != 'mnist_fashion':
-            if cc.settings["dataloader"]["dataset_name"] == "mnist":
+            dataset_name = cc.settings["dataloader"]["dataset_name"]
+            if dataset_name == "mnist":
                 if cc.settings["network"]["name"] == "ssgan_convolutional_mnist":
                     transforms_op = [transforms.Resize([64, 64])] + transforms_op
-            elif cc.settings["dataloader"]["dataset_name"] != "mnist_fashion":
+            elif dataset_name != "mnist_fashion":
                 # Need to reshape for RGB dataset as required by pre-trained InceptionV3
                 transforms_op = [transforms.Resize([64, 64])] + transforms_op
 
-            dataset = dataloader.dataset(
-                root=os.path.join(cc.settings["general"]["output_dir"], "data"),
-                train=True,
-                transform=transforms.Compose(transforms_op),
-            )
+            split_param_keyword, split_param_value = ("split", "train") if dataset_name == "svhn" else ("train", True)
+            dataset_params = {
+                "root": os.path.join(cc.settings["general"]["output_dir"], "data"),
+                split_param_keyword: split_param_value,
+                "transform": transforms.Compose(transforms_op),
+            }
+            dataset = dataloader.dataset(**dataset_params)
 
             return FIDCalculator(
                 IgnoreLabelDataset(dataset),

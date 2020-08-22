@@ -43,23 +43,16 @@ class DataLoader(ABC):
         self.cell_number = cell_settings.get("client_id", 0)
 
     def load(self, train=True):
-        # Image processing
 
         # Dataset
-        if self.dataset_name == "svhn":
-            dataset = self.dataset(
-                root=os.path.join(self.cc.settings["general"]["output_dir"], "data"),
-                split=train,
-                transform=self.transform(),
-                download=True,
-            )
-        else:
-            dataset = self.dataset(
-                root=os.path.join(self.cc.settings["general"]["output_dir"], "data"),
-                train=train,
-                transform=self.transform(),
-                download=True,
-            )
+        split_param_keyword = "split" if self.dataset_name == "svhn" else "train"
+        dataset_params = {
+            "root": os.path.join(self.cc.settings["general"]["output_dir"], "data"),
+            split_param_keyword: train,
+            "transform": self.transform(),
+            "download": True,
+        }
+        dataset = self.dataset(**dataset_params)
 
         if self.sampling_ratio >= 1:
             self.sampler = None

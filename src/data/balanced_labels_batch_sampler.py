@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import logging
 
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import BatchSampler
@@ -17,8 +18,6 @@ class BalancedLabelsBatchSampler(BatchSampler):
     """
 
     def __init__(self, dataset, num_classes, batch_size, label_rate):
-        import logging
-
         _logger = logging.getLogger(__name__)
         _logger.info("Using Balanced Labels Batch Sampler")
         self.dataset = dataset
@@ -41,9 +40,6 @@ class BalancedLabelsBatchSampler(BatchSampler):
         self.label_to_indices = {
             label: np.where(self.labels.data.cpu().numpy() == label)[0] for label in self.labels_set
         }
-        # Shuffle the indices of each label
-        for label in self.labels_set:
-            np.random.shuffle(self.label_to_indices[label])
 
         # Break down dataset into 'labeled' and 'unlabeled' datasets
         self.labeled_data = np.array([], dtype=int)
@@ -51,6 +47,7 @@ class BalancedLabelsBatchSampler(BatchSampler):
         total_labeled_data = int(len(self.dataset) * self.label_rate)
         self.num_labels_per_class = int(total_labeled_data / self.num_classes)
         for label in self.labels_set:
+            np.random.shuffle(self.label_to_indices[label])  # Shuffle the indices of each label
             self.labeled_data = np.concatenate(
                 (self.labeled_data, self.label_to_indices[label][: self.num_labels_per_class],)
             )
