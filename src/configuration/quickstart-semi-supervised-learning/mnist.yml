@@ -1,0 +1,46 @@
+trainer:
+  name: lipizzaner_gan
+  n_iterations: 100
+  calculate_net_weights_dist: True
+  # independent_probability, exact_proportion
+  mixture_generator_samples_mode: exact_proportion
+  params:
+    population_size: 1
+    tournament_size: 2
+    n_replacements: 1
+    default_d_adam_learning_rate: 0.001
+    default_g_adam_learning_rate: 0.0002
+    # Hyperparameter mutation
+    alpha: 0.0001
+    mutation_probability: 0.5
+    discriminator_skip_each_nth_step: 0
+    mixture_sigma: 0.01
+    enable_selection: True
+    score:
+      enabled: True
+      type: fid
+      score_sample_size: 1000
+      cuda: True
+    fitness:
+      fitness_sample_size: 1000
+      fitness_mode: average    # worse, best, average
+dataloader:
+  dataset_name: mnist
+  label_rate: 0.01
+  use_batch: True
+  batch_size: 100
+  n_batches: 0
+  shuffle: True
+network:
+  name: ssgan_conv_mnist_28x28
+  loss: celoss
+  in_mean: 0
+  in_std: 0.1
+  in_std_decay_rate: 0.0005
+  in_std_min: 0.065
+  in_fake_decay: False
+master:
+  calculate_score: True
+  score_sample_size: 50000
+  cuda: True
+general: !include general.yml

@@ -1,0 +1,41 @@
+trainer:
+  name: lipizzaner_gan
+  n_iterations: 300
+  calculate_net_weights_dist: True
+  # independent_probability, exact_proportion
+  mixture_generator_samples_mode: exact_proportion
+  params:
+    population_size: 1
+    tournament_size: 2
+    n_replacements: 1
+    default_adam_learning_rate: 0.0001
+    # Hyperparameter mutation
+    alpha: 0.0001
+    mutation_probability: 0.5
+    discriminator_skip_each_nth_step: 2
+    mixture_sigma: 0.01
+    enable_selection: True
+    score:
+      enabled: True
+      type: gaussian_toy_distances
+      score_sample_size: 1000
+      cuda: False
+    fitness:
+      fitness_sample_size: 1000
+      fitness_mode: average    # worse, best, average
+dataloader:
+  dataset_name: gaussian_circle
+  use_batch: True
+  batch_size: 100
+  n_batches: 0
+  shuffle: True
+  number_of_modes: 8
+  number_of_records: 5000
+network:
+  name: circular_problem_perceptron
+  loss: bceloss
+master:
+  calculate_score: True
+  score_sample_size: 50000
+  cuda: False
+general: !include general.yml

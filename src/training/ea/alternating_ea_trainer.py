@@ -19,8 +19,10 @@ class AlternatingEATrainer(EvolutionaryAlgorithmTrainer):
                 if i == 0:
                     self.evaluate_fitness_against_population(self.population_gen, self.population_dis, input_var)
 
-                for attacker, defender, attacker_type in ((self.population_gen, self.population_dis, TYPE_GENERATOR),
-                                           (self.population_dis, self.population_gen, TYPE_DISCRIMINATOR)):
+                for attacker, defender, attacker_type in (
+                    (self.population_gen, self.population_dis, TYPE_GENERATOR),
+                    (self.population_dis, self.population_gen, TYPE_DISCRIMINATOR,),
+                ):
                     new_population = self.tournament_selection(attacker, attacker_type)
                     self.mutate_gaussian(new_population)
                     self.evaluate_fitness_against_population(new_population, defender, input_var)
@@ -40,6 +42,7 @@ class AlternatingEATrainer(EvolutionaryAlgorithmTrainer):
 
         self.lw_cache.end_session()
 
-        return (self.population_gen.individuals[0].genome, self.population_gen.individuals[0].fitness), (
-            self.population_dis.individuals[0].genome, self.population_dis.individuals[0].fitness)
-
+        return (
+            (self.population_gen.individuals[0].genome, self.population_gen.individuals[0].fitness,),
+            (self.population_dis.individuals[0].genome, self.population_dis.individuals[0].fitness,),
+        )

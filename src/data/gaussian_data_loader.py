@@ -1,10 +1,10 @@
 import torch
 from torch.utils.data import Dataset
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pylab as plt
-
 from data.data_loader import DataLoader
+
+matplotlib.use("Agg")
 
 N_RECORDS = 10000
 N_VALUES_PER_RECORD = 1000
@@ -22,9 +22,12 @@ class GaussianDataLoader(DataLoader):
     def n_input_neurons(self):
         return N_VALUES_PER_RECORD
 
+    @property
+    def num_classes(self):
+        return None
+
 
 class GaussianDataSet(Dataset):
-
     def __init__(self, **kwargs):
         self.data = torch.randn(N_RECORDS, N_VALUES_PER_RECORD)
 

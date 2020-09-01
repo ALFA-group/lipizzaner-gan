@@ -12,6 +12,6 @@ class LipizzanerClient:
         while not is_port_open(port):
             port += 1
             if port == MAX_CLIENT_PORT:
-                raise IOError('No free port between {} and {} available.'.format(DEFAULT_CLIENT_PORT, MAX_CLIENT_PORT))
+                raise IOError("No free port between {} and {} available.".format(DEFAULT_CLIENT_PORT, MAX_CLIENT_PORT))
         ClientEnvironment.port = port
         ClientAPI().listen(port)

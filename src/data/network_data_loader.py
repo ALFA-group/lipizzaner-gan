@@ -5,12 +5,14 @@ import torch
 from torch.utils.data import Dataset
 import matplotlib
 
+matplotlib.use("Agg")
+
 from helpers.pytorch_helpers import to_pytorch_variable
 
-matplotlib.use('Agg')
 import matplotlib.pylab as plt
 import numpy as np
-sys.path.append('../')
+
+sys.path.append("../")
 sys.path.append("./network_data")
 from data.data_loader import DataLoader
 
@@ -30,6 +32,7 @@ def generate_random_sequences(num_sequences):
         sequences.append(np.array((StartTime, PktSize, SrcAddr, DstAddr)).T)
     return torch.from_numpy(np.array(sequences))
 
+
 class NetworkDataLoader(DataLoader):
     """
     A dataloader that returns network traffic data
@@ -47,8 +50,14 @@ class NetworkDataLoader(DataLoader):
     def n_input_neurons(self):
         return N_VALUES_PER_RECORD
 
+    @property
+    def num_classes(self):
+        return None
+
     def create_copy(self):
-        return NetworkDataLoader(use_batch = self.use_batch, batch_size = self.batch_size, n_batches = self.n_batches, shuffle = self.shuffle)
+        return NetworkDataLoader(
+            use_batch=self.use_batch, batch_size=self.batch_size, n_batches=self.n_batches, shuffle=self.shuffle,
+        )
 
     # Will probably need to define something different for this
     def save_images(self, images, shape, filename):
@@ -56,12 +65,11 @@ class NetworkDataLoader(DataLoader):
 
 
 class NetworkDataSet(Dataset):
-
     def __init__(self, **kwargs):
         flow_data = np.load("./data/network_data/network_capture.npy")
         self.data = flow_data
         print("Packets Array Size: ", self.data.shape)
-        
+
     def __getitem__(self, index):
         return self.data[index]
 

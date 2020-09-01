@@ -27,6 +27,7 @@ from torch.nn.functional import adaptive_avg_pool2d
 
 from helpers.configuration_container import ConfigurationContainer
 from training.mixture.fid_mnist import MNISTCnn
+from training.mixture.fid_mnist_conv import MNISTConvCnn
 from training.mixture.fid_inception import InceptionV3
 from training.mixture.score_calculator import ScoreCalculator
 
@@ -35,7 +36,9 @@ class FIDCalculator(ScoreCalculator):
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False):
+    def __init__(
+        self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False,
+    ):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10
         :param batch_size: Batch size that will be used, 64 is recommended.
@@ -50,8 +53,10 @@ class FIDCalculator(ScoreCalculator):
         self.n_samples = n_samples
         self.cuda = cuda
         self.verbose = verbose
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
-            self.dims = 10    # For MNIST the dimension of feature map is 10
+        self.dataset = self.cc.settings["dataloader"]["dataset_name"]
+        self.network = self.cc.settings["network"]["name"]
+        if self.dataset == "mnist" or self.dataset == "mnist_fashion":
+            self.dims = 10  # For MNIST the dimension of feature map is 10
         else:
             self.dims = dims
 
@@ -64,11 +69,19 @@ class FIDCalculator(ScoreCalculator):
         :return: FID and TVD
         """
         model = None
-        if self.cc.settings['dataloader']['dataset_name'] == 'mnist':    # Gray dataset
-            model = MNISTCnn()
-            model.load_state_dict(torch.load('./output/networks/mnist_cnn.pkl'))
+        if self.dataset == "mnist":  # Gray dataset
+            if self.network == "ssgan_convolutional_mnist":
+                model = MNISTConvCnn()
+                model.load_state_dict(torch.load("./output/networks/mnist_conv_cnn.pt"))
+            else:
+                model = MNISTCnn()
+                model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
             compute_label_freqs = True
-        else:    # Other RGB dataset
+        elif self.dataset == "mnist_fashion":
+            model = MNISTCnn()
+            model.load_state_dict(torch.load("./output/networks/fashion_mnist_cnn.pt"))
+            compute_label_freqs = True
+        else:  # Other RGB dataset
             block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[self.dims]
             model = InceptionV3([block_idx])
             compute_label_freqs = False
@@ -103,8 +116,7 @@ class FIDCalculator(ScoreCalculator):
 
         d0 = len(images)
         if self.batch_size > d0:
-            print(('Warning: batch size is bigger than the data size. '
-                   'Setting batch size to data size'))
+            print(("Warning: batch size is bigger than the data size. " "Setting batch size to data size"))
             self.batch_size = d0
 
         n_batches = d0 // self.batch_size
@@ -113,8 +125,9 @@ class FIDCalculator(ScoreCalculator):
         pred_arr = np.empty((n_used_imgs, self.dims))
         for i in range(n_batches):
             if self.verbose:
-                print('\rPropagating batch %d/%d' % (i + 1, n_batches),
-                      end='', flush=True)
+                print(
+                    "\rPropagating batch %d/%d" % (i + 1, n_batches), end="", flush=True,
+                )
             start = i * self.batch_size
             end = start + self.batch_size
 
@@ -129,7 +142,7 @@ class FIDCalculator(ScoreCalculator):
 
             pred = model(batch)[0]
 
-            if self.cc.settings['dataloader']['dataset_name'] != 'mnist':
+            if self.dataset != "mnist" and self.dataset != "mnist_fashion":
                 # If model output is not scalar, apply global spatial average pooling.
                 # This happens if you choose a dimensionality not equal 2048.
                 if pred.shape[2] != 1 or pred.shape[3] != 1:
@@ -138,7 +151,7 @@ class FIDCalculator(ScoreCalculator):
             pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
         if self.verbose:
-            print(' done')
+            print(" done")
 
         return pred_arr
 
@@ -170,18 +183,15 @@ class FIDCalculator(ScoreCalculator):
         sigma1 = np.atleast_2d(sigma1)
         sigma2 = np.atleast_2d(sigma2)
 
-        assert mu1.shape == mu2.shape, \
-            'Training and test mean vectors have different lengths'
-        assert sigma1.shape == sigma2.shape, \
-            'Training and test covariances have different dimensions'
+        assert mu1.shape == mu2.shape, "Training and test mean vectors have different lengths"
+        assert sigma1.shape == sigma2.shape, "Training and test covariances have different dimensions"
 
         diff = mu1 - mu2
 
         # Product might be almost singular
         covmean, _ = linalg.sqrtm(sigma1.dot(sigma2), disp=False)
         if not np.isfinite(covmean).all():
-            msg = ('fid calculation produces singular product; '
-                   'adding %s to diagonal of cov estimates') % eps
+            msg = ("fid calculation produces singular product; " "adding %s to diagonal of cov estimates") % eps
             print(msg)
             offset = np.eye(sigma1.shape[0]) * eps
             covmean = linalg.sqrtm((sigma1 + offset).dot(sigma2 + offset))
@@ -193,14 +203,13 @@ class FIDCalculator(ScoreCalculator):
                 # raise ValueError('Imaginary component {}'.format(m))
 
                 # Temporarily ignore the error, and log it for reminder that imaginary component appears
-                self._logger.info('ValueError (but ignored): Imaginary component {}'.format(m))
+                self._logger.info("ValueError (but ignored): Imaginary component {}".format(m))
 
             covmean = covmean.real
 
         tr_covmean = np.trace(covmean)
 
-        return (diff.dot(diff) + np.trace(sigma1) +
-                np.trace(sigma2) - 2 * tr_covmean)
+        return diff.dot(diff) + np.trace(sigma1) + np.trace(sigma2) - 2 * tr_covmean
 
     def get_frequencies_of_activations(self, activations):
         frequencies = 10 * [0]
@@ -238,11 +247,16 @@ class FIDCalculator(ScoreCalculator):
 
     def _compute_statistics_of_path(self, dataset, model, compute_label_freqs=False):
         imgs = []
-        assert len(dataset) >= self.n_samples, 'Cannot draw enough samples from dataset'
+        assert len(dataset) >= self.n_samples, "Cannot draw enough samples from dataset"
 
         for i in range(self.n_samples):
             img = dataset[i]
-            if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
+            if self.dataset == "mnist":
+                if self.network == "ssgan_convolutional_mnist":
+                    img = img.view(-1, 64, 64)
+                else:
+                    img = img.view(-1, 28, 28)
+            if self.dataset == "mnist_fashion":
                 # Reshape to 2D images as required by MNISTCnn class
                 img = img.view(-1, 28, 28)
 

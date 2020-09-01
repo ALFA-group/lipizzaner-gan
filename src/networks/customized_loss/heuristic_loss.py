@@ -2,7 +2,6 @@ import torch
 
 
 class HeuristicLoss(torch.nn.Module):
-
     def __init__(self):
         super(HeuristicLoss, self).__init__()
 

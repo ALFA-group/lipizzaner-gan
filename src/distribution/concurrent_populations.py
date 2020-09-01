@@ -5,7 +5,6 @@ from helpers.singleton import Singleton
 
 @Singleton
 class ConcurrentPopulations:
-
     def __init__(self):
         self._lock = Lock()
         self._generator = None

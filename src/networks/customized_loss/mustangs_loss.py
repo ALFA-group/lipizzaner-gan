@@ -5,15 +5,18 @@ from helpers.configuration_container import ConfigurationContainer
 
 
 class MustangsLoss(torch.nn.Module):
-
     def __init__(self, applied_loss=None, name=None):
         super(MustangsLoss, self).__init__()
-        self.losses_list = [torch.nn.BCELoss(), torch.nn.MSELoss(), HeuristicLoss()]
+        self.losses_list = [
+            torch.nn.BCELoss(),
+            torch.nn.MSELoss(),
+            HeuristicLoss(),
+        ]
 
         # We add a new parameter to network named 'randomized'. If it is set to always it selects randomly a new loss
         # every minibatch in other case it selects randomly the loss function when the network is created
         cc = ConfigurationContainer.instance()
-        self.mustangs_always_random_init_value = 'always' == cc.settings['network'].get('randomized', 'False')
+        self.mustangs_always_random_init_value = "always" == cc.settings["network"].get("randomized", "False")
         self.mustangs_always_random = self.mustangs_always_random_init_value
 
         self.applied_loss = applied_loss
@@ -26,7 +29,7 @@ class MustangsLoss(torch.nn.Module):
 
     def forward(self, input, target):
         # If we want to pick a random loss function for every minibatch
-        if 'Generator' in self.name and self.mustangs_always_random:
+        if "Generator" in self.name and self.mustangs_always_random:
             self.pick_random_loss()
         return self.applied_loss(input, target)
 
@@ -44,5 +47,4 @@ class MustangsLoss(torch.nn.Module):
 
     def set_network_name(self, name):
         self.name = name
-        init = self.mustangs_always_random
-        self.mustangs_always_random = False if ('Discriminator' in name) else self.mustangs_always_random_init_value
+        self.mustangs_always_random = False if ("Discriminator" in name) else self.mustangs_always_random_init_value

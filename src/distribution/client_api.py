@@ -28,13 +28,13 @@ class ClientAPI:
     _logger = logging.getLogger(__name__)
 
     @staticmethod
-    @app.route('/experiments', methods=['POST'])
+    @app.route("/experiments", methods=["POST"])
     def run_experiment():
         config = request.get_json()
         ClientAPI._lock.acquire()
         if ClientAPI.is_busy:
             ClientAPI._lock.release()
-            return 'Client is currently busy.', 500
+            return "Client is currently busy.", 500
 
         ClientAPI.is_finished = False
         ClientAPI.is_busy = True
@@ -47,30 +47,30 @@ class ClientAPI:
         return Response()
 
     @staticmethod
-    @app.route('/experiments', methods=['DELETE'])
+    @app.route("/experiments", methods=["DELETE"])
     def terminate_experiment():
         ClientAPI._lock.acquire()
 
         if ClientAPI.is_busy:
-            ClientAPI._logger.warning('Received stop signal from master, experiment will be quit.')
+            ClientAPI._logger.warning("Received stop signal from master, experiment will be quit.")
             ClientAPI._stop_event.set()
         else:
-            ClientAPI._logger.warning('Received stop signal from master, but no experiment is running.')
+            ClientAPI._logger.warning("Received stop signal from master, but no experiment is running.")
 
         ClientAPI._lock.release()
         return Response()
 
     @staticmethod
-    @app.route('/experiments', methods=['GET'])
+    @app.route("/experiments", methods=["GET"])
     def get_results():
         ClientAPI._lock.acquire()
 
         if ClientAPI.is_busy:
-            ClientAPI._logger.info('Sending neighbourhood results to master')
+            ClientAPI._logger.info("Sending neighbourhood results to master")
             response = jsonify(ClientAPI._gather_results())
             ClientAPI._finish_event.set()
         else:
-            ClientAPI._logger.warning('Master requested results, but no experiment is running.')
+            ClientAPI._logger.warning("Master requested results, but no experiment is running.")
             response = Response()
 
         ClientAPI._lock.release()
@@ -78,16 +78,13 @@ class ClientAPI:
         return response
 
     @staticmethod
-    @app.route('/status', methods=['GET'])
+    @app.route("/status", methods=["GET"])
     def get_status():
-        result = {
-            'busy': ClientAPI.is_busy,
-            'finished': ClientAPI.is_finished
-        }
+        result = {"busy": ClientAPI.is_busy, "finished": ClientAPI.is_finished}
         return jsonify(result)
 
     @staticmethod
-    @app.route('/parameters/discriminators', methods=['GET'])
+    @app.route("/parameters/discriminators", methods=["GET"])
     def get_discriminators():
         populations = ConcurrentPopulations.instance()
 
@@ -102,7 +99,7 @@ class ClientAPI:
         return Response(response=data, status=200, mimetype="application/json")
 
     @staticmethod
-    @app.route('/parameters/discriminators/best', methods=['GET'])
+    @app.route("/parameters/discriminators/best", methods=["GET"])
     def get_best_discriminator():
         populations = ConcurrentPopulations.instance()
 
@@ -118,7 +115,7 @@ class ClientAPI:
         return Response(response=data, status=200, mimetype="application/json")
 
     @staticmethod
-    @app.route('/parameters/generators', methods=['GET'])
+    @app.route("/parameters/generators", methods=["GET"])
     def get_generators():
         populations = ConcurrentPopulations.instance()
 
@@ -133,7 +130,7 @@ class ClientAPI:
         return Response(response=data, status=200, mimetype="application/json")
 
     @staticmethod
-    @app.route('/parameters/generators/best', methods=['GET'])
+    @app.route("/parameters/generators/best", methods=["GET"])
     def get_best_generator():
         populations = ConcurrentPopulations.instance()
 
@@ -156,40 +153,43 @@ class ClientAPI:
         output_base_dir = cc.output_dir
         ClientAPI._set_output_dir(cc)
 
-        if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
-            LogHelper.setup(cc.settings['general']['logging']['log_level'], cc.output_dir)
+        if "logging" in cc.settings["general"] and cc.settings["general"]["logging"]["enabled"]:
+            LogHelper.setup(cc.settings["general"]["logging"]["log_level"], cc.output_dir)
 
-        ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(cc.output_dir))
+        ClientAPI._logger.info("Distributed training recognized, set log directory to {}".format(cc.output_dir))
 
         try:
             lipizzaner = Lipizzaner()
-            lipizzaner.run(cc.settings['trainer']['n_iterations'], ClientAPI._stop_event)
+            lipizzaner.run(cc.settings["trainer"]["n_iterations"], ClientAPI._stop_event)
             ClientAPI.is_finished = True
 
             # Wait until master finishes experiment, i.e. collects results, or experiment is terminated
             or_event(ClientAPI._finish_event, ClientAPI._stop_event).wait()
         except Exception as ex:
             ClientAPI.is_finished = True
-            ClientAPI._logger.critical('An unhandled error occured while running Lipizzaner: {}'.format(ex))
+            ClientAPI._logger.critical("An unhandled error occured while running Lipizzaner: {}".format(ex))
             # Flask 1.0.2 does not print the stack trace of exceptions anymore
             traceback.print_exc()
             raise ex
         finally:
             ClientAPI.is_busy = False
-            ClientAPI._logger.info('Finished experiment, waiting for new requests.')
+            ClientAPI._logger.info("Finished experiment, waiting for new requests.")
             cc.output_dir = output_base_dir
             ConcurrentPopulations.instance().lock()
 
     @staticmethod
     def _individual_to_json(individual):
         json_response = {
-            'id': individual.id,
-            'parameters': individual.genome.encoded_parameters,
-            'learning_rate': individual.learning_rate,
-            'optimizer_state': StateEncoder.encode(individual.optimizer_state)
+            "id": individual.id,
+            "parameters": individual.genome.encoded_parameters,
+            "learning_rate": individual.learning_rate,
+            "optimizer_state": StateEncoder.encode(individual.optimizer_state),
         }
         if individual.iteration is not None:
-            json_response['iteration'] = individual.iteration
+            json_response["iteration"] = individual.iteration
+
+        if hasattr(individual.genome, "classification_layer"):
+            json_response["classification_layer_parameters"] = individual.genome.encoded_classification_layer_parameters
 
         return json_response
 
@@ -198,25 +198,27 @@ class ClientAPI:
         neighbourhood = Neighbourhood.instance()
         cc = ConfigurationContainer.instance()
         results = {
-            'generators': neighbourhood.best_generator_parameters,
-            'discriminators': neighbourhood.best_discriminator_parameters,
-            'weights_generators': neighbourhood.mixture_weights_generators
+            "generators": neighbourhood.best_generator_parameters,
+            "discriminators": neighbourhood.best_discriminator_parameters,
+            "weights_generators": neighbourhood.mixture_weights_generators,
         }
-        if cc.settings['trainer']['name'] == 'with_disc_mixture_wgan' \
-            or cc.settings['trainer']['name'] == 'with_disc_mixture_gan':
-            results['weights_discriminators'] = neighbourhood.mixture_weights_discriminators
+        if (
+            cc.settings["trainer"]["name"] == "with_disc_mixture_wgan"
+            or cc.settings["trainer"]["name"] == "with_disc_mixture_gan"
+        ):
+            results["weights_discriminators"] = neighbourhood.mixture_weights_discriminators
         else:
-            results['weights_discriminators'] = 0.0
+            results["weights_discriminators"] = 0.0
 
         return results
 
     @classmethod
     def _set_output_dir(cls, cc):
         output = cc.output_dir
-        dataloader = cc.settings['dataloader']['dataset_name']
-        start_time = cc.settings['general']['distribution']['start_time']
+        dataloader = cc.settings["dataloader"]["dataset_name"]
+        start_time = cc.settings["general"]["distribution"]["start_time"]
 
-        cc.output_dir = os.path.join(output, 'distributed', dataloader, start_time, str(os.getpid()))
+        cc.output_dir = os.path.join(output, "distributed", dataloader, start_time, str(os.getpid()))
         os.makedirs(cc.output_dir, exist_ok=True)
 
     def listen(self, port):

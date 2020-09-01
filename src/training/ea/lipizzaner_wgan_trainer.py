@@ -24,16 +24,21 @@ class LipizzanerWGANTrainer(LipizzanerGANTrainer):
     real_labels = torch.FloatTensor([1]).cuda() if is_cuda_enabled() else torch.FloatTensor([1])
     fake_labels = real_labels * -1
 
-    def update_genomes(self, population_attacker, population_defender, input_var, loaded, data_iterator):
+    def update_genomes(
+        self, population_attacker, population_defender, input_var, loaded, data_iterator,
+    ):
         if population_attacker.population_type == TYPE_DISCRIMINATOR:
-            return self._update_discriminators(population_attacker, population_defender, input_var, loaded,
-                                        data_iterator)
+            return self._update_discriminators(
+                population_attacker, population_defender, input_var, loaded, data_iterator,
+            )
         elif population_attacker.population_type == TYPE_GENERATOR:
             return self._update_generators(population_attacker, population_defender, input_var)
         else:
-            raise Exception('Population type not explicitely set.')
+            raise Exception("Population type not explicitely set.")
 
-    def _update_discriminators(self, population_attacker, population_defender, input_var, loaded, data_iterator):
+    def _update_discriminators(
+        self, population_attacker, population_defender, input_var, loaded, data_iterator,
+    ):
 
         batch_size = input_var.size(0)
         # Randomly pick one only, referred from asynchronous_ea_trainer
@@ -92,7 +97,6 @@ class LipizzanerWGANTrainer(LipizzanerGANTrainer):
 
         return input_var
 
-
     def _update_generators(self, population_attacker, population_defender, input_var):
 
         batch_size = input_var.size(0)
@@ -125,8 +129,7 @@ class LipizzanerWGANTrainer(LipizzanerGANTrainer):
 
     @staticmethod
     def _get_optimizer(individual):
-        optimizer = torch.optim.RMSprop(individual.genome.net.parameters(),
-                                        lr=individual.learning_rate)
+        optimizer = torch.optim.RMSprop(individual.genome.net.parameters(), lr=individual.learning_rate)
 
         # Restore previous state dict, if available
         if individual.optimizer_state is not None:

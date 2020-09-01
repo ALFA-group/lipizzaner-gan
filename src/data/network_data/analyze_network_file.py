@@ -20,13 +20,14 @@ def main(file_to_analyze, sequence_length):
 
     # Convert to argus and get the required fields
     convert_to_argus_command = "argus -r {} -w {}".format(pcap_file, argus_file)
-    read_argus_command = "racluster -r {} -M rmon dsrs=\"-agr\" -m smac saddr -s stime dur:20 pkts bytes trans > {}".format(argus_file, tmp_file)
+    read_argus_command = 'racluster -r {} -M rmon dsrs="-agr" -m smac saddr -s stime dur:20 pkts bytes trans > {}'.format(
+        argus_file, tmp_file
+    )
     os.system(convert_to_argus_command)
     os.system(read_argus_command)
 
-
-    with open(tmp_file, 'r') as f:
-        first_line = f.readline()
+    with open(tmp_file, "r") as f:
+        f.readline()
         first = True
         data = []
         sequence_data = []
@@ -35,7 +36,6 @@ def main(file_to_analyze, sequence_length):
         # Read the data and create the dataset
         for line in f.readlines():
             split_line = line.strip().split()
-            length = len(split_line)
             start_time = split_line[0]
             start_time_datetime = datetime.strptime(start_time, "%H:%M:%S.%f")
             if first:
@@ -62,16 +62,13 @@ def main(file_to_analyze, sequence_length):
     np.save("{}.npy".format(basename), data)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Analyze pcap file')
-    parser.add_argument('--pcap_file',
-                        type=str,
-                        required=True,
-                        help='Name of pcap file to extract the netflow data from.')
-    parser.add_argument('--sequence_length',
-                        type=int,
-                        required=True,
-                        default=30,
-                        help='Length of a sequence.')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Analyze pcap file")
+    parser.add_argument(
+        "--pcap_file", type=str, required=True, help="Name of pcap file to extract the netflow data from.",
+    )
+    parser.add_argument(
+        "--sequence_length", type=int, required=True, default=30, help="Length of a sequence.",
+    )
     args = parser.parse_args()
     main(args.pcap_file, args.sequence_length)
