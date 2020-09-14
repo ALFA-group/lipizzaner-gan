@@ -69,12 +69,24 @@ class BackpropagationTrainer(NeuralNetworkTrainer):
                 if (i + 1) % 300 == 0:
                     self._logger.info(
                         "Epoch [%d/%d], Step[%d/%d], d_loss: %.4f, "
-                        "g_loss: %.4f" % (epoch, n_iterations, i + 1, 600, d_loss.data[0], g_loss.data[0],)
+                        "g_loss: %.4f"
+                        % (
+                            epoch,
+                            n_iterations,
+                            i + 1,
+                            600,
+                            d_loss.data[0],
+                            g_loss.data[0],
+                        )
                     )
 
             if graph_loss is not None:
                 graph_loss.append(
-                    epoch, {"L(gen(x)) - Backprop": float(g_loss), "L(disc(x)) - Backprop": float(d_loss),},
+                    epoch,
+                    {
+                        "L(gen(x)) - Backprop": float(g_loss),
+                        "L(disc(x)) - Backprop": float(d_loss),
+                    },
                 )
                 graph_step_size.append(
                     epoch,
@@ -93,7 +105,7 @@ class BackpropagationTrainer(NeuralNetworkTrainer):
 
             z = to_pytorch_variable(torch.randn(min(batch_size, 100), self.network_factory.gen_input_size))
             generated_output = generator.net(z)
-            self.dataloader.save_images(generated_output, shape, "fake_images-%d.png" % (epoch + 1))
+            self.dataloader.save_images(generated_output, shape, "fake_images-%03d.png" % (epoch + 1))
             self._logger.info(
                 "Epoch [%d/%d], d_loss: %.4f, g_loss: %.4f" % (epoch, n_iterations, d_loss.data[0], g_loss.data[0])
             )

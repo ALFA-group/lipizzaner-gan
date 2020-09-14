@@ -26,7 +26,10 @@ class NeuralNetworkTrainer(ABC):
         self.network_factory = network_factory
         self.cc = ConfigurationContainer.instance()
 
-        (self.population_gen, self.population_dis,) = self.initialize_populations()
+        (
+            self.population_gen,
+            self.population_dis,
+        ) = self.initialize_populations()
 
     @abstractmethod
     def initialize_populations(self):
@@ -58,14 +61,23 @@ class NeuralNetworkTrainer(ABC):
         image_format = self.cc.settings["general"]["logging"]["image_format"]
 
         path_real = os.path.join(self.cc.output_dir, "real_images.{}".format(image_format))
-        path_fake = os.path.join(self.cc.output_dir, "fake_images-{}.{}".format(iteration + 1, image_format),)
+        path_fake = os.path.join(
+            self.cc.output_dir,
+            "fake_images-{:03d}.{}".format(iteration + 1, image_format),
+        )
 
         self.save_images(batch_size, input_var, iteration, loader, path_fake, path_real)
 
         return path_real, path_fake
 
     def save_images(
-        self, batch_size, input_var, iteration, loader, path_fake, path_real=None,
+        self,
+        batch_size,
+        input_var,
+        iteration,
+        loader,
+        path_fake,
+        path_real=None,
     ):
         # Check if dataset contains its own image conversion method (e.g. for gaussian values)
         if hasattr(loader.dataset, "save_images"):
@@ -73,7 +85,12 @@ class NeuralNetworkTrainer(ABC):
             if iteration == 0 and path_real:
                 loader.dataset.save_images(input_var, path_real)
 
-            z = noise(batch_size, self.network_factory.gen_input_size)
+            num_classes = (
+                self.network_factory.num_classes
+                if self.network_factory.num_classes is not None and self.network_factory.num_classes != 0
+                else 0
+            )
+            z = noise(batch_size, self.network_factory.gen_input_size + num_classes)
             if self.cc.settings["dataloader"]["dataset_name"] == "network_traffic":
                 sequence_length = input_var.size(1)
                 z = z.unsqueeze(1).repeat(1, sequence_length, 1)
@@ -102,7 +119,12 @@ class NeuralNetworkTrainer(ABC):
             if iteration == 0 and path_real:
                 self.dataloader.save_images(input_var, shape, path_real)
 
-            z = noise(batch_size, self.network_factory.gen_input_size)
+            num_classes = (
+                self.network_factory.num_classes
+                if self.network_factory.num_classes is not None and self.network_factory.num_classes != 0
+                else 0
+            )
+            z = noise(batch_size, self.network_factory.gen_input_size + num_classes)
             gen = self.population_gen.individuals[0].genome.net
             gen.eval()
             generated_output = gen(z)
@@ -131,7 +153,8 @@ class NeuralNetworkTrainer(ABC):
                     if indiv["is_local"]:
                         filename = "{}{}.pkl".format(prefix, cell_number)
                         torch.save(
-                            individual.genome.net.state_dict(), os.path.join(self.cc.output_dir, filename),
+                            individual.genome.net.state_dict(),
+                            os.path.join(self.cc.output_dir, filename),
                         )
             return individuals_info
 

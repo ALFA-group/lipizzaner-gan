@@ -14,6 +14,8 @@ from networks.competetive_net import (
     DiscriminatorNetSequential,
     SSDiscriminatorNet,
     SSGeneratorNet,
+    ConditionalDiscriminatorNet,
+    ConditionalGeneratorNet,
 )
 
 
@@ -83,7 +85,9 @@ class RNNFactory(NetworkFactory):
 
     def create_discriminator(self, parameters=None, encoded_parameters=None):
         net = DiscriminatorNetSequential(
-            self.loss_function, SimpleRNN(self.input_data_size, 1, self.gen_input_size), self.gen_input_size,
+            self.loss_function,
+            SimpleRNN(self.input_data_size, 1, self.gen_input_size),
+            self.gen_input_size,
         )
 
         if parameters is not None:
@@ -94,20 +98,24 @@ class RNNFactory(NetworkFactory):
         return net
 
 
-class CircularProblemFactory(NetworkFactory):
+class Gaussian2DNetworkFactory(NetworkFactory):
+    num_classes = 0
+
     @property
     def gen_input_size(self):
-        return 256
+        return 32
 
     def create_generator(self, parameters=None, encoded_parameters=None):
         net = GeneratorNet(
             self.loss_function,
             Sequential(
-                nn.Linear(self.gen_input_size, 128),
-                nn.Tanh(),
-                nn.Linear(128, 128),
-                nn.Tanh(),
-                nn.Linear(128, self.input_data_size),
+                nn.Linear(self.gen_input_size, 64),
+                nn.Dropout(0.1),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, 64),
+                nn.Dropout(0.1),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, self.input_data_size),
             ),
             self.gen_input_size,
         )
@@ -123,11 +131,13 @@ class CircularProblemFactory(NetworkFactory):
         net = DiscriminatorNet(
             self.loss_function,
             Sequential(
-                nn.Linear(self.input_data_size, 128),
-                nn.Tanh(),
-                nn.Linear(128, 128),
-                nn.Tanh(),
-                nn.Linear(128, 1),
+                nn.Linear(self.input_data_size, 64),
+                nn.Dropout(0.1),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, 64),
+                nn.Dropout(0.1),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, 1),
                 nn.Sigmoid(),
             ),
             self.gen_input_size,
@@ -180,6 +190,103 @@ class FourLayerPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 1),
                 nn.Sigmoid(),
             ),
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+
+class ThreeLayerPerceptronFactory(NetworkFactory):
+    @property
+    def gen_input_size(self):
+        return 64
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+
+        net = GeneratorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(64, 128),
+                nn.LeakyReLU(0.2),
+                nn.Linear(128, self.input_data_size),
+            ),
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+        net = DiscriminatorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(self.input_data_size, 128),
+                nn.LeakyReLU(0.2),
+                nn.Linear(128, 1),
+                nn.Sigmoid(),
+            ),
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+
+class Gaussian2DConditionalNetworkFactory(NetworkFactory):
+    @property
+    def gen_input_size(self):
+        return 64
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+
+        print(self.num_classes)
+        net = ConditionalGeneratorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(self.gen_input_size + self.num_classes, 64),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, 64),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, self.input_data_size),
+                nn.Tanh(),
+            ),
+            self.num_classes,
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+
+        net = ConditionalDiscriminatorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(self.input_data_size + self.num_classes, 64),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, 64),
+                nn.LeakyReLU(0.2),
+                nn.Linear(64, 1),
+                nn.Sigmoid(),
+            ),
+            self.num_classes,
             self.gen_input_size,
         )
 

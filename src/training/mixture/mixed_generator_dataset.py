@@ -8,7 +8,12 @@ from helpers.pytorch_helpers import noise
 
 class MixedGeneratorDataset(torch.utils.data.Dataset):
     def __init__(
-        self, generator_population, weights, n_samples, mixture_generator_samples_mode, z=None,
+        self,
+        generator_population,
+        weights,
+        n_samples,
+        mixture_generator_samples_mode,
+        z=None,
     ):
         """
         Creates samples from a mixture of generators, with sample probability defined given a random noise vector
@@ -48,7 +53,17 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
                 "Invalid argument for mixture_generator_samples_mode: {}".format(mixture_generator_samples_mode)
             )
         if z is None:
-            self.z = noise(n_samples, self.individuals[0].genome.data_size)
+            # num_classes = self.individuals[0].genome.num_classes if self.individuals[
+            #                                                             0].genome.num_classes is not None and \
+            #                                                         self.individuals[0].genome.num_classes != 0 else 0
+
+            num_classes = (
+                self.individuals[0].genome.num_classes
+                if hasattr(self.individuals[0].genome, "num_classes") and self.individuals[0].genome.num_classes != 0
+                else 0
+            )
+
+            self.z = noise(n_samples, self.individuals[0].genome.data_size + num_classes)
         else:
             self.z = z
 

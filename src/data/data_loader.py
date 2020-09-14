@@ -20,7 +20,13 @@ class DataLoader(ABC):
     """
 
     def __init__(
-        self, dataset, use_batch=True, batch_size=100, n_batches=0, shuffle=False, sampling_ratio=1,
+        self,
+        dataset,
+        use_batch=True,
+        batch_size=100,
+        n_batches=0,
+        shuffle=False,
+        sampling_ratio=1,
     ):
         """
         :param dataset: Dataset from torchvision.datasets.*, e.g. MNIST or CIFAR10
@@ -78,7 +84,10 @@ class DataLoader(ABC):
 
     def transform(self):
         return transforms.Compose(
-            [transforms.ToTensor(), transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),]
+            [
+                transforms.ToTensor(),
+                transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+            ]
         )
 
     def transpose_data(self, data):
@@ -86,10 +95,12 @@ class DataLoader(ABC):
 
     def save_images(self, images, shape, filename):
         # Additional dimensions are only passed to the shape instance when > 1
-        dimensions = 1 if len(shape) == 3 else shape[3]
-
-        img_view = images.view(images.size(0), dimensions, shape[1], shape[2])
-        save_image(denorm(img_view.data), filename)
+        if shape is not None:
+            dimensions = 1 if len(shape) == 3 else shape[3]
+            img_view = images.view(images.size(0), dimensions, shape[1], shape[2])
+            save_image(denorm(img_view.data), filename)
+        else:
+            save_image(images.data, filename)
 
     @property
     @abstractmethod

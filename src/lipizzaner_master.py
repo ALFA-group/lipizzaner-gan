@@ -68,7 +68,8 @@ class LipizzanerMaster:
         # It is not possible to obtain reproducible result for large grid due to nature of asynchronous training
         # But still set seed here to minimize variance
         set_random_seed(
-            self.cc.settings["general"]["seed"], self.cc.settings["trainer"]["params"]["score"]["cuda"],
+            self.cc.settings["general"]["seed"],
+            self.cc.settings["trainer"]["params"]["score"]["cuda"],
         )
         self._logger.info("Seed used in master: {}".format(self.cc.settings["general"]["seed"]))
 
@@ -116,7 +117,10 @@ class LipizzanerMaster:
         for ip in ip_addresses:
             possible_clients.append({"address": ip, "port": 5000})
 
-        accessible_clients = sorted(self._accessible_clients(possible_clients), key=lambda x: x["address"],)
+        accessible_clients = sorted(
+            self._accessible_clients(possible_clients),
+            key=lambda x: x["address"],
+        )
         # Docker swarm specific: lowest address is overlay network address, remove it
         if os.environ.get("SWARM", False) == "True" and len(accessible_clients) != 0:
             del accessible_clients[0]
@@ -167,7 +171,9 @@ class LipizzanerMaster:
         # Initialize node client
         dataloader = self.cc.create_instance(self.cc.settings["dataloader"]["dataset_name"])
         network_factory = self.cc.create_instance(
-            self.cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
+            self.cc.settings["network"]["name"],
+            dataloader.n_input_neurons,
+            num_classes=dataloader.num_classes,
         )
         node_client = NodeClient(network_factory)
         db_logger = DbLogger()
@@ -175,19 +181,29 @@ class LipizzanerMaster:
         results = node_client.gather_results(self.cc.settings["general"]["distribution"]["client_nodes"], 120)
 
         scores = []
-        for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator,) in results:
+        for (
+            node,
+            generator_pop,
+            discriminator_pop,
+            weights_generator,
+            weights_discriminator,
+        ) in results:
             node_name = "{}:{}".format(node["address"], node["port"])
             try:
                 output_dir = self.get_and_create_output_dir(node)
 
                 for generator in generator_pop.individuals:
-                    filename = generator.save_genome(GENERATOR_PREFIX, output_dir,)
+                    filename = generator.save_genome(
+                        GENERATOR_PREFIX,
+                        output_dir,
+                    )
                     with open(os.path.join(output_dir, "mixture.yml"), "a") as file:
                         file.write("{}: {}\n".format(filename, weights_generator[generator.source]))
 
                 for discriminator in discriminator_pop.individuals:
-                    filename = discriminator.save_genome(DISCRIMINATOR_PREFIX, output_dir, True)
-                    # "ssgan" in self.cc.settings["network"]["name"])
+                    discriminator.save_genome(
+                        DISCRIMINATOR_PREFIX, output_dir, "SemiSupervised" in discriminator.genome.name
+                    )
 
                 # Save images
                 dataset = MixedGeneratorDataset(
@@ -197,8 +213,10 @@ class LipizzanerMaster:
                     self.cc.settings["trainer"]["mixture_generator_samples_mode"],
                 )
 
-                if "gaussian_" in self.cc.settings["dataloader"]["dataset_name"]:
+                if "gaussian_" in self.cc.settings["dataloader"]["dataset_name"]:  # Gaussian 2D
                     image_paths = self.save_samples(dataset, output_dir, dataloader, 100000, 10000)
+                elif "gaussian" == self.cc.settings["dataloader"]["dataset_name"]:  # Gaussian 1D
+                    image_paths = self.save_samples(dataset, output_dir, dataloader)
                 else:
                     image_paths = self.save_samples(dataset, output_dir, dataloader)
                 self._logger.info(
@@ -229,7 +247,11 @@ class LipizzanerMaster:
                 traceback.print_exc()
 
         if self.cc.settings["master"]["calculate_score"] and scores:
-            best_node = sorted(scores, key=lambda x: x[1], reverse=ScoreCalculatorFactory.create().is_reversed,)[-1]
+            best_node = sorted(
+                scores,
+                key=lambda x: x[1],
+                reverse=ScoreCalculatorFactory.create().is_reversed,
+            )[-1]
             self._logger.info(
                 "Best result: {}:{} = {}".format(best_node[0]["address"], best_node[0]["port"], best_node[1])
             )
@@ -245,7 +267,12 @@ class LipizzanerMaster:
         return directory
 
     def save_samples(
-        self, dataset, output_dir, image_specific_loader, n_images=10, batch_size=100,
+        self,
+        dataset,
+        output_dir,
+        image_specific_loader,
+        n_images=10,
+        batch_size=100,
     ):
         image_format = self.cc.settings["general"]["logging"]["image_format"]
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size)
