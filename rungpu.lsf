@@ -1,7 +1,7 @@
 #!/bin/bash
 # Begin BSUB Options
 #BSUB -P csc387
-#BSUB -W 01:00
+#BSUB -W 02:00
 #BSUB -nnodes 2
 #BSUB -alloc_flags "gpumps"
 #BSUB -J ganwork

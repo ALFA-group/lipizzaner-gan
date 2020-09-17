@@ -15,8 +15,8 @@ distribution:
   master_node:
     exit_clients_on_disconnect: True
   client_nodes:
-    - address: g27n16
+    - address: h21n16
       port: 5000-5005
-    - address: g14n07
+    - address: g18n14
       port: 5000-5005
 

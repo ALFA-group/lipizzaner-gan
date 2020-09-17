@@ -12,3 +12,7 @@ class MNISTDataLoader(DataLoader):
     def n_input_neurons(self):
         return 784
 
+    def transform(self):
+        return transforms.Compose([transforms.ToTensor(), transforms.Normalize(mean=(0.5,),
+                                                                               std=(0.5,))])
+
