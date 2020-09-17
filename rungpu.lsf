@@ -8,12 +8,12 @@
 #BSUB -o ganwork.%J
 #BSUB -e ganwork.%J
 
-# Load Modules
-module load cuda/10.1.243
-module load python/3.6.6-anaconda3-5.3.0
-module load gcc/6.4.0
-module load magma/2.3.0
-module load netlib-lapack/3.8.0
+# Load Modules - IBM WML sets up conda environment
+module load ibm-wml-ce/1.7.0-3
+module load git-lfs
+
+# Set user base for installing additional libraries
+export PYTHONUSERBASE=$PWD/.local/
 
 # Experiment Paths/Parameters
 RUNID=ganrun_000
@@ -22,12 +22,6 @@ export PYTHON_EGG_CACHE=$PWD/.cache
 export NUM_CLIENTS_PER_NODE=6
 export PORT_UPPER_LIMIT=5005
 cd $PROJWORK/csc387/floresd/lipizzaner-gan
-
-# Load/Setup Conda Environment
-CONDA_ENV=/ccs/proj/csc363/path/to/your/conda_env
-source deactivate
-source activate $CONDA_ENV
-export LD_LIBRARY_PATH=$CONDA_ENV/lib:$LD_LIBRARY_PATH
 
 # Run Code
 cp src/configuration/quickstart/general.yml.bak src/configuration/quickstart/general.yml
