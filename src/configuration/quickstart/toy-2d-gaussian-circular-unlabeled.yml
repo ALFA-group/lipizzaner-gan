@@ -12,25 +12,27 @@ trainer:
     # Hyperparameter mutation
     alpha: 0.0001
     mutation_probability: 0.5
-    discriminator_skip_each_nth_step: 1
+    discriminator_skip_each_nth_step: 0
     mixture_sigma: 0.01
     enable_selection: True
     score:
       enabled: True
-      type: fid
+      type: gaussian_toy_distances_2d
       score_sample_size: 1000
       cuda: False
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
 dataloader:
-  dataset_name: mnist
+  dataset_name: unlabeled_gaussian_circle
   use_batch: True
-  batch_size: 400
-  n_batches: 10
+  batch_size: 50
+  n_batches: 0
   shuffle: True
+  number_of_modes: 4
+  number_of_records: 10000
 network:
-  name: four_layer_perceptron
+  name: gaussian_2d_perceptron
   loss: bceloss
 master:
   calculate_score: True

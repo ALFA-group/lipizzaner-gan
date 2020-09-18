@@ -141,7 +141,7 @@ def calc_score(args, cc):
     score_calc = ScoreCalculatorFactory.create()
     cc.settings['general']['distribution']['client_id'] = 0
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
-    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes,)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     generator = network_factory.create_generator()
@@ -169,7 +169,7 @@ def generate_samples(args, cc):
     sample_size = args.sample_size
 
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
-    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes,)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
