@@ -22,8 +22,9 @@ class LabeledCircularToyDataLoader(DataLoader):
     A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a circle
     """
 
-    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
-        super().__init__(LabeledCircularToyDataSet, use_batch, batch_size, n_batches, shuffle)
+    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False, dataset_name=None):
+        dataset = LabeledCircularToyDataSet if dataset_name is None else dataset_name
+        super().__init__(dataset, use_batch, batch_size, n_batches, shuffle)
 
     @property
     def n_input_neurons(self):
@@ -37,24 +38,13 @@ class LabeledCircularToyDataLoader(DataLoader):
         self.dataset().save_images(images, filename)
 
 
-class UnlabeledCircularToyDataLoader(DataLoader):
+class UnlabeledCircularToyDataLoader(LabeledCircularToyDataLoader):
     """
     A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a circle
     """
 
     def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
-        super().__init__(UnlabeledCircularToyDataSet, use_batch, batch_size, n_batches, shuffle)
-
-    @property
-    def n_input_neurons(self):
-        return 2
-
-    @property
-    def num_classes(self):
-        return self.dataset().num_classes
-
-    def save_images(self, images, shape, filename):
-        self.dataset().save_images(images, filename)
+        super().__init__(use_batch, batch_size, n_batches, shuffle, dataset_name=UnlabeledCircularToyDataSet)
 
 
 class LabeledGridToyDataLoader(DataLoader):
@@ -62,8 +52,9 @@ class LabeledGridToyDataLoader(DataLoader):
     A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a grid
     """
 
-    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
-        super().__init__(LabeledGridToyDataSet, use_batch, batch_size, n_batches, shuffle)
+    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False, dataset_name=None):
+        dataset = LabeledGridToyDataSet if dataset_name is None else dataset_name
+        super().__init__(dataset, use_batch, batch_size, n_batches, shuffle)
 
     @property
     def n_input_neurons(self):
@@ -81,28 +72,13 @@ class LabeledGridToyDataLoader(DataLoader):
         pass
 
 
-class UnlabeledGridToyDataLoader(DataLoader):
+class UnlabeledGridToyDataLoader(LabeledGridToyDataLoader):
     """
     A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a grid
     """
 
     def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
-        super().__init__(UnlabeledGridToyDataSet, use_batch, batch_size, n_batches, shuffle)
-
-    @property
-    def n_input_neurons(self):
-        return 2
-
-    @property
-    def num_classes(self):
-        return self.dataset().num_classes
-
-    def save_images(self, images, shape, filename):
-        self.dataset().save_images(images, filename)
-
-    @property
-    def points(self):
-        pass
+        super().__init__(use_batch, batch_size, n_batches, shuffle, dataset_name=UnlabeledGridToyDataSet)
 
 
 class Gaussian2DDataSet(Dataset):
@@ -119,8 +95,6 @@ class Gaussian2DDataSet(Dataset):
         points_with_label = np.array((xs, ys, labels), dtype=np.float).T
         points_with_label = points_with_label[np.random.choice(points_with_label.shape[0], self.number_of_records), :]
         points_array = [[point[0], point[1]] for point in points_with_label]
-
-        # self.labels = [self.create_label(int(point[2])) for point in points_with_label]
 
         self.labels = [int(point[2]) for point in points_with_label]
         self.data = torch.from_numpy(
@@ -220,15 +194,10 @@ class LabeledCircularToyDataSet(Gaussian2DDataSet):
         return np.sin(thetas) * FACTOR_SIZE, np.cos(thetas) * FACTOR_SIZE, list(range(number_of_modes))
 
 
-class UnlabeledCircularToyDataSet(Gaussian2DDataSet):
+class UnlabeledCircularToyDataSet(LabeledCircularToyDataSet):
     @property
     def num_classes(self):
         return 0
-
-    @staticmethod
-    def points(number_of_modes):
-        thetas = np.linspace(0, 2 * np.pi, number_of_modes + 1)[:-1]
-        return np.sin(thetas) * FACTOR_SIZE, np.cos(thetas) * FACTOR_SIZE, [0] * number_of_modes
 
 
 class LabeledGridToyDataSet(Gaussian2DDataSet):
@@ -255,24 +224,7 @@ class LabeledGridToyDataSet(Gaussian2DDataSet):
         return xs, ys, list(range(len(xs)))
 
 
-class UnlabeledGridToyDataSet(Gaussian2DDataSet):
+class UnlabeledGridToyDataSet(LabeledGridToyDataSet):
     @property
     def num_classes(self):
         return 0
-
-    @staticmethod
-    def points(number_of_modes):
-        points_per_row = int(sqrt(number_of_modes))
-        points_per_col = int(number_of_modes / points_per_row)
-        size = FACTOR_SIZE
-        incr_x = (size * 2) / (points_per_row - 1)
-        incr_y = (size * 2) / (points_per_col - 1)
-        xs = []
-        ys = []
-        for i in range(points_per_row):
-            for j in range(points_per_col):
-                xs.append((i * incr_x) - size)
-                ys.append((j * incr_y) - size)
-        return xs, ys, [0] * len(xs)
-
-    colors = None
