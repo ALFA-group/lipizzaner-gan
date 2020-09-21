@@ -73,10 +73,10 @@ class ClientAPI:
         
 
         if ClientAPI.is_busy:
-            if os.path.exists("sleepfile.txt") :
-                ClientAPI._logger.info('Client made to sleep')
-                response = Response() 
-            else :
+            # if os.path.exists("sleepfile.txt") :
+            #     ClientAPI._logger.info('Client made to sleep')
+            #     response = Response() 
+            # else :
                 ClientAPI._logger.info('Sending neighbourhood results to master')
                 response = jsonify(ClientAPI._gather_results())
                 ClientAPI._finish_event.set()
@@ -152,23 +152,24 @@ class ClientAPI:
             'finished': ClientAPI.is_finished
         }
 
-        if hasattr(cc, "settings"):
-            if 'general' in cc.settings.keys():
-                sleep_path = cc.output_dir + "sleepfile.txt"
-                if os.path.exists(sleep_path) :
-                        ClientAPI._logger.info('Client made to sleep')
-                        response = Response()
-                        response._status_code = 404 
-                        return response
-                # otherwise find files in output dir and sort in alphanumeric order
-                # return timestamp of most recent checkpoint 
-                files = [x for x in os.listdir(cc.output_dir) if x.startswith("checkpoint")]
-                sortedFiles = sorted_nicely(files)
-                latestCheckpoint = sortedFiles[len(sortedFiles) - 1] # last one should be latest
-                if ClientAPI._last_checkpoint != latestCheckpoint:
-                    # TODO: not sure whether to update the last checkpoint time here so i can avoid herd effect
-                    # but i also don't want to miss checkpoints if the call fails 
-                    result['new_checkpoint'] = True 
+        # if hasattr(cc, "settings"):
+        #     if 'general' in cc.settings.keys():
+        #         sleep_path = cc.output_dir + "sleepfile.txt"
+        #         if os.path.exists(sleep_path) :
+        #                 ClientAPI._logger.info('Client made to sleep')
+        #                 response = Response()
+        #                 response._status_code = 404 
+        #                 return response
+        #         # otherwise find files in output dir and sort in alphanumeric order
+        #         # return timestamp of most recent checkpoint 
+        #         files = [x for x in os.listdir(cc.output_dir) if x.startswith("checkpoint")]
+        #         sortedFiles = sorted_nicely(files)
+        #         if len(sortedFiles) > 0:
+        #             latestCheckpoint = sortedFiles[len(sortedFiles) - 1] # last one should be latest
+        #             if ClientAPI._last_checkpoint != latestCheckpoint:
+        #                 # TODO: not sure whether to update the last checkpoint time here so i can avoid herd effect
+        #                 # but i also don't want to miss checkpoints if the call fails 
+        #                 result['new_checkpoint'] = True 
                 
         return jsonify(result)
 

@@ -1,0 +1,871 @@
++ cd src/
++ for i in {1..4..1}
++ echo 'start client 1'
+start client 1
++ sleep 5
++ python main.py train --distributed --client
+ * Serving Flask app "distribution.client_api" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
++ for i in {1..4..1}
++ echo 'start client 2'
+start client 2
++ sleep 5
++ python main.py train --distributed --client
+ * Serving Flask app "distribution.client_api" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on http://0.0.0.0:5001/ (Press CTRL+C to quit)
++ for i in {1..4..1}
++ echo 'start client 3'
+start client 3
++ sleep 5
++ python main.py train --distributed --client
+ * Serving Flask app "distribution.client_api" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on http://0.0.0.0:5002/ (Press CTRL+C to quit)
++ for i in {1..4..1}
++ echo 'start client 4'
+start client 4
++ sleep 5
++ python main.py train --distributed --client
+ * Serving Flask app "distribution.client_api" (lazy loading)
+ * Environment: production
+   WARNING: This is a development server. Do not use it in a production deployment.
+   Use a production WSGI server instead.
+ * Debug mode: off
+ * Running on http://0.0.0.0:5003/ (Press CTRL+C to quit)
++ ps
+  PID TTY          TIME CMD
+ 4730 pts/0    00:00:00 bash
+ 4731 pts/0    00:00:02 python
+ 4744 pts/0    00:00:01 python
+ 4757 pts/0    00:00:01 python
+ 4770 pts/0    00:00:01 python
+ 4783 pts/0    00:00:00 ps
+ 9223 pts/0    00:00:01 bash
++ wget http://0.0.0.0:5000/status
+--2020-05-27 07:35:33--  http://0.0.0.0:5000/status
+Connecting to 0.0.0.0:5000... connected.
+HTTP request sent, awaiting response... 127.0.0.1 - - [27/May/2020 07:35:33] "[37mGET /status HTTP/1.1[0m" 200 -
+200 OK
+Length: 32 [application/json]
+Saving to: ‘status.33’
+
+     0K                                                       100% 2.18M=0s
+
+2020-05-27 07:35:33 (2.18 MB/s) - ‘status.33’ saved [32/32]
+
++ cat status
+{"busy":false,"finished":true}
++ netstat_output_path=../netstatOutputPath.txt
++ sleep_time=15
++ port_path=../ports.txt
++ python main.py train --distributed --master -f configuration/quickstart/mnist.yml
++ bash -x ../client_killing.sh ../netstatOutputPath.txt 15 ../ports.txt
++ echo 'client killing script'
+client killing script
++ netstat -ap
++ grep python
+(Not all processes could be identified, non-owned process info
+ will not be shown, you would have to be root to see it all.)
++ python ../parsePorts.py ../netstatOutputPath.txt ../ports.txt
+['5000', '5001', '5002', '5003']
++ sleep 15
+127.0.0.1 - - [27/May/2020 07:35:34] "[37mGET /status HTTP/1.1[0m" 200 -
+127.0.0.1 - - [27/May/2020 07:35:34] "[37mGET /status HTTP/1.1[0m" 200 -
+127.0.0.1 - - [27/May/2020 07:35:34] "[37mGET /status HTTP/1.1[0m" 200 -
+127.0.0.1 - - [27/May/2020 07:35:34] "[37mGET /status HTTP/1.1[0m" 200 -
+2020-05-27 07:35:34,697 INFO - lipizzaner_master - Seed used in master: 1
+2020-05-27 07:35:34,704 INFO - lipizzaner_master - Successfully started experiment on http://127.0.0.1:5000/experiments
+2020-05-27 07:35:34,705 INFO - distribution.client_api - Distributed training recognized, set log directory to ./output/lipizzaner_gan/distributed/mnist/2020-05-27_07-35-34/4731
+2020-05-27 07:35:34,709 INFO - distribution.client_api - Distributed training recognized, set log directory to ./output/lipizzaner_gan/distributed/mnist/2020-05-27_07-35-34/4744
+2020-05-27 07:35:34,710 INFO - lipizzaner_master - Successfully started experiment on http://127.0.0.1:5001/experiments
+2020-05-27 07:35:34,715 INFO - lipizzaner_master - Successfully started experiment on http://127.0.0.1:5002/experiments
+2020-05-27 07:35:34,715 INFO - distribution.client_api - Distributed training recognized, set log directory to ./output/lipizzaner_gan/distributed/mnist/2020-05-27_07-35-34/4757
+2020-05-27 07:35:34,721 INFO - lipizzaner_master - Successfully started experiment on http://127.0.0.1:5003/experiments
+2020-05-27 07:35:34,721 INFO - distribution.client_api - Distributed training recognized, set log directory to ./output/lipizzaner_gan/distributed/mnist/2020-05-27_07-35-34/4770
+2020-05-27 07:35:35,201 INFO - lipizzaner - Parameters: {'trainer': {'name': 'lipizzaner_gan', 'n_iterations': 1, 'calculate_net_weights_dist': True, 'mixture_generator_samples_mode': 'exact_proportion', 'params': {'population_size': 1, 'tournament_size': 2, 'n_replacements': 1, 'default_adam_learning_rate': 0.0002, 'alpha': 0.0001, 'mutation_probability': 0.5, 'discriminator_skip_each_nth_step': 1, 'mixture_sigma': 0.01, 'enable_selection': True, 'score': {'enabled': True, 'type': 'fid', 'score_sample_size': 1000, 'cuda': False}, 'fitness': {'fitness_sample_size': 1000, 'fitness_mode': 'average'}}}, 'dataloader': {'dataset_name': 'mnist', 'use_batch': True, 'batch_size': 400, 'n_batches': 0, 'shuffle': True}, 'network': {'name': 'four_layer_perceptron', 'loss': 'bceloss'}, 'master': {'calculate_score': True, 'score_sample_size': 50000, 'cuda': False}, 'general': {'logging': {'enabled': True, 'log_level': 'INFO', 'log_server': None, 'image_format': 'jpg', 'print_discriminator': False}, 'losswise': {'enabled': False, 'api_key': None}, 'output_dir': './output', 'distribution': {'auto_discover': False, 'master_node': {'exit_clients_on_disconnect': True}, 'client_nodes': [{'address': '127.0.0.1', 'port': 5000, 'id': '127.0.0.1:5000'}, {'address': '127.0.0.1', 'port': 5001, 'id': '127.0.0.1:5001'}, {'address': '127.0.0.1', 'port': 5002, 'id': '127.0.0.1:5002'}, {'address': '127.0.0.1', 'port': 5003, 'id': '127.0.0.1:5003'}], 'start_time': '2020-05-27_07-35-34', 'client_id': 1}, 'seed': 1, 'num_workers': 0}}
+2020-05-27 07:35:35,202 INFO - lipizzaner - CUDA is not supported on this device.
+2020-05-27 07:35:35,202 INFO - lipizzaner - Parameters: {'trainer': {'name': 'lipizzaner_gan', 'n_iterations': 1, 'calculate_net_weights_dist': True, 'mixture_generator_samples_mode': 'exact_proportion', 'params': {'population_size': 1, 'tournament_size': 2, 'n_replacements': 1, 'default_adam_learning_rate': 0.0002, 'alpha': 0.0001, 'mutation_probability': 0.5, 'discriminator_skip_each_nth_step': 1, 'mixture_sigma': 0.01, 'enable_selection': True, 'score': {'enabled': True, 'type': 'fid', 'score_sample_size': 1000, 'cuda': False}, 'fitness': {'fitness_sample_size': 1000, 'fitness_mode': 'average'}}}, 'dataloader': {'dataset_name': 'mnist', 'use_batch': True, 'batch_size': 400, 'n_batches': 0, 'shuffle': True}, 'network': {'name': 'four_layer_perceptron', 'loss': 'bceloss'}, 'master': {'calculate_score': True, 'score_sample_size': 50000, 'cuda': False}, 'general': {'logging': {'enabled': True, 'log_level': 'INFO', 'log_server': None, 'image_format': 'jpg', 'print_discriminator': False}, 'losswise': {'enabled': False, 'api_key': None}, 'output_dir': './output', 'distribution': {'auto_discover': False, 'master_node': {'exit_clients_on_disconnect': True}, 'client_nodes': [{'address': '127.0.0.1', 'port': 5000, 'id': '127.0.0.1:5000'}, {'address': '127.0.0.1', 'port': 5001, 'id': '127.0.0.1:5001'}, {'address': '127.0.0.1', 'port': 5002, 'id': '127.0.0.1:5002'}, {'address': '127.0.0.1', 'port': 5003, 'id': '127.0.0.1:5003'}], 'start_time': '2020-05-27_07-35-34', 'client_id': 3}, 'seed': 1, 'num_workers': 0}}
+2020-05-27 07:35:35,202 INFO - lipizzaner - Parameters: {'trainer': {'name': 'lipizzaner_gan', 'n_iterations': 1, 'calculate_net_weights_dist': True, 'mixture_generator_samples_mode': 'exact_proportion', 'params': {'population_size': 1, 'tournament_size': 2, 'n_replacements': 1, 'default_adam_learning_rate': 0.0002, 'alpha': 0.0001, 'mutation_probability': 0.5, 'discriminator_skip_each_nth_step': 1, 'mixture_sigma': 0.01, 'enable_selection': True, 'score': {'enabled': True, 'type': 'fid', 'score_sample_size': 1000, 'cuda': False}, 'fitness': {'fitness_sample_size': 1000, 'fitness_mode': 'average'}}}, 'dataloader': {'dataset_name': 'mnist', 'use_batch': True, 'batch_size': 400, 'n_batches': 0, 'shuffle': True}, 'network': {'name': 'four_layer_perceptron', 'loss': 'bceloss'}, 'master': {'calculate_score': True, 'score_sample_size': 50000, 'cuda': False}, 'general': {'logging': {'enabled': True, 'log_level': 'INFO', 'log_server': None, 'image_format': 'jpg', 'print_discriminator': False}, 'losswise': {'enabled': False, 'api_key': None}, 'output_dir': './output', 'distribution': {'auto_discover': False, 'master_node': {'exit_clients_on_disconnect': True}, 'client_nodes': [{'address': '127.0.0.1', 'port': 5000, 'id': '127.0.0.1:5000'}, {'address': '127.0.0.1', 'port': 5001, 'id': '127.0.0.1:5001'}, {'address': '127.0.0.1', 'port': 5002, 'id': '127.0.0.1:5002'}, {'address': '127.0.0.1', 'port': 5003, 'id': '127.0.0.1:5003'}], 'start_time': '2020-05-27_07-35-34', 'client_id': 2}, 'seed': 1, 'num_workers': 0}}
+2020-05-27 07:35:35,202 INFO - lipizzaner - Parameters: {'trainer': {'name': 'lipizzaner_gan', 'n_iterations': 1, 'calculate_net_weights_dist': True, 'mixture_generator_samples_mode': 'exact_proportion', 'params': {'population_size': 1, 'tournament_size': 2, 'n_replacements': 1, 'default_adam_learning_rate': 0.0002, 'alpha': 0.0001, 'mutation_probability': 0.5, 'discriminator_skip_each_nth_step': 1, 'mixture_sigma': 0.01, 'enable_selection': True, 'score': {'enabled': True, 'type': 'fid', 'score_sample_size': 1000, 'cuda': False}, 'fitness': {'fitness_sample_size': 1000, 'fitness_mode': 'average'}}}, 'dataloader': {'dataset_name': 'mnist', 'use_batch': True, 'batch_size': 400, 'n_batches': 0, 'shuffle': True}, 'network': {'name': 'four_layer_perceptron', 'loss': 'bceloss'}, 'master': {'calculate_score': True, 'score_sample_size': 50000, 'cuda': False}, 'general': {'logging': {'enabled': True, 'log_level': 'INFO', 'log_server': None, 'image_format': 'jpg', 'print_discriminator': False}, 'losswise': {'enabled': False, 'api_key': None}, 'output_dir': './output', 'distribution': {'auto_discover': False, 'master_node': {'exit_clients_on_disconnect': True}, 'client_nodes': [{'address': '127.0.0.1', 'port': 5000, 'id': '127.0.0.1:5000'}, {'address': '127.0.0.1', 'port': 5001, 'id': '127.0.0.1:5001'}, {'address': '127.0.0.1', 'port': 5002, 'id': '127.0.0.1:5002'}, {'address': '127.0.0.1', 'port': 5003, 'id': '127.0.0.1:5003'}], 'start_time': '2020-05-27_07-35-34', 'client_id': 0}, 'seed': 1, 'num_workers': 0}}
+2020-05-27 07:35:35,202 INFO - lipizzaner - CUDA is not supported on this device.
+2020-05-27 07:35:35,202 INFO - lipizzaner - CUDA is not supported on this device.
+2020-05-27 07:35:35,202 INFO - lipizzaner - CUDA is not supported on this device.
+2020-05-27 07:35:35,204 INFO - lipizzaner - Seed used: 1
+2020-05-27 07:35:35,204 INFO - lipizzaner - Seed used: 1
+2020-05-27 07:35:35,204 INFO - lipizzaner - Seed used: 1
+2020-05-27 07:35:35,204 INFO - lipizzaner - Seed used: 1
+2020-05-27 07:35:35,204 INFO - lipizzaner - Starting training for 1 iterations/epochs.
+2020-05-27 07:35:35,204 INFO - lipizzaner - Starting training for 1 iterations/epochs.
+2020-05-27 07:35:35,204 INFO - lipizzaner - Starting training for 1 iterations/epochs.
+2020-05-27 07:35:35,204 INFO - lipizzaner - Starting training for 1 iterations/epochs.
+2020-05-27 07:35:35,341 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/generators took 0.0744471549987793 seconds
+2020-05-27 07:35:35,390 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/generators took 0.12203001976013184 seconds
+2020-05-27 07:35:35,406 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/generators took 0.13954877853393555 seconds
+2020-05-27 07:35:35,420 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/generators took 0.14961934089660645 seconds
+2020-05-27 07:35:35,424 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/generators took 0.15572309494018555 seconds
+2020-05-27 07:35:35,424 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/generators took 0.15767288208007812 seconds
+2020-05-27 07:35:35,424 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/generators took 0.1563115119934082 seconds
+2020-05-27 07:35:35,424 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/generators took 0.15789008140563965 seconds
+2020-05-27 07:35:35,524 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/discriminators took 0.0664525032043457 seconds
+2020-05-27 07:35:35,545 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/discriminators took 0.09070205688476562 seconds
+2020-05-27 07:35:35,556 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/discriminators took 0.07696247100830078 seconds
+2020-05-27 07:35:35,554 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/discriminators took 0.0927267074584961 seconds
+2020-05-27 07:35:35,580 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/discriminators took 0.12011456489562988 seconds
+2020-05-27 07:35:35,608 INFO - training.ea.ea_trainer - Neighborhood located in possition (0, 1) of the grid
+2020-05-27 07:35:35,608 INFO - training.ea.ea_trainer - Generators in current neighborhood are ['Iteration0:127.0.0.1:5003:3/G0', 'Iteration0:127.0.0.1:5000:0/G0', 'Iteration0:127.0.0.1:5002:2/G0']
+2020-05-27 07:35:35,608 INFO - training.ea.ea_trainer - Discriminators in current neighborhood are ['Iteration0:127.0.0.1:5003:3/D0', 'Iteration0:127.0.0.1:5000:0/D0', 'Iteration0:127.0.0.1:5002:2/D0']
+2020-05-27 07:35:35,608 INFO - training.ea.ea_trainer - Local generators in current neighborhood are ['Iteration0:127.0.0.1:5002:2/G0']
+2020-05-27 07:35:35,608 INFO - training.ea.ea_trainer - Local discriminators in current neighborhood are ['Iteration0:127.0.0.1:5002:2/D0']
+2020-05-27 07:35:35,609 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/discriminators took 0.06667447090148926 seconds
+2020-05-27 07:35:35,613 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/discriminators took 0.12635016441345215 seconds
+2020-05-27 07:35:35,623 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/discriminators took 0.08360099792480469 seconds
+2020-05-27 07:35:35,636 INFO - training.ea.ea_trainer - Neighborhood located in possition (0, 0) of the grid
+2020-05-27 07:35:35,636 INFO - training.ea.ea_trainer - Generators in current neighborhood are ['Iteration0:127.0.0.1:5001:1/G0', 'Iteration0:127.0.0.1:5002:2/G0', 'Iteration0:127.0.0.1:5000:0/G0']
+2020-05-27 07:35:35,636 INFO - training.ea.ea_trainer - Discriminators in current neighborhood are ['Iteration0:127.0.0.1:5002:2/D0', 'Iteration0:127.0.0.1:5001:1/D0', 'Iteration0:127.0.0.1:5000:0/D0']
+2020-05-27 07:35:35,636 INFO - training.ea.ea_trainer - Local generators in current neighborhood are ['Iteration0:127.0.0.1:5000:0/G0']
+2020-05-27 07:35:35,636 INFO - training.ea.ea_trainer - Local discriminators in current neighborhood are ['Iteration0:127.0.0.1:5000:0/D0']
+2020-05-27 07:35:35,663 INFO - training.ea.ea_trainer - Neighborhood located in possition (1, 1) of the grid
+2020-05-27 07:35:35,663 INFO - training.ea.ea_trainer - Generators in current neighborhood are ['Iteration0:127.0.0.1:5002:2/G0', 'Iteration0:127.0.0.1:5001:1/G0', 'Iteration0:127.0.0.1:5003:3/G0']
+2020-05-27 07:35:35,663 INFO - training.ea.ea_trainer - Discriminators in current neighborhood are ['Iteration0:127.0.0.1:5001:1/D0', 'Iteration0:127.0.0.1:5002:2/D0', 'Iteration0:127.0.0.1:5003:3/D0']
+2020-05-27 07:35:35,663 INFO - training.ea.ea_trainer - Local generators in current neighborhood are ['Iteration0:127.0.0.1:5003:3/G0']
+2020-05-27 07:35:35,664 INFO - training.ea.ea_trainer - Local discriminators in current neighborhood are ['Iteration0:127.0.0.1:5003:3/D0']
+2020-05-27 07:35:35,664 INFO - training.ea.ea_trainer - Neighborhood located in possition (1, 0) of the grid
+2020-05-27 07:35:35,664 INFO - training.ea.ea_trainer - Generators in current neighborhood are ['Iteration0:127.0.0.1:5000:0/G0', 'Iteration0:127.0.0.1:5003:3/G0', 'Iteration0:127.0.0.1:5001:1/G0']
+2020-05-27 07:35:35,664 INFO - training.ea.ea_trainer - Discriminators in current neighborhood are ['Iteration0:127.0.0.1:5003:3/D0', 'Iteration0:127.0.0.1:5000:0/D0', 'Iteration0:127.0.0.1:5001:1/D0']
+2020-05-27 07:35:35,664 INFO - training.ea.ea_trainer - Local generators in current neighborhood are ['Iteration0:127.0.0.1:5001:1/G0']
+2020-05-27 07:35:35,664 INFO - training.ea.ea_trainer - Local discriminators in current neighborhood are ['Iteration0:127.0.0.1:5001:1/D0']
+2020-05-27 07:35:35,682 INFO - training.ea.ea_trainer - L2 distance between all generators weights: [('Iteration0:127.0.0.1:5003:3/G0', 'Iteration0:127.0.0.1:5000:0/G0', array(29.495895, dtype=float32)), ('Iteration0:127.0.0.1:5003:3/G0', 'Iteration0:127.0.0.1:5002:2/G0', array(29.44955, dtype=float32)), ('Iteration0:127.0.0.1:5000:0/G0', 'Iteration0:127.0.0.1:5002:2/G0', array(29.528898, dtype=float32))]
+2020-05-27 07:35:35,824 INFO - training.ea.ea_trainer - L2 distance between all generators weights: [('Iteration0:127.0.0.1:5002:2/G0', 'Iteration0:127.0.0.1:5001:1/G0', array(29.397673, dtype=float32)), ('Iteration0:127.0.0.1:5002:2/G0', 'Iteration0:127.0.0.1:5003:3/G0', array(29.44955, dtype=float32)), ('Iteration0:127.0.0.1:5001:1/G0', 'Iteration0:127.0.0.1:5003:3/G0', array(29.442345, dtype=float32))]
+2020-05-27 07:35:35,825 INFO - training.ea.ea_trainer - L2 distance between all generators weights: [('Iteration0:127.0.0.1:5001:1/G0', 'Iteration0:127.0.0.1:5002:2/G0', array(29.397673, dtype=float32)), ('Iteration0:127.0.0.1:5001:1/G0', 'Iteration0:127.0.0.1:5000:0/G0', array(29.468021, dtype=float32)), ('Iteration0:127.0.0.1:5002:2/G0', 'Iteration0:127.0.0.1:5000:0/G0', array(29.528898, dtype=float32))]
+2020-05-27 07:35:35,838 INFO - training.ea.ea_trainer - L2 distance between all discriminators weights: [('Iteration0:127.0.0.1:5003:3/D0', 'Iteration0:127.0.0.1:5000:0/D0', array(18.496534, dtype=float32)), ('Iteration0:127.0.0.1:5003:3/D0', 'Iteration0:127.0.0.1:5002:2/D0', array(18.496206, dtype=float32)), ('Iteration0:127.0.0.1:5000:0/D0', 'Iteration0:127.0.0.1:5002:2/D0', array(18.516693, dtype=float32))]
+2020-05-27 07:35:35,841 INFO - training.ea.ea_trainer - L2 distance between all generators weights: [('Iteration0:127.0.0.1:5000:0/G0', 'Iteration0:127.0.0.1:5003:3/G0', array(29.495895, dtype=float32)), ('Iteration0:127.0.0.1:5000:0/G0', 'Iteration0:127.0.0.1:5001:1/G0', array(29.468021, dtype=float32)), ('Iteration0:127.0.0.1:5003:3/G0', 'Iteration0:127.0.0.1:5001:1/G0', array(29.442345, dtype=float32))]
+2020-05-27 07:35:35,951 INFO - training.ea.ea_trainer - L2 distance between all discriminators weights: [('Iteration0:127.0.0.1:5001:1/D0', 'Iteration0:127.0.0.1:5002:2/D0', array(18.460606, dtype=float32)), ('Iteration0:127.0.0.1:5001:1/D0', 'Iteration0:127.0.0.1:5003:3/D0', array(18.475191, dtype=float32)), ('Iteration0:127.0.0.1:5002:2/D0', 'Iteration0:127.0.0.1:5003:3/D0', array(18.496206, dtype=float32))]
+2020-05-27 07:35:35,962 INFO - training.ea.ea_trainer - L2 distance between all discriminators weights: [('Iteration0:127.0.0.1:5002:2/D0', 'Iteration0:127.0.0.1:5001:1/D0', array(18.460606, dtype=float32)), ('Iteration0:127.0.0.1:5002:2/D0', 'Iteration0:127.0.0.1:5000:0/D0', array(18.516693, dtype=float32)), ('Iteration0:127.0.0.1:5001:1/D0', 'Iteration0:127.0.0.1:5000:0/D0', array(18.520739, dtype=float32))]
+2020-05-27 07:35:35,963 INFO - training.ea.ea_trainer - L2 distance between all discriminators weights: [('Iteration0:127.0.0.1:5003:3/D0', 'Iteration0:127.0.0.1:5000:0/D0', array(18.496534, dtype=float32)), ('Iteration0:127.0.0.1:5003:3/D0', 'Iteration0:127.0.0.1:5001:1/D0', array(18.475191, dtype=float32)), ('Iteration0:127.0.0.1:5000:0/D0', 'Iteration0:127.0.0.1:5001:1/D0', array(18.520739, dtype=float32))]
+2020-05-27 07:35:39,430 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5003:3/G0'] are selected from tournament selection
+2020-05-27 07:35:39,436 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5002:2/D0'] are selected from tournament selection
+2020-05-27 07:35:39,497 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5003:3/G0'] are selected from tournament selection
+2020-05-27 07:35:39,498 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5003:3/D0'] are selected from tournament selection
+2020-05-27 07:35:39,741 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5001:1/G0'] are selected from tournament selection
+2020-05-27 07:35:39,744 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5003:3/D0'] are selected from tournament selection
+2020-05-27 07:35:39,813 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5001:1/G0'] are selected from tournament selection
+2020-05-27 07:35:39,816 INFO - training.ea.ea_trainer - ['Iteration0:127.0.0.1:5002:2/D0'] are selected from tournament selection
+2020-05-27 07:35:39,820 INFO - training.ea.ea_trainer - Iteration 1, Batch 0/150
+2020-05-27 07:35:39,840 INFO - training.ea.ea_trainer - Iteration 1, Batch 0/150
+2020-05-27 07:35:39,927 INFO - training.ea.ea_trainer - Iteration 1, Batch 1/150
+2020-05-27 07:35:39,938 INFO - training.ea.ea_trainer - Iteration 1, Batch 1/150
+2020-05-27 07:35:40,019 INFO - training.ea.ea_trainer - Iteration 1, Batch 0/150
+2020-05-27 07:35:40,085 INFO - training.ea.ea_trainer - Iteration 1, Batch 0/150
+2020-05-27 07:35:40,118 INFO - training.ea.ea_trainer - Iteration 1, Batch 2/150
+2020-05-27 07:35:40,119 INFO - training.ea.ea_trainer - Iteration 1, Batch 2/150
+2020-05-27 07:35:40,124 INFO - training.ea.ea_trainer - Iteration 1, Batch 1/150
+2020-05-27 07:35:40,175 INFO - training.ea.ea_trainer - Iteration 1, Batch 1/150
+2020-05-27 07:35:40,223 INFO - training.ea.ea_trainer - Iteration 1, Batch 3/150
+2020-05-27 07:35:40,255 INFO - training.ea.ea_trainer - Iteration 1, Batch 3/150
+2020-05-27 07:35:40,305 INFO - training.ea.ea_trainer - Iteration 1, Batch 2/150
+2020-05-27 07:35:40,373 INFO - training.ea.ea_trainer - Iteration 1, Batch 4/150
+2020-05-27 07:35:40,381 INFO - training.ea.ea_trainer - Iteration 1, Batch 2/150
+2020-05-27 07:35:40,401 INFO - training.ea.ea_trainer - Iteration 1, Batch 3/150
+2020-05-27 07:35:40,438 INFO - training.ea.ea_trainer - Iteration 1, Batch 4/150
+2020-05-27 07:35:40,469 INFO - training.ea.ea_trainer - Iteration 1, Batch 5/150
+2020-05-27 07:35:40,493 INFO - training.ea.ea_trainer - Iteration 1, Batch 3/150
+2020-05-27 07:35:40,556 INFO - training.ea.ea_trainer - Iteration 1, Batch 5/150
+2020-05-27 07:35:40,572 INFO - training.ea.ea_trainer - Iteration 1, Batch 4/150
+2020-05-27 07:35:40,617 INFO - training.ea.ea_trainer - Iteration 1, Batch 6/150
+2020-05-27 07:35:40,646 INFO - training.ea.ea_trainer - Iteration 1, Batch 4/150
+2020-05-27 07:35:40,670 INFO - training.ea.ea_trainer - Iteration 1, Batch 5/150
+2020-05-27 07:35:40,708 INFO - training.ea.ea_trainer - Iteration 1, Batch 7/150
+2020-05-27 07:35:40,739 INFO - training.ea.ea_trainer - Iteration 1, Batch 6/150
+2020-05-27 07:35:40,753 INFO - training.ea.ea_trainer - Iteration 1, Batch 5/150
+2020-05-27 07:35:40,841 INFO - training.ea.ea_trainer - Iteration 1, Batch 6/150
+2020-05-27 07:35:40,865 INFO - training.ea.ea_trainer - Iteration 1, Batch 7/150
+2020-05-27 07:35:40,884 INFO - training.ea.ea_trainer - Iteration 1, Batch 8/150
+2020-05-27 07:35:40,931 INFO - training.ea.ea_trainer - Iteration 1, Batch 6/150
+2020-05-27 07:35:40,967 INFO - training.ea.ea_trainer - Iteration 1, Batch 7/150
+2020-05-27 07:35:41,000 INFO - training.ea.ea_trainer - Iteration 1, Batch 9/150
+2020-05-27 07:35:41,027 INFO - training.ea.ea_trainer - Iteration 1, Batch 7/150
+2020-05-27 07:35:41,099 INFO - training.ea.ea_trainer - Iteration 1, Batch 8/150
+2020-05-27 07:35:41,172 INFO - training.ea.ea_trainer - Iteration 1, Batch 8/150
+2020-05-27 07:35:41,210 INFO - training.ea.ea_trainer - Iteration 1, Batch 10/150
+2020-05-27 07:35:41,221 INFO - training.ea.ea_trainer - Iteration 1, Batch 8/150
+2020-05-27 07:35:41,257 INFO - training.ea.ea_trainer - Iteration 1, Batch 9/150
+2020-05-27 07:35:41,274 INFO - training.ea.ea_trainer - Iteration 1, Batch 9/150
+2020-05-27 07:35:41,310 INFO - training.ea.ea_trainer - Iteration 1, Batch 11/150
+2020-05-27 07:35:41,353 INFO - training.ea.ea_trainer - Iteration 1, Batch 9/150
+2020-05-27 07:35:41,475 INFO - training.ea.ea_trainer - Iteration 1, Batch 10/150
+2020-05-27 07:35:41,494 INFO - training.ea.ea_trainer - Iteration 1, Batch 10/150
+2020-05-27 07:35:41,507 INFO - training.ea.ea_trainer - Iteration 1, Batch 12/150
+2020-05-27 07:35:41,539 INFO - training.ea.ea_trainer - Iteration 1, Batch 10/150
+2020-05-27 07:35:41,569 INFO - training.ea.ea_trainer - Iteration 1, Batch 11/150
+2020-05-27 07:35:41,600 INFO - training.ea.ea_trainer - Iteration 1, Batch 13/150
+2020-05-27 07:35:41,629 INFO - training.ea.ea_trainer - Iteration 1, Batch 11/150
+2020-05-27 07:35:41,656 INFO - training.ea.ea_trainer - Iteration 1, Batch 11/150
+2020-05-27 07:35:41,752 INFO - training.ea.ea_trainer - Iteration 1, Batch 12/150
+2020-05-27 07:35:41,791 INFO - training.ea.ea_trainer - Iteration 1, Batch 12/150
+2020-05-27 07:35:41,815 INFO - training.ea.ea_trainer - Iteration 1, Batch 14/150
+2020-05-27 07:35:41,828 INFO - training.ea.ea_trainer - Iteration 1, Batch 12/150
+2020-05-27 07:35:41,865 INFO - training.ea.ea_trainer - Iteration 1, Batch 13/150
+2020-05-27 07:35:41,887 INFO - training.ea.ea_trainer - Iteration 1, Batch 13/150
+2020-05-27 07:35:41,931 INFO - training.ea.ea_trainer - Iteration 1, Batch 13/150
+2020-05-27 07:35:41,938 INFO - training.ea.ea_trainer - Iteration 1, Batch 15/150
+2020-05-27 07:35:42,069 INFO - training.ea.ea_trainer - Iteration 1, Batch 14/150
+2020-05-27 07:35:42,110 INFO - training.ea.ea_trainer - Iteration 1, Batch 14/150
+2020-05-27 07:35:42,133 INFO - training.ea.ea_trainer - Iteration 1, Batch 16/150
+2020-05-27 07:35:42,150 INFO - training.ea.ea_trainer - Iteration 1, Batch 14/150
+2020-05-27 07:35:42,177 INFO - training.ea.ea_trainer - Iteration 1, Batch 15/150
+2020-05-27 07:35:42,220 INFO - training.ea.ea_trainer - Iteration 1, Batch 15/150
+2020-05-27 07:35:42,256 INFO - training.ea.ea_trainer - Iteration 1, Batch 15/150
+2020-05-27 07:35:42,261 INFO - training.ea.ea_trainer - Iteration 1, Batch 17/150
+2020-05-27 07:35:42,397 INFO - training.ea.ea_trainer - Iteration 1, Batch 16/150
+2020-05-27 07:35:42,437 INFO - training.ea.ea_trainer - Iteration 1, Batch 16/150
+2020-05-27 07:35:42,461 INFO - training.ea.ea_trainer - Iteration 1, Batch 16/150
+2020-05-27 07:35:42,474 INFO - training.ea.ea_trainer - Iteration 1, Batch 18/150
+2020-05-27 07:35:42,516 INFO - training.ea.ea_trainer - Iteration 1, Batch 17/150
+2020-05-27 07:35:42,570 INFO - training.ea.ea_trainer - Iteration 1, Batch 17/150
+2020-05-27 07:35:42,575 INFO - training.ea.ea_trainer - Iteration 1, Batch 17/150
+2020-05-27 07:35:42,616 INFO - training.ea.ea_trainer - Iteration 1, Batch 19/150
+2020-05-27 07:35:42,697 INFO - training.ea.ea_trainer - Iteration 1, Batch 18/150
+2020-05-27 07:35:42,746 INFO - training.ea.ea_trainer - Iteration 1, Batch 18/150
+2020-05-27 07:35:42,768 INFO - training.ea.ea_trainer - Iteration 1, Batch 18/150
+2020-05-27 07:35:42,790 INFO - training.ea.ea_trainer - Iteration 1, Batch 20/150
+2020-05-27 07:35:42,793 INFO - training.ea.ea_trainer - Iteration 1, Batch 19/150
+2020-05-27 07:35:42,825 INFO - training.ea.ea_trainer - Iteration 1, Batch 19/150
+2020-05-27 07:35:42,883 INFO - training.ea.ea_trainer - Iteration 1, Batch 21/150
+2020-05-27 07:35:42,907 INFO - training.ea.ea_trainer - Iteration 1, Batch 19/150
+2020-05-27 07:35:42,973 INFO - training.ea.ea_trainer - Iteration 1, Batch 20/150
+2020-05-27 07:35:43,028 INFO - training.ea.ea_trainer - Iteration 1, Batch 20/150
+2020-05-27 07:35:43,050 INFO - training.ea.ea_trainer - Iteration 1, Batch 22/150
+2020-05-27 07:35:43,081 INFO - training.ea.ea_trainer - Iteration 1, Batch 20/150
+2020-05-27 07:35:43,135 INFO - training.ea.ea_trainer - Iteration 1, Batch 21/150
+2020-05-27 07:35:43,151 INFO - training.ea.ea_trainer - Iteration 1, Batch 21/150
+2020-05-27 07:35:43,179 INFO - training.ea.ea_trainer - Iteration 1, Batch 21/150
+2020-05-27 07:35:43,188 INFO - training.ea.ea_trainer - Iteration 1, Batch 23/150
+2020-05-27 07:35:43,325 INFO - training.ea.ea_trainer - Iteration 1, Batch 22/150
+2020-05-27 07:35:43,346 INFO - training.ea.ea_trainer - Iteration 1, Batch 22/150
+2020-05-27 07:35:43,367 INFO - training.ea.ea_trainer - Iteration 1, Batch 22/150
+2020-05-27 07:35:43,385 INFO - training.ea.ea_trainer - Iteration 1, Batch 24/150
+2020-05-27 07:35:43,422 INFO - training.ea.ea_trainer - Iteration 1, Batch 23/150
+2020-05-27 07:35:43,471 INFO - training.ea.ea_trainer - Iteration 1, Batch 23/150
+2020-05-27 07:35:43,494 INFO - training.ea.ea_trainer - Iteration 1, Batch 25/150
+2020-05-27 07:35:43,496 INFO - training.ea.ea_trainer - Iteration 1, Batch 23/150
+2020-05-27 07:35:43,622 INFO - training.ea.ea_trainer - Iteration 1, Batch 24/150
+2020-05-27 07:35:43,643 INFO - training.ea.ea_trainer - Iteration 1, Batch 24/150
+2020-05-27 07:35:43,660 INFO - training.ea.ea_trainer - Iteration 1, Batch 24/150
+2020-05-27 07:35:43,723 INFO - training.ea.ea_trainer - Iteration 1, Batch 26/150
+2020-05-27 07:35:43,726 INFO - training.ea.ea_trainer - Iteration 1, Batch 25/150
+2020-05-27 07:35:43,768 INFO - training.ea.ea_trainer - Iteration 1, Batch 25/150
+2020-05-27 07:35:43,785 INFO - training.ea.ea_trainer - Iteration 1, Batch 25/150
+2020-05-27 07:35:43,828 INFO - training.ea.ea_trainer - Iteration 1, Batch 27/150
+2020-05-27 07:35:43,899 INFO - training.ea.ea_trainer - Iteration 1, Batch 26/150
+2020-05-27 07:35:43,977 INFO - training.ea.ea_trainer - Iteration 1, Batch 26/150
+2020-05-27 07:35:43,978 INFO - training.ea.ea_trainer - Iteration 1, Batch 26/150
+2020-05-27 07:35:43,988 INFO - training.ea.ea_trainer - Iteration 1, Batch 28/150
+2020-05-27 07:35:44,016 INFO - training.ea.ea_trainer - Iteration 1, Batch 27/150
+2020-05-27 07:35:44,055 INFO - training.ea.ea_trainer - Iteration 1, Batch 27/150
+2020-05-27 07:35:44,119 INFO - training.ea.ea_trainer - Iteration 1, Batch 27/150
+2020-05-27 07:35:44,183 INFO - training.ea.ea_trainer - Iteration 1, Batch 29/150
+2020-05-27 07:35:44,188 INFO - training.ea.ea_trainer - Iteration 1, Batch 28/150
+2020-05-27 07:35:44,214 INFO - training.ea.ea_trainer - Iteration 1, Batch 28/150
+2020-05-27 07:35:44,346 INFO - training.ea.ea_trainer - Iteration 1, Batch 30/150
+2020-05-27 07:35:44,392 INFO - training.ea.ea_trainer - Iteration 1, Batch 29/150
+2020-05-27 07:35:44,394 INFO - training.ea.ea_trainer - Iteration 1, Batch 28/150
+2020-05-27 07:35:44,395 INFO - training.ea.ea_trainer - Iteration 1, Batch 29/150
+2020-05-27 07:35:44,450 INFO - training.ea.ea_trainer - Iteration 1, Batch 31/150
+2020-05-27 07:35:44,488 INFO - training.ea.ea_trainer - Iteration 1, Batch 29/150
+2020-05-27 07:35:44,580 INFO - training.ea.ea_trainer - Iteration 1, Batch 30/150
+2020-05-27 07:35:44,595 INFO - training.ea.ea_trainer - Iteration 1, Batch 30/150
+2020-05-27 07:35:44,641 INFO - training.ea.ea_trainer - Iteration 1, Batch 32/150
+2020-05-27 07:35:44,663 INFO - training.ea.ea_trainer - Iteration 1, Batch 31/150
+2020-05-27 07:35:44,678 INFO - training.ea.ea_trainer - Iteration 1, Batch 30/150
+2020-05-27 07:35:44,700 INFO - training.ea.ea_trainer - Iteration 1, Batch 31/150
+2020-05-27 07:35:44,718 INFO - training.ea.ea_trainer - Iteration 1, Batch 33/150
+2020-05-27 07:35:44,788 INFO - training.ea.ea_trainer - Iteration 1, Batch 31/150
+2020-05-27 07:35:44,824 INFO - training.ea.ea_trainer - Iteration 1, Batch 32/150
+2020-05-27 07:35:44,855 INFO - training.ea.ea_trainer - Iteration 1, Batch 32/150
+2020-05-27 07:35:44,914 INFO - training.ea.ea_trainer - Iteration 1, Batch 34/150
+2020-05-27 07:35:44,927 INFO - training.ea.ea_trainer - Iteration 1, Batch 33/150
+2020-05-27 07:35:44,973 INFO - training.ea.ea_trainer - Iteration 1, Batch 33/150
+2020-05-27 07:35:45,009 INFO - training.ea.ea_trainer - Iteration 1, Batch 32/150
+2020-05-27 07:35:45,019 INFO - training.ea.ea_trainer - Iteration 1, Batch 35/150
+2020-05-27 07:35:45,123 INFO - training.ea.ea_trainer - Iteration 1, Batch 34/150
+2020-05-27 07:35:45,140 INFO - training.ea.ea_trainer - Iteration 1, Batch 33/150
+2020-05-27 07:35:45,146 INFO - training.ea.ea_trainer - Iteration 1, Batch 34/150
+2020-05-27 07:35:45,200 INFO - training.ea.ea_trainer - Iteration 1, Batch 36/150
+2020-05-27 07:35:45,216 INFO - training.ea.ea_trainer - Iteration 1, Batch 35/150
+2020-05-27 07:35:45,303 INFO - training.ea.ea_trainer - Iteration 1, Batch 35/150
+2020-05-27 07:35:45,303 INFO - training.ea.ea_trainer - Iteration 1, Batch 37/150
+2020-05-27 07:35:45,322 INFO - training.ea.ea_trainer - Iteration 1, Batch 34/150
+2020-05-27 07:35:45,416 INFO - training.ea.ea_trainer - Iteration 1, Batch 36/150
+2020-05-27 07:35:45,461 INFO - training.ea.ea_trainer - Iteration 1, Batch 35/150
+2020-05-27 07:35:45,484 INFO - training.ea.ea_trainer - Iteration 1, Batch 36/150
+2020-05-27 07:35:45,495 INFO - training.ea.ea_trainer - Iteration 1, Batch 38/150
+2020-05-27 07:35:45,516 INFO - training.ea.ea_trainer - Iteration 1, Batch 37/150
+2020-05-27 07:35:45,605 INFO - training.ea.ea_trainer - Iteration 1, Batch 37/150
+2020-05-27 07:35:45,629 INFO - training.ea.ea_trainer - Iteration 1, Batch 39/150
+2020-05-27 07:35:45,661 INFO - training.ea.ea_trainer - Iteration 1, Batch 36/150
+2020-05-27 07:35:45,679 INFO - training.ea.ea_trainer - Iteration 1, Batch 38/150
+2020-05-27 07:35:45,769 INFO - training.ea.ea_trainer - Iteration 1, Batch 37/150
+2020-05-27 07:35:45,798 INFO - training.ea.ea_trainer - Iteration 1, Batch 40/150
+2020-05-27 07:35:45,798 INFO - training.ea.ea_trainer - Iteration 1, Batch 38/150
+2020-05-27 07:35:45,807 INFO - training.ea.ea_trainer - Iteration 1, Batch 39/150
+2020-05-27 07:35:45,896 INFO - training.ea.ea_trainer - Iteration 1, Batch 39/150
+2020-05-27 07:35:45,912 INFO - training.ea.ea_trainer - Iteration 1, Batch 41/150
+2020-05-27 07:35:45,943 INFO - training.ea.ea_trainer - Iteration 1, Batch 38/150
+2020-05-27 07:35:46,017 INFO - training.ea.ea_trainer - Iteration 1, Batch 40/150
+2020-05-27 07:35:46,046 INFO - training.ea.ea_trainer - Iteration 1, Batch 39/150
+2020-05-27 07:35:46,054 INFO - training.ea.ea_trainer - Iteration 1, Batch 40/150
+2020-05-27 07:35:46,091 INFO - training.ea.ea_trainer - Iteration 1, Batch 42/150
+2020-05-27 07:35:46,119 INFO - training.ea.ea_trainer - Iteration 1, Batch 41/150
+2020-05-27 07:35:46,150 INFO - training.ea.ea_trainer - Iteration 1, Batch 41/150
+2020-05-27 07:35:46,215 INFO - training.ea.ea_trainer - Iteration 1, Batch 43/150
+2020-05-27 07:35:46,255 INFO - training.ea.ea_trainer - Iteration 1, Batch 40/150
+2020-05-27 07:35:46,293 INFO - training.ea.ea_trainer - Iteration 1, Batch 42/150
+2020-05-27 07:35:46,325 INFO - training.ea.ea_trainer - Iteration 1, Batch 42/150
+2020-05-27 07:35:46,377 INFO - training.ea.ea_trainer - Iteration 1, Batch 41/150
+2020-05-27 07:35:46,410 INFO - training.ea.ea_trainer - Iteration 1, Batch 43/150
+2020-05-27 07:35:46,426 INFO - training.ea.ea_trainer - Iteration 1, Batch 43/150
+2020-05-27 07:35:46,449 INFO - training.ea.ea_trainer - Iteration 1, Batch 44/150
+2020-05-27 07:35:46,517 INFO - training.ea.ea_trainer - Iteration 1, Batch 42/150
+2020-05-27 07:35:46,535 INFO - training.ea.ea_trainer - Iteration 1, Batch 45/150
+2020-05-27 07:35:46,600 INFO - training.ea.ea_trainer - Iteration 1, Batch 43/150
+2020-05-27 07:35:46,640 INFO - training.ea.ea_trainer - Iteration 1, Batch 44/150
+2020-05-27 07:35:46,647 INFO - training.ea.ea_trainer - Iteration 1, Batch 44/150
+2020-05-27 07:35:46,737 INFO - training.ea.ea_trainer - Iteration 1, Batch 46/150
+2020-05-27 07:35:46,749 INFO - training.ea.ea_trainer - Iteration 1, Batch 44/150
+2020-05-27 07:35:46,759 INFO - training.ea.ea_trainer - Iteration 1, Batch 45/150
+2020-05-27 07:35:46,799 INFO - training.ea.ea_trainer - Iteration 1, Batch 45/150
+2020-05-27 07:35:46,839 INFO - training.ea.ea_trainer - Iteration 1, Batch 47/150
+2020-05-27 07:35:46,855 INFO - training.ea.ea_trainer - Iteration 1, Batch 45/150
+2020-05-27 07:35:46,972 INFO - training.ea.ea_trainer - Iteration 1, Batch 46/150
+2020-05-27 07:35:47,015 INFO - training.ea.ea_trainer - Iteration 1, Batch 46/150
+2020-05-27 07:35:47,026 INFO - training.ea.ea_trainer - Iteration 1, Batch 48/150
+2020-05-27 07:35:47,037 INFO - training.ea.ea_trainer - Iteration 1, Batch 46/150
+2020-05-27 07:35:47,096 INFO - training.ea.ea_trainer - Iteration 1, Batch 47/150
+2020-05-27 07:35:47,141 INFO - training.ea.ea_trainer - Iteration 1, Batch 47/150
+2020-05-27 07:35:47,155 INFO - training.ea.ea_trainer - Iteration 1, Batch 49/150
+2020-05-27 07:35:47,166 INFO - training.ea.ea_trainer - Iteration 1, Batch 47/150
+2020-05-27 07:35:47,265 INFO - training.ea.ea_trainer - Iteration 1, Batch 48/150
+2020-05-27 07:35:47,334 INFO - training.ea.ea_trainer - Iteration 1, Batch 48/150
+2020-05-27 07:35:47,341 INFO - training.ea.ea_trainer - Iteration 1, Batch 48/150
+2020-05-27 07:35:47,341 INFO - training.ea.ea_trainer - Iteration 1, Batch 50/150
+2020-05-27 07:35:47,424 INFO - training.ea.ea_trainer - Iteration 1, Batch 49/150
+2020-05-27 07:35:47,429 INFO - training.ea.ea_trainer - Iteration 1, Batch 51/150
+2020-05-27 07:35:47,481 INFO - training.ea.ea_trainer - Iteration 1, Batch 49/150
+2020-05-27 07:35:47,489 INFO - training.ea.ea_trainer - Iteration 1, Batch 49/150
+2020-05-27 07:35:47,619 INFO - training.ea.ea_trainer - Iteration 1, Batch 50/150
+2020-05-27 07:35:47,626 INFO - training.ea.ea_trainer - Iteration 1, Batch 52/150
+2020-05-27 07:35:47,653 INFO - training.ea.ea_trainer - Iteration 1, Batch 50/150
+2020-05-27 07:35:47,684 INFO - training.ea.ea_trainer - Iteration 1, Batch 50/150
+2020-05-27 07:35:47,725 INFO - training.ea.ea_trainer - Iteration 1, Batch 51/150
+2020-05-27 07:35:47,739 INFO - training.ea.ea_trainer - Iteration 1, Batch 53/150
+2020-05-27 07:35:47,776 INFO - training.ea.ea_trainer - Iteration 1, Batch 51/150
+2020-05-27 07:35:47,793 INFO - training.ea.ea_trainer - Iteration 1, Batch 51/150
+2020-05-27 07:35:47,954 INFO - training.ea.ea_trainer - Iteration 1, Batch 52/150
+2020-05-27 07:35:47,970 INFO - training.ea.ea_trainer - Iteration 1, Batch 54/150
+2020-05-27 07:35:47,991 INFO - training.ea.ea_trainer - Iteration 1, Batch 52/150
+2020-05-27 07:35:48,020 INFO - training.ea.ea_trainer - Iteration 1, Batch 52/150
+2020-05-27 07:35:48,075 INFO - training.ea.ea_trainer - Iteration 1, Batch 53/150
+2020-05-27 07:35:48,102 INFO - training.ea.ea_trainer - Iteration 1, Batch 53/150
+2020-05-27 07:35:48,125 INFO - training.ea.ea_trainer - Iteration 1, Batch 55/150
+2020-05-27 07:35:48,136 INFO - training.ea.ea_trainer - Iteration 1, Batch 53/150
+2020-05-27 07:35:48,255 INFO - training.ea.ea_trainer - Iteration 1, Batch 54/150
+2020-05-27 07:35:48,294 INFO - training.ea.ea_trainer - Iteration 1, Batch 54/150
+2020-05-27 07:35:48,317 INFO - training.ea.ea_trainer - Iteration 1, Batch 56/150
+2020-05-27 07:35:48,331 INFO - training.ea.ea_trainer - Iteration 1, Batch 54/150
+2020-05-27 07:35:48,366 INFO - training.ea.ea_trainer - Iteration 1, Batch 55/150
+2020-05-27 07:35:48,419 INFO - training.ea.ea_trainer - Iteration 1, Batch 55/150
+2020-05-27 07:35:48,435 INFO - training.ea.ea_trainer - Iteration 1, Batch 57/150
+2020-05-27 07:35:48,452 INFO - training.ea.ea_trainer - Iteration 1, Batch 55/150
+2020-05-27 07:35:48,539 INFO - training.ea.ea_trainer - Iteration 1, Batch 56/150
++ echo 'printing here'
+printing here
+2020-05-27 07:35:48,602 INFO - training.ea.ea_trainer - Iteration 1, Batch 56/150
+2020-05-27 07:35:48,642 INFO - training.ea.ea_trainer - Iteration 1, Batch 57/150
+2020-05-27 07:35:48,666 INFO - training.ea.ea_trainer - Iteration 1, Batch 58/150
+2020-05-27 07:35:48,677 INFO - training.ea.ea_trainer - Iteration 1, Batch 56/150
+2020-05-27 07:35:48,700 INFO - training.ea.ea_trainer - Iteration 1, Batch 57/150
+2020-05-27 07:35:48,769 INFO - training.ea.ea_trainer - Iteration 1, Batch 59/150
+2020-05-27 07:35:48,795 INFO - training.ea.ea_trainer - Iteration 1, Batch 57/150
+2020-05-27 07:35:48,824 INFO - training.ea.ea_trainer - Iteration 1, Batch 58/150
+2020-05-27 07:35:48,899 INFO - training.ea.ea_trainer - Iteration 1, Batch 58/150
+2020-05-27 07:35:48,918 INFO - training.ea.ea_trainer - Iteration 1, Batch 60/150
+2020-05-27 07:35:48,935 INFO - training.ea.ea_trainer - Iteration 1, Batch 59/150
+2020-05-27 07:35:48,985 INFO - training.ea.ea_trainer - Iteration 1, Batch 58/150
+2020-05-27 07:35:48,987 INFO - training.ea.ea_trainer - Iteration 1, Batch 59/150
+2020-05-27 07:35:49,017 INFO - training.ea.ea_trainer - Iteration 1, Batch 61/150
+2020-05-27 07:35:49,121 INFO - training.ea.ea_trainer - Iteration 1, Batch 59/150
+2020-05-27 07:35:49,144 INFO - training.ea.ea_trainer - Iteration 1, Batch 60/150
+2020-05-27 07:35:49,182 INFO - training.ea.ea_trainer - Iteration 1, Batch 60/150
+2020-05-27 07:35:49,187 INFO - training.ea.ea_trainer - Iteration 1, Batch 62/150
+2020-05-27 07:35:49,251 INFO - training.ea.ea_trainer - Iteration 1, Batch 61/150
+2020-05-27 07:35:49,282 INFO - training.ea.ea_trainer - Iteration 1, Batch 63/150
+2020-05-27 07:35:49,285 INFO - training.ea.ea_trainer - Iteration 1, Batch 61/150
+2020-05-27 07:35:49,302 INFO - training.ea.ea_trainer - Iteration 1, Batch 60/150
+2020-05-27 07:35:49,400 INFO - training.ea.ea_trainer - Iteration 1, Batch 61/150
+2020-05-27 07:35:49,464 INFO - training.ea.ea_trainer - Iteration 1, Batch 64/150
+2020-05-27 07:35:49,478 INFO - training.ea.ea_trainer - Iteration 1, Batch 62/150
+2020-05-27 07:35:49,518 INFO - training.ea.ea_trainer - Iteration 1, Batch 62/150
+2020-05-27 07:35:49,534 INFO - training.ea.ea_trainer - Iteration 1, Batch 65/150
+2020-05-27 07:35:49,584 INFO - training.ea.ea_trainer - Iteration 1, Batch 62/150
+2020-05-27 07:35:49,613 INFO - training.ea.ea_trainer - Iteration 1, Batch 63/150
+2020-05-27 07:35:49,629 INFO - training.ea.ea_trainer - Iteration 1, Batch 63/150
+2020-05-27 07:35:49,668 INFO - training.ea.ea_trainer - Iteration 1, Batch 66/150
+2020-05-27 07:35:49,696 INFO - training.ea.ea_trainer - Iteration 1, Batch 63/150
+2020-05-27 07:35:49,770 INFO - training.ea.ea_trainer - Iteration 1, Batch 67/150
+2020-05-27 07:35:49,784 INFO - training.ea.ea_trainer - Iteration 1, Batch 64/150
+2020-05-27 07:35:49,822 INFO - training.ea.ea_trainer - Iteration 1, Batch 64/150
+2020-05-27 07:35:49,868 INFO - training.ea.ea_trainer - Iteration 1, Batch 65/150
+2020-05-27 07:35:49,875 INFO - training.ea.ea_trainer - Iteration 1, Batch 64/150
+2020-05-27 07:35:49,949 INFO - training.ea.ea_trainer - Iteration 1, Batch 68/150
+2020-05-27 07:35:49,950 INFO - training.ea.ea_trainer - Iteration 1, Batch 65/150
+2020-05-27 07:35:50,005 INFO - training.ea.ea_trainer - Iteration 1, Batch 65/150
+2020-05-27 07:35:50,040 INFO - training.ea.ea_trainer - Iteration 1, Batch 66/150
+2020-05-27 07:35:50,056 INFO - training.ea.ea_trainer - Iteration 1, Batch 69/150
+2020-05-27 07:35:50,127 INFO - training.ea.ea_trainer - Iteration 1, Batch 66/150
+2020-05-27 07:35:50,144 INFO - training.ea.ea_trainer - Iteration 1, Batch 67/150
+2020-05-27 07:35:50,198 INFO - training.ea.ea_trainer - Iteration 1, Batch 66/150
+2020-05-27 07:35:50,216 INFO - training.ea.ea_trainer - Iteration 1, Batch 67/150
+2020-05-27 07:35:50,229 INFO - training.ea.ea_trainer - Iteration 1, Batch 70/150
+2020-05-27 07:35:50,277 INFO - training.ea.ea_trainer - Iteration 1, Batch 68/150
+2020-05-27 07:35:50,314 INFO - training.ea.ea_trainer - Iteration 1, Batch 71/150
+2020-05-27 07:35:50,333 INFO - training.ea.ea_trainer - Iteration 1, Batch 67/150
+2020-05-27 07:35:50,362 INFO - training.ea.ea_trainer - Iteration 1, Batch 69/150
+2020-05-27 07:35:50,373 INFO - training.ea.ea_trainer - Iteration 1, Batch 68/150
+2020-05-27 07:35:50,474 INFO - training.ea.ea_trainer - Iteration 1, Batch 68/150
+2020-05-27 07:35:50,494 INFO - training.ea.ea_trainer - Iteration 1, Batch 69/150
+2020-05-27 07:35:50,499 INFO - training.ea.ea_trainer - Iteration 1, Batch 72/150
+2020-05-27 07:35:50,518 INFO - training.ea.ea_trainer - Iteration 1, Batch 70/150
+2020-05-27 07:35:50,565 INFO - training.ea.ea_trainer - Iteration 1, Batch 69/150
+2020-05-27 07:35:50,619 INFO - training.ea.ea_trainer - Iteration 1, Batch 73/150
+2020-05-27 07:35:50,621 INFO - training.ea.ea_trainer - Iteration 1, Batch 71/150
+2020-05-27 07:35:50,711 INFO - training.ea.ea_trainer - Iteration 1, Batch 70/150
+2020-05-27 07:35:50,766 INFO - training.ea.ea_trainer - Iteration 1, Batch 70/150
+2020-05-27 07:35:50,808 INFO - training.ea.ea_trainer - Iteration 1, Batch 74/150
+2020-05-27 07:35:50,829 INFO - training.ea.ea_trainer - Iteration 1, Batch 71/150
+2020-05-27 07:35:50,842 INFO - training.ea.ea_trainer - Iteration 1, Batch 72/150
+2020-05-27 07:35:50,870 INFO - training.ea.ea_trainer - Iteration 1, Batch 71/150
+2020-05-27 07:35:50,945 INFO - training.ea.ea_trainer - Iteration 1, Batch 73/150
+2020-05-27 07:35:50,956 INFO - training.ea.ea_trainer - Iteration 1, Batch 75/150
+2020-05-27 07:35:51,050 INFO - training.ea.ea_trainer - Iteration 1, Batch 72/150
+2020-05-27 07:35:51,084 INFO - training.ea.ea_trainer - Iteration 1, Batch 72/150
+2020-05-27 07:35:51,123 INFO - training.ea.ea_trainer - Iteration 1, Batch 74/150
+2020-05-27 07:35:51,141 INFO - training.ea.ea_trainer - Iteration 1, Batch 73/150
+2020-05-27 07:35:51,147 INFO - training.ea.ea_trainer - Iteration 1, Batch 76/150
+2020-05-27 07:35:51,186 INFO - training.ea.ea_trainer - Iteration 1, Batch 73/150
+2020-05-27 07:35:51,243 INFO - training.ea.ea_trainer - Iteration 1, Batch 75/150
+2020-05-27 07:35:51,278 INFO - training.ea.ea_trainer - Iteration 1, Batch 77/150
+2020-05-27 07:35:51,306 INFO - training.ea.ea_trainer - Iteration 1, Batch 74/150
+2020-05-27 07:35:51,390 INFO - training.ea.ea_trainer - Iteration 1, Batch 74/150
+2020-05-27 07:35:51,406 INFO - training.ea.ea_trainer - Iteration 1, Batch 75/150
+2020-05-27 07:35:51,431 INFO - training.ea.ea_trainer - Iteration 1, Batch 76/150
+2020-05-27 07:35:51,455 INFO - training.ea.ea_trainer - Iteration 1, Batch 78/150
+2020-05-27 07:35:51,513 INFO - training.ea.ea_trainer - Iteration 1, Batch 75/150
+2020-05-27 07:35:51,548 INFO - training.ea.ea_trainer - Iteration 1, Batch 77/150
+2020-05-27 07:35:51,557 INFO - training.ea.ea_trainer - Iteration 1, Batch 79/150
+2020-05-27 07:35:51,599 INFO - training.ea.ea_trainer - Iteration 1, Batch 76/150
+2020-05-27 07:35:51,727 INFO - training.ea.ea_trainer - Iteration 1, Batch 76/150
+2020-05-27 07:35:51,746 INFO - training.ea.ea_trainer - Iteration 1, Batch 77/150
+2020-05-27 07:35:51,770 INFO - training.ea.ea_trainer - Iteration 1, Batch 80/150
+2020-05-27 07:35:51,771 INFO - training.ea.ea_trainer - Iteration 1, Batch 78/150
+2020-05-27 07:35:51,816 INFO - training.ea.ea_trainer - Iteration 1, Batch 77/150
+2020-05-27 07:35:51,875 INFO - training.ea.ea_trainer - Iteration 1, Batch 81/150
+2020-05-27 07:35:51,906 INFO - training.ea.ea_trainer - Iteration 1, Batch 79/150
+2020-05-27 07:35:51,931 INFO - training.ea.ea_trainer - Iteration 1, Batch 78/150
+2020-05-27 07:35:51,977 INFO - training.ea.ea_trainer - Iteration 1, Batch 78/150
+2020-05-27 07:35:52,020 INFO - training.ea.ea_trainer - Iteration 1, Batch 79/150
+2020-05-27 07:35:52,073 INFO - training.ea.ea_trainer - Iteration 1, Batch 79/150
+2020-05-27 07:35:52,098 INFO - training.ea.ea_trainer - Iteration 1, Batch 82/150
+2020-05-27 07:35:52,119 INFO - training.ea.ea_trainer - Iteration 1, Batch 80/150
+2020-05-27 07:35:52,160 INFO - training.ea.ea_trainer - Iteration 1, Batch 80/150
+2020-05-27 07:35:52,207 INFO - training.ea.ea_trainer - Iteration 1, Batch 83/150
+2020-05-27 07:35:52,232 INFO - training.ea.ea_trainer - Iteration 1, Batch 81/150
+2020-05-27 07:35:52,260 INFO - training.ea.ea_trainer - Iteration 1, Batch 80/150
+2020-05-27 07:35:52,275 INFO - training.ea.ea_trainer - Iteration 1, Batch 81/150
+2020-05-27 07:35:52,374 INFO - training.ea.ea_trainer - Iteration 1, Batch 81/150
+2020-05-27 07:35:52,399 INFO - training.ea.ea_trainer - Iteration 1, Batch 84/150
+2020-05-27 07:35:52,417 INFO - training.ea.ea_trainer - Iteration 1, Batch 82/150
+2020-05-27 07:35:52,450 INFO - training.ea.ea_trainer - Iteration 1, Batch 82/150
+2020-05-27 07:35:52,496 INFO - training.ea.ea_trainer - Iteration 1, Batch 85/150
+2020-05-27 07:35:52,538 INFO - training.ea.ea_trainer - Iteration 1, Batch 83/150
+2020-05-27 07:35:52,561 INFO - training.ea.ea_trainer - Iteration 1, Batch 83/150
+2020-05-27 07:35:52,566 INFO - training.ea.ea_trainer - Iteration 1, Batch 82/150
+2020-05-27 07:35:52,666 INFO - training.ea.ea_trainer - Iteration 1, Batch 86/150
+2020-05-27 07:35:52,675 INFO - training.ea.ea_trainer - Iteration 1, Batch 83/150
+2020-05-27 07:35:52,721 INFO - training.ea.ea_trainer - Iteration 1, Batch 84/150
+2020-05-27 07:35:52,722 INFO - training.ea.ea_trainer - Iteration 1, Batch 84/150
+2020-05-27 07:35:52,768 INFO - training.ea.ea_trainer - Iteration 1, Batch 87/150
+2020-05-27 07:35:52,821 INFO - training.ea.ea_trainer - Iteration 1, Batch 85/150
+2020-05-27 07:35:52,835 INFO - training.ea.ea_trainer - Iteration 1, Batch 85/150
+2020-05-27 07:35:52,849 INFO - training.ea.ea_trainer - Iteration 1, Batch 84/150
+2020-05-27 07:35:52,897 INFO - training.ea.ea_trainer - Iteration 1, Batch 88/150
+2020-05-27 07:35:52,954 INFO - training.ea.ea_trainer - Iteration 1, Batch 85/150
+2020-05-27 07:35:53,014 INFO - training.ea.ea_trainer - Iteration 1, Batch 89/150
+2020-05-27 07:35:53,022 INFO - training.ea.ea_trainer - Iteration 1, Batch 86/150
+2020-05-27 07:35:53,035 INFO - training.ea.ea_trainer - Iteration 1, Batch 86/150
+2020-05-27 07:35:53,127 INFO - training.ea.ea_trainer - Iteration 1, Batch 87/150
+2020-05-27 07:35:53,134 INFO - training.ea.ea_trainer - Iteration 1, Batch 86/150
+2020-05-27 07:35:53,160 INFO - training.ea.ea_trainer - Iteration 1, Batch 87/150
+2020-05-27 07:35:53,223 INFO - training.ea.ea_trainer - Iteration 1, Batch 87/150
+2020-05-27 07:35:53,233 INFO - training.ea.ea_trainer - Iteration 1, Batch 90/150
+2020-05-27 07:35:53,325 INFO - training.ea.ea_trainer - Iteration 1, Batch 88/150
+2020-05-27 07:35:53,349 INFO - training.ea.ea_trainer - Iteration 1, Batch 91/150
+2020-05-27 07:35:53,355 INFO - training.ea.ea_trainer - Iteration 1, Batch 88/150
+2020-05-27 07:35:53,381 INFO - training.ea.ea_trainer - Iteration 1, Batch 88/150
+2020-05-27 07:35:53,405 INFO - training.ea.ea_trainer - Iteration 1, Batch 89/150
+2020-05-27 07:35:53,437 INFO - training.ea.ea_trainer - Iteration 1, Batch 89/150
+2020-05-27 07:35:53,499 INFO - training.ea.ea_trainer - Iteration 1, Batch 89/150
+2020-05-27 07:35:53,527 INFO - training.ea.ea_trainer - Iteration 1, Batch 92/150
+2020-05-27 07:35:53,612 INFO - training.ea.ea_trainer - Iteration 1, Batch 90/150
+2020-05-27 07:35:53,619 INFO - training.ea.ea_trainer - Iteration 1, Batch 90/150
+2020-05-27 07:35:53,641 INFO - training.ea.ea_trainer - Iteration 1, Batch 93/150
+2020-05-27 07:35:53,649 INFO - training.ea.ea_trainer - Iteration 1, Batch 90/150
+2020-05-27 07:35:53,761 INFO - training.ea.ea_trainer - Iteration 1, Batch 91/150
+2020-05-27 07:35:53,762 INFO - training.ea.ea_trainer - Iteration 1, Batch 91/150
+2020-05-27 07:35:53,787 INFO - training.ea.ea_trainer - Iteration 1, Batch 91/150
+2020-05-27 07:35:53,811 INFO - training.ea.ea_trainer - Iteration 1, Batch 94/150
+2020-05-27 07:35:53,926 INFO - training.ea.ea_trainer - Iteration 1, Batch 92/150
+2020-05-27 07:35:53,947 INFO - training.ea.ea_trainer - Iteration 1, Batch 95/150
+2020-05-27 07:35:53,948 INFO - training.ea.ea_trainer - Iteration 1, Batch 92/150
+2020-05-27 07:35:53,960 INFO - training.ea.ea_trainer - Iteration 1, Batch 92/150
+2020-05-27 07:35:54,049 INFO - training.ea.ea_trainer - Iteration 1, Batch 93/150
+2020-05-27 07:35:54,061 INFO - training.ea.ea_trainer - Iteration 1, Batch 93/150
+2020-05-27 07:35:54,074 INFO - training.ea.ea_trainer - Iteration 1, Batch 93/150
+2020-05-27 07:35:54,114 INFO - training.ea.ea_trainer - Iteration 1, Batch 96/150
+2020-05-27 07:35:54,217 INFO - training.ea.ea_trainer - Iteration 1, Batch 94/150
+2020-05-27 07:35:54,232 INFO - training.ea.ea_trainer - Iteration 1, Batch 97/150
+2020-05-27 07:35:54,267 INFO - training.ea.ea_trainer - Iteration 1, Batch 94/150
+2020-05-27 07:35:54,279 INFO - training.ea.ea_trainer - Iteration 1, Batch 94/150
+2020-05-27 07:35:54,304 INFO - training.ea.ea_trainer - Iteration 1, Batch 95/150
+2020-05-27 07:35:54,358 INFO - training.ea.ea_trainer - Iteration 1, Batch 95/150
+2020-05-27 07:35:54,386 INFO - training.ea.ea_trainer - Iteration 1, Batch 98/150
+2020-05-27 07:35:54,409 INFO - training.ea.ea_trainer - Iteration 1, Batch 95/150
+2020-05-27 07:35:54,479 INFO - training.ea.ea_trainer - Iteration 1, Batch 99/150
+2020-05-27 07:35:54,497 INFO - training.ea.ea_trainer - Iteration 1, Batch 96/150
+2020-05-27 07:35:54,563 INFO - training.ea.ea_trainer - Iteration 1, Batch 96/150
+2020-05-27 07:35:54,569 INFO - training.ea.ea_trainer - Iteration 1, Batch 96/150
+2020-05-27 07:35:54,610 INFO - training.ea.ea_trainer - Iteration 1, Batch 97/150
+2020-05-27 07:35:54,648 INFO - training.ea.ea_trainer - Iteration 1, Batch 97/150
+2020-05-27 07:35:54,683 INFO - training.ea.ea_trainer - Iteration 1, Batch 97/150
+2020-05-27 07:35:54,704 INFO - training.ea.ea_trainer - Iteration 1, Batch 100/150
+2020-05-27 07:35:54,793 INFO - training.ea.ea_trainer - Iteration 1, Batch 101/150
+2020-05-27 07:35:54,802 INFO - training.ea.ea_trainer - Iteration 1, Batch 98/150
+2020-05-27 07:35:54,818 INFO - training.ea.ea_trainer - Iteration 1, Batch 98/150
+2020-05-27 07:35:54,865 INFO - training.ea.ea_trainer - Iteration 1, Batch 98/150
+2020-05-27 07:35:54,933 INFO - training.ea.ea_trainer - Iteration 1, Batch 99/150
+2020-05-27 07:35:54,943 INFO - training.ea.ea_trainer - Iteration 1, Batch 99/150
+2020-05-27 07:35:54,947 INFO - training.ea.ea_trainer - Iteration 1, Batch 102/150
+2020-05-27 07:35:54,967 INFO - training.ea.ea_trainer - Iteration 1, Batch 99/150
+2020-05-27 07:35:55,057 INFO - training.ea.ea_trainer - Iteration 1, Batch 103/150
+2020-05-27 07:35:55,153 INFO - training.ea.ea_trainer - Iteration 1, Batch 100/150
+2020-05-27 07:35:55,166 INFO - training.ea.ea_trainer - Iteration 1, Batch 100/150
+2020-05-27 07:35:55,192 INFO - training.ea.ea_trainer - Iteration 1, Batch 104/150
+2020-05-27 07:35:55,204 INFO - training.ea.ea_trainer - Iteration 1, Batch 100/150
+2020-05-27 07:35:55,273 INFO - training.ea.ea_trainer - Iteration 1, Batch 101/150
+2020-05-27 07:35:55,284 INFO - training.ea.ea_trainer - Iteration 1, Batch 101/150
+2020-05-27 07:35:55,288 INFO - training.ea.ea_trainer - Iteration 1, Batch 105/150
+2020-05-27 07:35:55,314 INFO - training.ea.ea_trainer - Iteration 1, Batch 101/150
+2020-05-27 07:35:55,463 INFO - training.ea.ea_trainer - Iteration 1, Batch 102/150
+2020-05-27 07:35:55,478 INFO - training.ea.ea_trainer - Iteration 1, Batch 102/150
+2020-05-27 07:35:55,479 INFO - training.ea.ea_trainer - Iteration 1, Batch 106/150
+2020-05-27 07:35:55,502 INFO - training.ea.ea_trainer - Iteration 1, Batch 102/150
+2020-05-27 07:35:55,573 INFO - training.ea.ea_trainer - Iteration 1, Batch 103/150
+2020-05-27 07:35:55,584 INFO - training.ea.ea_trainer - Iteration 1, Batch 103/150
+2020-05-27 07:35:55,601 INFO - training.ea.ea_trainer - Iteration 1, Batch 107/150
+2020-05-27 07:35:55,613 INFO - training.ea.ea_trainer - Iteration 1, Batch 103/150
+2020-05-27 07:35:55,746 INFO - training.ea.ea_trainer - Iteration 1, Batch 104/150
+2020-05-27 07:35:55,753 INFO - training.ea.ea_trainer - Iteration 1, Batch 104/150
+2020-05-27 07:35:55,765 INFO - training.ea.ea_trainer - Iteration 1, Batch 108/150
+2020-05-27 07:35:55,822 INFO - training.ea.ea_trainer - Iteration 1, Batch 104/150
+2020-05-27 07:35:55,857 INFO - training.ea.ea_trainer - Iteration 1, Batch 105/150
+2020-05-27 07:35:55,864 INFO - training.ea.ea_trainer - Iteration 1, Batch 105/150
+2020-05-27 07:35:55,881 INFO - training.ea.ea_trainer - Iteration 1, Batch 109/150
+2020-05-27 07:35:55,897 INFO - training.ea.ea_trainer - Iteration 1, Batch 105/150
+2020-05-27 07:35:56,060 INFO - training.ea.ea_trainer - Iteration 1, Batch 106/150
+2020-05-27 07:35:56,077 INFO - training.ea.ea_trainer - Iteration 1, Batch 106/150
+2020-05-27 07:35:56,077 INFO - training.ea.ea_trainer - Iteration 1, Batch 110/150
+2020-05-27 07:35:56,085 INFO - training.ea.ea_trainer - Iteration 1, Batch 106/150
+2020-05-27 07:35:56,164 INFO - training.ea.ea_trainer - Iteration 1, Batch 107/150
+2020-05-27 07:35:56,173 INFO - training.ea.ea_trainer - Iteration 1, Batch 111/150
+2020-05-27 07:35:56,201 INFO - training.ea.ea_trainer - Iteration 1, Batch 107/150
+2020-05-27 07:35:56,214 INFO - training.ea.ea_trainer - Iteration 1, Batch 107/150
+2020-05-27 07:35:56,341 INFO - training.ea.ea_trainer - Iteration 1, Batch 108/150
+2020-05-27 07:35:56,347 INFO - training.ea.ea_trainer - Iteration 1, Batch 112/150
+2020-05-27 07:35:56,377 INFO - training.ea.ea_trainer - Iteration 1, Batch 108/150
+2020-05-27 07:35:56,387 INFO - training.ea.ea_trainer - Iteration 1, Batch 108/150
+2020-05-27 07:35:56,445 INFO - training.ea.ea_trainer - Iteration 1, Batch 109/150
+2020-05-27 07:35:56,479 INFO - training.ea.ea_trainer - Iteration 1, Batch 113/150
+2020-05-27 07:35:56,490 INFO - training.ea.ea_trainer - Iteration 1, Batch 109/150
+2020-05-27 07:35:56,501 INFO - training.ea.ea_trainer - Iteration 1, Batch 109/150
+2020-05-27 07:35:56,622 INFO - training.ea.ea_trainer - Iteration 1, Batch 110/150
+2020-05-27 07:35:56,664 INFO - training.ea.ea_trainer - Iteration 1, Batch 110/150
+2020-05-27 07:35:56,681 INFO - training.ea.ea_trainer - Iteration 1, Batch 114/150
+2020-05-27 07:35:56,702 INFO - training.ea.ea_trainer - Iteration 1, Batch 110/150
+2020-05-27 07:35:56,725 INFO - training.ea.ea_trainer - Iteration 1, Batch 111/150
+2020-05-27 07:35:56,780 INFO - training.ea.ea_trainer - Iteration 1, Batch 111/150
+2020-05-27 07:35:56,781 INFO - training.ea.ea_trainer - Iteration 1, Batch 115/150
+2020-05-27 07:35:56,816 INFO - training.ea.ea_trainer - Iteration 1, Batch 111/150
+2020-05-27 07:35:56,859 INFO - training.ea.ea_trainer - Iteration 1, Batch 112/150
+2020-05-27 07:35:56,951 INFO - training.ea.ea_trainer - Iteration 1, Batch 112/150
+2020-05-27 07:35:56,962 INFO - training.ea.ea_trainer - Iteration 1, Batch 116/150
+2020-05-27 07:35:56,969 INFO - training.ea.ea_trainer - Iteration 1, Batch 112/150
+2020-05-27 07:35:56,979 INFO - training.ea.ea_trainer - Iteration 1, Batch 113/150
+2020-05-27 07:35:57,031 INFO - training.ea.ea_trainer - Iteration 1, Batch 113/150
+2020-05-27 07:35:57,075 INFO - training.ea.ea_trainer - Iteration 1, Batch 117/150
+2020-05-27 07:35:57,130 INFO - training.ea.ea_trainer - Iteration 1, Batch 113/150
+2020-05-27 07:35:57,185 INFO - training.ea.ea_trainer - Iteration 1, Batch 114/150
+2020-05-27 07:35:57,212 INFO - training.ea.ea_trainer - Iteration 1, Batch 114/150
+2020-05-27 07:35:57,241 INFO - training.ea.ea_trainer - Iteration 1, Batch 118/150
+2020-05-27 07:35:57,286 INFO - training.ea.ea_trainer - Iteration 1, Batch 115/150
+2020-05-27 07:35:57,329 INFO - training.ea.ea_trainer - Iteration 1, Batch 114/150
+2020-05-27 07:35:57,349 INFO - training.ea.ea_trainer - Iteration 1, Batch 115/150
+2020-05-27 07:35:57,361 INFO - training.ea.ea_trainer - Iteration 1, Batch 119/150
+2020-05-27 07:35:57,437 INFO - training.ea.ea_trainer - Iteration 1, Batch 116/150
+2020-05-27 07:35:57,456 INFO - training.ea.ea_trainer - Iteration 1, Batch 115/150
+2020-05-27 07:35:57,541 INFO - training.ea.ea_trainer - Iteration 1, Batch 116/150
+2020-05-27 07:35:57,545 INFO - training.ea.ea_trainer - Iteration 1, Batch 117/150
+2020-05-27 07:35:57,559 INFO - training.ea.ea_trainer - Iteration 1, Batch 120/150
+2020-05-27 07:35:57,635 INFO - training.ea.ea_trainer - Iteration 1, Batch 117/150
+2020-05-27 07:35:57,660 INFO - training.ea.ea_trainer - Iteration 1, Batch 121/150
+2020-05-27 07:35:57,686 INFO - training.ea.ea_trainer - Iteration 1, Batch 116/150
+2020-05-27 07:35:57,746 INFO - training.ea.ea_trainer - Iteration 1, Batch 118/150
+2020-05-27 07:35:57,786 INFO - training.ea.ea_trainer - Iteration 1, Batch 117/150
+2020-05-27 07:35:57,824 INFO - training.ea.ea_trainer - Iteration 1, Batch 118/150
+2020-05-27 07:35:57,845 INFO - training.ea.ea_trainer - Iteration 1, Batch 119/150
+2020-05-27 07:35:57,868 INFO - training.ea.ea_trainer - Iteration 1, Batch 122/150
+2020-05-27 07:35:57,922 INFO - training.ea.ea_trainer - Iteration 1, Batch 119/150
+2020-05-27 07:35:57,955 INFO - training.ea.ea_trainer - Iteration 1, Batch 118/150
+2020-05-27 07:35:58,000 INFO - training.ea.ea_trainer - Iteration 1, Batch 123/150
+2020-05-27 07:35:58,017 INFO - training.ea.ea_trainer - Iteration 1, Batch 120/150
+2020-05-27 07:35:58,060 INFO - training.ea.ea_trainer - Iteration 1, Batch 119/150
+2020-05-27 07:35:58,095 INFO - training.ea.ea_trainer - Iteration 1, Batch 120/150
+2020-05-27 07:35:58,174 INFO - training.ea.ea_trainer - Iteration 1, Batch 121/150
+2020-05-27 07:35:58,200 INFO - training.ea.ea_trainer - Iteration 1, Batch 124/150
+2020-05-27 07:35:58,237 INFO - training.ea.ea_trainer - Iteration 1, Batch 121/150
+2020-05-27 07:35:58,238 INFO - training.ea.ea_trainer - Iteration 1, Batch 120/150
+2020-05-27 07:35:58,305 INFO - training.ea.ea_trainer - Iteration 1, Batch 125/150
+2020-05-27 07:35:58,353 INFO - training.ea.ea_trainer - Iteration 1, Batch 121/150
+2020-05-27 07:35:58,394 INFO - training.ea.ea_trainer - Iteration 1, Batch 122/150
+2020-05-27 07:35:58,422 INFO - training.ea.ea_trainer - Iteration 1, Batch 122/150
+2020-05-27 07:35:58,455 INFO - training.ea.ea_trainer - Iteration 1, Batch 126/150
+2020-05-27 07:35:58,478 INFO - training.ea.ea_trainer - Iteration 1, Batch 123/150
+2020-05-27 07:35:58,514 INFO - training.ea.ea_trainer - Iteration 1, Batch 123/150
+2020-05-27 07:35:58,556 INFO - training.ea.ea_trainer - Iteration 1, Batch 127/150
+2020-05-27 07:35:58,559 INFO - training.ea.ea_trainer - Iteration 1, Batch 122/150
+2020-05-27 07:35:58,639 INFO - training.ea.ea_trainer - Iteration 1, Batch 124/150
+2020-05-27 07:35:58,669 INFO - training.ea.ea_trainer - Iteration 1, Batch 123/150
+2020-05-27 07:35:58,686 INFO - training.ea.ea_trainer - Iteration 1, Batch 124/150
+2020-05-27 07:35:58,712 INFO - training.ea.ea_trainer - Iteration 1, Batch 125/150
+2020-05-27 07:35:58,733 INFO - training.ea.ea_trainer - Iteration 1, Batch 128/150
+2020-05-27 07:35:58,776 INFO - training.ea.ea_trainer - Iteration 1, Batch 125/150
+2020-05-27 07:35:58,866 INFO - training.ea.ea_trainer - Iteration 1, Batch 126/150
+2020-05-27 07:35:58,876 INFO - training.ea.ea_trainer - Iteration 1, Batch 129/150
+2020-05-27 07:35:58,893 INFO - training.ea.ea_trainer - Iteration 1, Batch 124/150
+2020-05-27 07:35:58,962 INFO - training.ea.ea_trainer - Iteration 1, Batch 127/150
+2020-05-27 07:35:58,962 INFO - training.ea.ea_trainer - Iteration 1, Batch 126/150
+2020-05-27 07:35:59,004 INFO - training.ea.ea_trainer - Iteration 1, Batch 125/150
+2020-05-27 07:35:59,054 INFO - training.ea.ea_trainer - Iteration 1, Batch 127/150
+2020-05-27 07:35:59,079 INFO - training.ea.ea_trainer - Iteration 1, Batch 130/150
+2020-05-27 07:35:59,145 INFO - training.ea.ea_trainer - Iteration 1, Batch 128/150
+2020-05-27 07:35:59,193 INFO - training.ea.ea_trainer - Iteration 1, Batch 131/150
+2020-05-27 07:35:59,197 INFO - training.ea.ea_trainer - Iteration 1, Batch 126/150
+2020-05-27 07:35:59,213 INFO - training.ea.ea_trainer - Iteration 1, Batch 128/150
+2020-05-27 07:35:59,243 INFO - training.ea.ea_trainer - Iteration 1, Batch 129/150
+2020-05-27 07:35:59,302 INFO - training.ea.ea_trainer - Iteration 1, Batch 129/150
+2020-05-27 07:35:59,316 INFO - training.ea.ea_trainer - Iteration 1, Batch 127/150
+2020-05-27 07:35:59,365 INFO - training.ea.ea_trainer - Iteration 1, Batch 132/150
+2020-05-27 07:35:59,395 INFO - training.ea.ea_trainer - Iteration 1, Batch 130/150
+2020-05-27 07:35:59,471 INFO - training.ea.ea_trainer - Iteration 1, Batch 130/150
+2020-05-27 07:35:59,496 INFO - training.ea.ea_trainer - Iteration 1, Batch 133/150
+2020-05-27 07:35:59,498 INFO - training.ea.ea_trainer - Iteration 1, Batch 131/150
+2020-05-27 07:35:59,505 INFO - training.ea.ea_trainer - Iteration 1, Batch 128/150
+2020-05-27 07:35:59,547 INFO - training.ea.ea_trainer - Iteration 1, Batch 131/150
+2020-05-27 07:35:59,620 INFO - training.ea.ea_trainer - Iteration 1, Batch 129/150
+2020-05-27 07:35:59,696 INFO - training.ea.ea_trainer - Iteration 1, Batch 134/150
+2020-05-27 07:35:59,717 INFO - training.ea.ea_trainer - Iteration 1, Batch 132/150
+2020-05-27 07:35:59,747 INFO - training.ea.ea_trainer - Iteration 1, Batch 132/150
+2020-05-27 07:35:59,774 INFO - training.ea.ea_trainer - Iteration 1, Batch 130/150
+2020-05-27 07:35:59,800 INFO - training.ea.ea_trainer - Iteration 1, Batch 133/150
+2020-05-27 07:35:59,815 INFO - training.ea.ea_trainer - Iteration 1, Batch 135/150
+2020-05-27 07:35:59,837 INFO - training.ea.ea_trainer - Iteration 1, Batch 133/150
+2020-05-27 07:35:59,870 INFO - training.ea.ea_trainer - Iteration 1, Batch 131/150
+2020-05-27 07:35:59,988 INFO - training.ea.ea_trainer - Iteration 1, Batch 134/150
+2020-05-27 07:36:00,028 INFO - training.ea.ea_trainer - Iteration 1, Batch 136/150
+2020-05-27 07:36:00,041 INFO - training.ea.ea_trainer - Iteration 1, Batch 134/150
+2020-05-27 07:36:00,073 INFO - training.ea.ea_trainer - Iteration 1, Batch 135/150
+2020-05-27 07:36:00,079 INFO - training.ea.ea_trainer - Iteration 1, Batch 132/150
+2020-05-27 07:36:00,126 INFO - training.ea.ea_trainer - Iteration 1, Batch 137/150
+2020-05-27 07:36:00,154 INFO - training.ea.ea_trainer - Iteration 1, Batch 135/150
+2020-05-27 07:36:00,216 INFO - training.ea.ea_trainer - Iteration 1, Batch 133/150
+2020-05-27 07:36:00,265 INFO - training.ea.ea_trainer - Iteration 1, Batch 136/150
+2020-05-27 07:36:00,309 INFO - training.ea.ea_trainer - Iteration 1, Batch 138/150
+2020-05-27 07:36:00,329 INFO - training.ea.ea_trainer - Iteration 1, Batch 136/150
+2020-05-27 07:36:00,364 INFO - training.ea.ea_trainer - Iteration 1, Batch 137/150
+2020-05-27 07:36:00,410 INFO - training.ea.ea_trainer - Iteration 1, Batch 134/150
+2020-05-27 07:36:00,422 INFO - training.ea.ea_trainer - Iteration 1, Batch 139/150
+2020-05-27 07:36:00,423 INFO - training.ea.ea_trainer - Iteration 1, Batch 137/150
+2020-05-27 07:36:00,521 INFO - training.ea.ea_trainer - Iteration 1, Batch 135/150
+2020-05-27 07:36:00,561 INFO - training.ea.ea_trainer - Iteration 1, Batch 138/150
+2020-05-27 07:36:00,589 INFO - training.ea.ea_trainer - Iteration 1, Batch 138/150
+2020-05-27 07:36:00,617 INFO - training.ea.ea_trainer - Iteration 1, Batch 140/150
+2020-05-27 07:36:00,682 INFO - training.ea.ea_trainer - Iteration 1, Batch 139/150
+2020-05-27 07:36:00,697 INFO - training.ea.ea_trainer - Iteration 1, Batch 139/150
+2020-05-27 07:36:00,721 INFO - training.ea.ea_trainer - Iteration 1, Batch 141/150
+2020-05-27 07:36:00,724 INFO - training.ea.ea_trainer - Iteration 1, Batch 136/150
+2020-05-27 07:36:00,833 INFO - training.ea.ea_trainer - Iteration 1, Batch 137/150
+2020-05-27 07:36:00,860 INFO - training.ea.ea_trainer - Iteration 1, Batch 140/150
+2020-05-27 07:36:00,868 INFO - training.ea.ea_trainer - Iteration 1, Batch 140/150
+2020-05-27 07:36:00,886 INFO - training.ea.ea_trainer - Iteration 1, Batch 142/150
+2020-05-27 07:36:00,945 INFO - training.ea.ea_trainer - Iteration 1, Batch 141/150
+2020-05-27 07:36:00,996 INFO - training.ea.ea_trainer - Iteration 1, Batch 141/150
+2020-05-27 07:36:01,009 INFO - training.ea.ea_trainer - Iteration 1, Batch 143/150
+2020-05-27 07:36:01,013 INFO - training.ea.ea_trainer - Iteration 1, Batch 138/150
+2020-05-27 07:36:01,145 INFO - training.ea.ea_trainer - Iteration 1, Batch 139/150
+2020-05-27 07:36:01,166 INFO - training.ea.ea_trainer - Iteration 1, Batch 142/150
+2020-05-27 07:36:01,179 INFO - training.ea.ea_trainer - Iteration 1, Batch 142/150
+2020-05-27 07:36:01,187 INFO - training.ea.ea_trainer - Iteration 1, Batch 144/150
+2020-05-27 07:36:01,251 INFO - training.ea.ea_trainer - Iteration 1, Batch 143/150
+2020-05-27 07:36:01,297 INFO - training.ea.ea_trainer - Iteration 1, Batch 143/150
+2020-05-27 07:36:01,306 INFO - training.ea.ea_trainer - Iteration 1, Batch 145/150
+2020-05-27 07:36:01,335 INFO - training.ea.ea_trainer - Iteration 1, Batch 140/150
+2020-05-27 07:36:01,412 INFO - training.ea.ea_trainer - Iteration 1, Batch 144/150
+2020-05-27 07:36:01,459 INFO - training.ea.ea_trainer - Iteration 1, Batch 141/150
+2020-05-27 07:36:01,465 INFO - training.ea.ea_trainer - Iteration 1, Batch 146/150
+2020-05-27 07:36:01,487 INFO - training.ea.ea_trainer - Iteration 1, Batch 144/150
+2020-05-27 07:36:01,506 INFO - training.ea.ea_trainer - Iteration 1, Batch 145/150
+2020-05-27 07:36:01,578 INFO - training.ea.ea_trainer - Iteration 1, Batch 147/150
+2020-05-27 07:36:01,596 INFO - training.ea.ea_trainer - Iteration 1, Batch 145/150
+2020-05-27 07:36:01,615 INFO - training.ea.ea_trainer - Iteration 1, Batch 142/150
+2020-05-27 07:36:01,707 INFO - training.ea.ea_trainer - Iteration 1, Batch 143/150
+2020-05-27 07:36:01,708 INFO - training.ea.ea_trainer - Iteration 1, Batch 146/150
+2020-05-27 07:36:01,747 INFO - training.ea.ea_trainer - Iteration 1, Batch 146/150
+2020-05-27 07:36:01,755 INFO - training.ea.ea_trainer - Iteration 1, Batch 148/150
+2020-05-27 07:36:01,812 INFO - training.ea.ea_trainer - Iteration 1, Batch 147/150
+2020-05-27 07:36:01,842 INFO - training.ea.ea_trainer - Iteration 1, Batch 147/150
+2020-05-27 07:36:01,886 INFO - training.ea.ea_trainer - Iteration 1, Batch 149/150
+2020-05-27 07:36:01,916 INFO - training.ea.ea_trainer - Iteration 1, Batch 144/150
+2020-05-27 07:36:02,002 INFO - training.ea.ea_trainer - Iteration 1, Batch 148/150
+2020-05-27 07:36:02,031 INFO - training.ea.ea_trainer - Iteration 1, Batch 145/150
+2020-05-27 07:36:02,032 INFO - training.ea.ea_trainer - Iteration 1, Batch 148/150
+2020-05-27 07:36:02,101 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5003:3/G0']
+2020-05-27 07:36:02,101 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5003:3/G0']
+2020-05-27 07:36:02,101 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5003:3/G0']
+2020-05-27 07:36:02,104 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5002:2/D0']
+2020-05-27 07:36:02,104 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5003:3/D0']
+2020-05-27 07:36:02,104 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5002:2/D0']
+2020-05-27 07:36:02,141 INFO - training.ea.ea_trainer - Iteration 1, Batch 149/150
+2020-05-27 07:36:02,148 INFO - training.ea.ea_trainer - Iteration 1, Batch 149/150
+2020-05-27 07:36:02,198 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/generators/best took 0.08837437629699707 seconds
+2020-05-27 07:36:02,223 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/generators/best took 0.11694073677062988 seconds
+2020-05-27 07:36:02,263 INFO - training.ea.ea_trainer - Iteration 1, Batch 146/150
+2020-05-27 07:36:02,314 INFO - training.ea.ea_trainer - Calculating FID/inception score.
+2020-05-27 07:36:02,347 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5001:1/G0']
+2020-05-27 07:36:02,348 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5000:0/G0']
+2020-05-27 07:36:02,348 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5001:1/G0']
+2020-05-27 07:36:02,352 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5002:2/D0']
+2020-05-27 07:36:02,352 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5000:0/D0']
+2020-05-27 07:36:02,353 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5002:2/D0']
+2020-05-27 07:36:02,396 INFO - training.ea.ea_trainer - Iteration 1, Batch 147/150
+2020-05-27 07:36:02,419 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/generators/best took 0.06225728988647461 seconds
+2020-05-27 07:36:02,422 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5003:3/G0']
+2020-05-27 07:36:02,422 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5002:2/G0']
+2020-05-27 07:36:02,422 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5003:3/G0']
+2020-05-27 07:36:02,426 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5003:3/D0']
+2020-05-27 07:36:02,426 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5002:2/D0']
+2020-05-27 07:36:02,427 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5003:3/D0']
+2020-05-27 07:36:02,435 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/generators/best took 0.08121609687805176 seconds
+2020-05-27 07:36:02,553 INFO - training.ea.ea_trainer - Iteration 1, Batch 148/150
+2020-05-27 07:36:02,587 INFO - training.ea.ea_trainer - Calculating FID/inception score.
+2020-05-27 07:36:02,613 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/generators/best took 0.18553853034973145 seconds
+2020-05-27 07:36:02,658 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/generators/best took 0.2289738655090332 seconds
+2020-05-27 07:36:02,676 INFO - training.ea.ea_trainer - Iteration 1, Batch 149/150
+2020-05-27 07:36:02,743 INFO - training.ea.ea_trainer - Calculating FID/inception score.
+2020-05-27 07:36:02,826 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5001:1/G0']
+2020-05-27 07:36:02,826 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5001:1/G0']
+2020-05-27 07:36:02,826 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5001:1/G0']
+2020-05-27 07:36:02,829 INFO - helpers.population - Replacers are ['Iteration0:127.0.0.1:5003:3/D0']
+2020-05-27 07:36:02,829 INFO - helpers.population - Replacees are ['Iteration0:127.0.0.1:5001:1/D0']
+2020-05-27 07:36:02,829 INFO - helpers.population - Current local sorted population is ['Iteration0:127.0.0.1:5003:3/D0']
+2020-05-27 07:36:03,052 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/generators/best took 0.22182130813598633 seconds
+2020-05-27 07:36:03,091 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/generators/best took 0.25836944580078125 seconds
+2020-05-27 07:36:03,171 INFO - training.ea.ea_trainer - Calculating FID/inception score.
+/home/ubuntu/lipizzaner-gan/src/training/mixture/fid_score.py:117: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  batch = Variable(batch, volatile=True)
+2020-05-27 07:36:04,071 INFO - training.ea.ea_trainer - Iteration=1, f(Generator(x))=0.6601367394129435, f(Discriminator(x))=1.2188784678777058, lr_gen=0.0001998693678260813, lr_dis=0.0001999747017024718, score=804.9158508346931, mixture_gen=OrderedDict([('127.0.0.1:5001', 0.3379320936169981), ('127.0.0.1:5002', 0.32786152753958453), ('127.0.0.1:5003', 0.3342063788434174)]), mixture_dis=None
+2020-05-27 07:36:04,167 INFO - lipizzaner - Finished training process, f(d)=1.2188784678777058, f(g)=0.6601367394129435
+/home/ubuntu/lipizzaner-gan/src/training/mixture/fid_score.py:117: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  batch = Variable(batch, volatile=True)
+2020-05-27 07:36:04,315 INFO - training.ea.ea_trainer - Iteration=1, f(Generator(x))=0.6660451491673788, f(Discriminator(x))=1.249338944753011, lr_gen=0.0001998693678260813, lr_dis=0.0001999747017024718, score=770.5322231401518, mixture_gen=OrderedDict([('127.0.0.1:5001', 0.3379320936169981), ('127.0.0.1:5002', 0.32786152753958453), ('127.0.0.1:5000', 0.3342063788434174)]), mixture_dis=None
+/home/ubuntu/lipizzaner-gan/src/training/mixture/fid_score.py:117: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  batch = Variable(batch, volatile=True)
+2020-05-27 07:36:04,343 INFO - training.ea.ea_trainer - Iteration=1, f(Generator(x))=0.674513578414917, f(Discriminator(x))=1.1979525089263916, lr_gen=0.0001998693678260813, lr_dis=0.0001999747017024718, score=754.7399970807294, mixture_gen=OrderedDict([('127.0.0.1:5000', 0.3379320936169981), ('127.0.0.1:5003', 0.32786152753958453), ('127.0.0.1:5002', 0.3342063788434174)]), mixture_dis=None
+2020-05-27 07:36:04,391 INFO - lipizzaner - Finished training process, f(d)=1.249338944753011, f(g)=0.6660451491673788
+2020-05-27 07:36:04,411 INFO - lipizzaner - Finished training process, f(d)=1.1979525089263916, f(g)=0.674513578414917
+/home/ubuntu/lipizzaner-gan/src/training/mixture/fid_score.py:117: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  batch = Variable(batch, volatile=True)
+2020-05-27 07:36:04,590 INFO - training.ea.ea_trainer - Iteration=1, f(Generator(x))=0.656925618648529, f(Discriminator(x))=1.1937202612559001, lr_gen=0.0001998693678260813, lr_dis=0.0001999747017024718, score=760.0132751768508, mixture_gen=OrderedDict([('127.0.0.1:5000', 0.3379320936169981), ('127.0.0.1:5003', 0.32786152753958453), ('127.0.0.1:5001', 0.3342063788434174)]), mixture_dis=None
+2020-05-27 07:36:04,653 INFO - lipizzaner - Finished training process, f(d)=1.1937202612559001, f(g)=0.656925618648529
+2020-05-27 07:36:05,057 INFO - helpers.heartbeat - Heartbeat: All clients finished their experiments.
+2020-05-27 07:36:05,058 INFO - lipizzaner_master - Collecting results from clients...
+2020-05-27 07:36:05,069 INFO - distribution.client_api - Sending neighbourhood results to master
+2020-05-27 07:36:05,075 INFO - distribution.client_api - Sending neighbourhood results to master
+2020-05-27 07:36:05,078 INFO - distribution.client_api - Sending neighbourhood results to master
+2020-05-27 07:36:05,079 INFO - distribution.client_api - Sending neighbourhood results to master
+2020-05-27 07:36:05,490 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/generators/best took 0.4038424491882324 seconds
+2020-05-27 07:36:05,524 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/generators/best took 0.4440276622772217 seconds
+2020-05-27 07:36:05,558 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/generators/best took 0.48542046546936035 seconds
+2020-05-27 07:36:05,567 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/generators/best took 0.49172139167785645 seconds
+2020-05-27 07:36:05,569 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/generators/best took 0.47035908699035645 seconds
+2020-05-27 07:36:05,587 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/generators/best took 0.49890995025634766 seconds
+2020-05-27 07:36:05,605 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/generators/best took 0.521843671798706 seconds
+2020-05-27 07:36:05,612 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/generators/best took 0.5330092906951904 seconds
+2020-05-27 07:36:05,617 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/generators/best took 0.5144200325012207 seconds
+2020-05-27 07:36:05,618 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/generators/best took 0.5422143936157227 seconds
+2020-05-27 07:36:05,646 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/generators/best took 0.5758407115936279 seconds
+2020-05-27 07:36:05,659 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/generators/best took 0.579059362411499 seconds
+2020-05-27 07:36:06,000 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/discriminators/best took 0.3839855194091797 seconds
+2020-05-27 07:36:06,001 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/discriminators/best took 0.34520483016967773 seconds
+2020-05-27 07:36:06,007 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/discriminators/best took 0.36515355110168457 seconds
+2020-05-27 07:36:06,035 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/discriminators/best took 0.41582441329956055 seconds
+2020-05-27 07:36:06,048 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/discriminators/best took 0.3766624927520752 seconds
+2020-05-27 07:36:06,087 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/discriminators/best took 0.47170233726501465 seconds
+2020-05-27 07:36:06,088 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/discriminators/best took 0.4292149543762207 seconds
+2020-05-27 07:36:06,093 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/discriminators/best took 0.4306910037994385 seconds
+2020-05-27 07:36:06,118 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5000/parameters/discriminators/best took 0.4583709239959717 seconds
+2020-05-27 07:36:06,131 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5002/parameters/discriminators/best took 0.47962117195129395 seconds
+2020-05-27 07:36:06,132 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5003/parameters/discriminators/best took 0.4756605625152588 seconds
+2020-05-27 07:36:06,175 INFO - distribution.node_client - Loading parameters from endpoint http://127.0.0.1:5001/parameters/discriminators/best took 0.5072746276855469 seconds
+2020-05-27 07:36:06,291 INFO - distribution.client_api - Finished experiment, waiting for new requests.
+2020-05-27 07:36:06,298 INFO - distribution.client_api - Finished experiment, waiting for new requests.
+2020-05-27 07:36:06,378 INFO - distribution.client_api - Finished experiment, waiting for new requests.
+2020-05-27 07:36:06,401 INFO - distribution.client_api - Finished experiment, waiting for new requests.
+2020-05-27 07:36:08,486 INFO - lipizzaner_master - Saved mixture result images of client 127.0.0.1:5002 to target directory ./output/lipizzaner_gan/master/2020-05-27_07-35-34/127.0.0.1-5002.
+2020-05-27 07:36:08,561 INFO - lipizzaner_master - Score calculator: FIDCalculator
+2020-05-27 07:36:08,562 INFO - lipizzaner_master - Calculating score score of 127.0.0.1:5002. Depending on the type, this may take very long.
+/home/ubuntu/lipizzaner-gan/src/training/mixture/fid_score.py:117: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
+  batch = Variable(batch, volatile=True)
+2020-05-27 07:36:08,924 INFO - lipizzaner_master - Node 127.0.0.1:5002 with weights {'127.0.0.1:5000': 0.3379320936169981, '127.0.0.1:5002': 0.3342063788434174, '127.0.0.1:5003': 0.32786152753958453} yielded a score of (754.5902321935863, 0)
+2020-05-27 07:36:09,231 INFO - lipizzaner_master - Saved mixture result images of client 127.0.0.1:5003 to target directory ./output/lipizzaner_gan/master/2020-05-27_07-35-34/127.0.0.1-5003.
+2020-05-27 07:36:09,302 INFO - lipizzaner_master - Score calculator: FIDCalculator
+2020-05-27 07:36:09,302 INFO - lipizzaner_master - Calculating score score of 127.0.0.1:5003. Depending on the type, this may take very long.
+2020-05-27 07:36:09,634 INFO - lipizzaner_master - Node 127.0.0.1:5003 with weights {'127.0.0.1:5001': 0.3379320936169981, '127.0.0.1:5002': 0.32786152753958453, '127.0.0.1:5003': 0.3342063788434174} yielded a score of (799.3388405471627, 0)
+2020-05-27 07:36:09,961 INFO - lipizzaner_master - Saved mixture result images of client 127.0.0.1:5000 to target directory ./output/lipizzaner_gan/master/2020-05-27_07-35-34/127.0.0.1-5000.
+2020-05-27 07:36:10,035 INFO - lipizzaner_master - Score calculator: FIDCalculator
+2020-05-27 07:36:10,035 INFO - lipizzaner_master - Calculating score score of 127.0.0.1:5000. Depending on the type, this may take very long.
+2020-05-27 07:36:10,365 INFO - lipizzaner_master - Node 127.0.0.1:5000 with weights {'127.0.0.1:5000': 0.3342063788434174, '127.0.0.1:5001': 0.3379320936169981, '127.0.0.1:5002': 0.32786152753958453} yielded a score of (759.7750491825068, 0)
+2020-05-27 07:36:10,678 INFO - lipizzaner_master - Saved mixture result images of client 127.0.0.1:5001 to target directory ./output/lipizzaner_gan/master/2020-05-27_07-35-34/127.0.0.1-5001.
+2020-05-27 07:36:10,750 INFO - lipizzaner_master - Score calculator: FIDCalculator
+2020-05-27 07:36:10,751 INFO - lipizzaner_master - Calculating score score of 127.0.0.1:5001. Depending on the type, this may take very long.
+2020-05-27 07:36:11,089 INFO - lipizzaner_master - Node 127.0.0.1:5001 with weights {'127.0.0.1:5000': 0.3379320936169981, '127.0.0.1:5001': 0.3342063788434174, '127.0.0.1:5003': 0.32786152753958453} yielded a score of (760.8314623208944, 0)
+2020-05-27 07:36:11,169 INFO - lipizzaner_master - Best result: 127.0.0.1:5002 = (754.5902321935863, 0)
+2020-05-27 07:36:11,173 INFO - lipizzaner_master - Stopping heartbeat...
