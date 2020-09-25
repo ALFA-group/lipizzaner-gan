@@ -31,7 +31,7 @@ dataloader:
   shuffle: True
   mean: 3
   std: 1
-  data_size: 500 # Size of the vectors
+  data_size: 100 # Size of the vectors
   number_of_records: 50000
 network:
   name: three_layer_perceptron
