@@ -14,5 +14,6 @@ echo "printing here"
 python - << END 
 import requests
 print("python code inside bash script. not putting any clients to sleep \n")
+# print("python code inside bash script. putting one clients to sleep \n")
 # response = requests.get("http://127.0.0.1:5000/experiments/sleep") 
 # print("Response is " + str(response.status_code))
