@@ -21,7 +21,7 @@ class Neighbourhood:
         self.concurrent_populations = ConcurrentPopulations.instance()
 
         dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
+        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
         self.node_client = NodeClient(network_factory)
 
         self.grid_size, self.grid_position, self.local_node = self._load_topology_details()

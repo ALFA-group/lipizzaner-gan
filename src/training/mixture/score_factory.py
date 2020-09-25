@@ -7,6 +7,7 @@ from helpers.ignore_label_dataset import IgnoreLabelDataset
 from training.mixture.fid_score import FIDCalculator
 from training.mixture.inception_score import InceptionCalculator
 from training.mixture.constant_score import ConstantCalculator
+from training.mixture.gaussian_score import GaussianToyDistancesCalculator2D, GaussianToyDistancesCalculator1D
 
 
 class ScoreCalculatorFactory:
@@ -22,9 +23,14 @@ class ScoreCalculatorFactory:
         score_type = settings['score'].get('type', None)
         dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
         # Downloads dataset if its not yet available
-        dataloader.load()
+        loaded = dataloader.load()
 
-        if score_type == 'fid':
+        if score_type == "gaussian_toy_distances_2d":
+            number_of_modes = cc.settings["dataloader"]["number_of_modes"]
+            return GaussianToyDistancesCalculator2D(dataloader.dataset.points(number_of_modes))
+        elif score_type == "gaussian_toy_distances_1d":
+            return GaussianToyDistancesCalculator1D(next(iter(loaded)))
+        elif score_type == "fid":
             transforms_op = [transforms.ToTensor(),
                              transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))]
             if cc.settings['dataloader']['dataset_name'] != 'mnist':
