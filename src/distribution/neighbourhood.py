@@ -21,11 +21,17 @@ class Neighbourhood:
 
         dataloader = self.cc.create_instance(self.cc.settings["dataloader"]["dataset_name"])
         network_factory = self.cc.create_instance(
-            self.cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
+            self.cc.settings["network"]["name"],
+            dataloader.n_input_neurons,
+            num_classes=dataloader.num_classes,
         )
         self.node_client = NodeClient(network_factory)
 
-        (self.grid_size, self.grid_position, self.local_node,) = self._load_topology_details()
+        (
+            self.grid_size,
+            self.grid_position,
+            self.local_node,
+        ) = self._load_topology_details()
         self.cell_number = self._load_cell_number()
 
         num_clients = self.cc.settings["general"]["distribution"].get("num_clients", None)
@@ -129,8 +135,10 @@ class Neighbourhood:
         if len(matching_nodes) == 1:
             dim = int(round(sqrt(len(client_nodes))))
             idx = client_nodes.index(matching_nodes[0])
-            x = idx % dim
-            y = idx // dim
+            x = idx
+            y = 0
+            # x = idx % dim
+            # y = idx // dim
             return len(client_nodes), (x, y), matching_nodes[0]
         else:
             raise Exception(
@@ -147,25 +155,46 @@ class Neighbourhood:
             return []
 
         nodes = self._all_nodes_on_grid()
+        print(nodes)
         for node in nodes:
             node["id"] = "{}:{}".format(node["address"], node["port"])
 
-        dim = int(round(sqrt(len(nodes))))
+        print(node)
+        dim = len(nodes)  # int(round(sqrt(len(nodes))))
+        print(dim)
         x, y = self.grid_position
-        nodes = np.reshape(nodes, (-1, dim))
+        # nodes = np.reshape(nodes, (-1, dim))
+
+        print(nodes)
 
         def neighbours(x, y):
-            indices = np.array([(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)])
+            # indices = np.array([(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)])
+            indices = np.array([x - 1, x + 1])
             # Start at 0 when x or y is out of bounds
             indices[indices >= dim] = 0
             indices[indices == -1] = dim - 1
+            print(indices)
             # Remove duplicates (needed for smaller grids), and convert to (x,y) tuples
-            return np.array([tuple(row) for row in np.unique(indices, axis=0)])
+            return indices
+            # return np.array([tuple(row) for row in np.unique(indices, axis=0)])
 
-        mask = np.zeros((dim, dim))
-        mask[tuple(neighbours(x, y).T)] = 1
-
-        return nodes[mask == 1].tolist()
+        # print(nodes[neighbours(x, y)])
+        # for i in neighbours(x, y).tolist():
+        #     print(i)
+        #     print(nodes[i])
+        # print([nodes[i] for i in neighbours(x, y)])
+        # mask = np.zeros((dim, dim))
+        # mask = np.zeros(dim)
+        # mask[tuple(neighbours(x, y).T)] = 1
+        # # mask[neighbours(x, y).T] = 1
+        # print(mask)
+        # print(mask == 1)
+        # print(nodes)
+        # # print([nodes[0], nodes[1], nodes[2]].tolist())
+        # # print(nodes[mask == 1])
+        # print(nodes[mask == 1].tolist())
+        # return nodes[mask == 1].tolist()
+        return [nodes[i] for i in neighbours(x, y)]
 
     def _all_nodes_on_grid(self):
         nodes = self.cc.settings["general"]["distribution"]["client_nodes"]
