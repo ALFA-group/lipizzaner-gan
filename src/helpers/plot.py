@@ -8,9 +8,9 @@ following which the required plots are obtained
 """
 import time
 import matplotlib
-from matplotlib import pyplot as plt
 
 matplotlib.use("Agg")
+from matplotlib import pyplot as plt
 
 
 n_iterations = 200

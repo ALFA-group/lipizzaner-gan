@@ -54,7 +54,16 @@ class Individual:
         genome = create_genome(encoded_parameters=params)
         fitness = float(fitness_tensor) if fitness_tensor is not None else float("-inf")
 
-        return Individual(genome, fitness, is_local, learning_rate, optimizer_state, source, id, iteration,)
+        return Individual(
+            genome,
+            fitness,
+            is_local,
+            learning_rate,
+            optimizer_state,
+            source,
+            id,
+            iteration,
+        )
 
     def clone(self):
         return Individual(
@@ -78,8 +87,10 @@ class Individual:
         self.source.replace(":", "-")
         filename = "{}{}.pkl".format(network_prefix, self.source)
         torch.save(
-            self.genome.net.state_dict(), os.path.join(output_dir, filename),
+            self.genome.net.state_dict(),
+            os.path.join(output_dir, filename),
         )
+
         if include_classification_layer:
             torch.save(
                 self.genome.classification_layer.state_dict(),

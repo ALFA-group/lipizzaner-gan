@@ -2,27 +2,29 @@ import random
 import torch
 from torch.utils.data import Dataset
 import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pylab as plt
+import matplotlib.cm as cm
 import numpy as np
 from helpers.pytorch_helpers import to_pytorch_variable
 from helpers.configuration_container import ConfigurationContainer
 from data.data_loader import DataLoader
 from math import sqrt
 
-matplotlib.use("Agg")
-
-
 N_RECORDS = 10000
 N_MODES = 12
+FACTOR_SIZE = 0.8
 
 
-class CircularToyDataLoader(DataLoader):
+class LabeledCircularToyDataLoader(DataLoader):
     """
     A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a circle
     """
 
-    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
-        super().__init__(CircularToyDataSet, use_batch, batch_size, n_batches, shuffle)
+    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False, dataset_name=None):
+        dataset = LabeledCircularToyDataSet if dataset_name is None else dataset_name
+        super().__init__(dataset, use_batch, batch_size, n_batches, shuffle)
 
     @property
     def n_input_neurons(self):
@@ -30,19 +32,29 @@ class CircularToyDataLoader(DataLoader):
 
     @property
     def num_classes(self):
-        return None
+        return self.dataset().num_classes
 
     def save_images(self, images, shape, filename):
         self.dataset().save_images(images, filename)
 
 
-class GridToyDataLoader(DataLoader):
+class UnlabeledCircularToyDataLoader(LabeledCircularToyDataLoader):
+    """
+    A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a circle
+    """
+
+    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
+        super().__init__(use_batch, batch_size, n_batches, shuffle, dataset_name=UnlabeledCircularToyDataSet)
+
+
+class LabeledGridToyDataLoader(DataLoader):
     """
     A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a grid
     """
 
-    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
-        super().__init__(GridToyDataSet, use_batch, batch_size, n_batches, shuffle)
+    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False, dataset_name=None):
+        dataset = LabeledGridToyDataSet if dataset_name is None else dataset_name
+        super().__init__(dataset, use_batch, batch_size, n_batches, shuffle)
 
     @property
     def n_input_neurons(self):
@@ -50,7 +62,7 @@ class GridToyDataLoader(DataLoader):
 
     @property
     def num_classes(self):
-        return None
+        return self.dataset().num_classes
 
     def save_images(self, images, shape, filename):
         self.dataset().save_images(images, filename)
@@ -60,29 +72,68 @@ class GridToyDataLoader(DataLoader):
         pass
 
 
+class UnlabeledGridToyDataLoader(LabeledGridToyDataLoader):
+    """
+    A dataloader that returns samples from a simple toy problem 2d gaussian distributions of points in a grid
+    """
+
+    def __init__(self, use_batch=True, batch_size=100, n_batches=0, shuffle=False):
+        super().__init__(use_batch, batch_size, n_batches, shuffle, dataset_name=UnlabeledGridToyDataSet)
+
+
 class Gaussian2DDataSet(Dataset):
     def __init__(self, **kwargs):
         self.cc = ConfigurationContainer.instance()
-        self.number_of_records = self.cc.settings["dataloader"].get("number_of_records", N_RECORDS)
         number_of_modes = self.cc.settings["dataloader"].get("number_of_modes", N_MODES)
-
         number_of_modes = N_MODES if number_of_modes <= 0 else number_of_modes
+        self.cc.settings["dataloader"]["number_of_modes"] = number_of_modes  # If doesn't exist it creates the parameter
+
+        self.number_of_records = self.cc.settings["dataloader"].get("number_of_records", N_RECORDS)
         self.number_of_records = N_RECORDS if self.number_of_records <= 0 else self.number_of_records
 
-        self.cc.settings["dataloader"][
-            "number_of_modes"
-        ] = number_of_modes  # If does not exists it creates the parameter
-        xs, ys = self.points(number_of_modes)
-        points_array = np.array((xs, ys), dtype=np.float).T
+        xs, ys, labels = self.points(number_of_modes)
+        points_with_label = np.array((xs, ys, labels), dtype=np.float).T
+        points_with_label = points_with_label[np.random.choice(points_with_label.shape[0], self.number_of_records), :]
+        points_array = [[point[0], point[1]] for point in points_with_label]
+
+        self.labels = [int(point[2]) for point in points_with_label]
         self.data = torch.from_numpy(
-            np.random.normal(points_array[np.random.choice(points_array.shape[0], self.number_of_records), :,], 0.25,)
+            np.random.normal(
+                points_array,
+                0.025,
+            )
         ).float()
 
     def __getitem__(self, index):
-        return self.data[index], 0
+        return self.data[index], self.labels[index]
 
     def __len__(self):
         return self.number_of_records
+
+    def save_images(self, tensor, shape, filename):
+        plt.interactive(False)
+        if not isinstance(tensor, list):
+            plt.style.use("ggplot")
+            plt.clf()
+            fig = plt.figure()
+            ax1 = fig.add_subplot(111)
+
+            data = self.data.cpu().numpy()
+            x, y = np.split(data, 2, axis=1)
+            x = x.flatten()
+            y = y.flatten()
+            if self.num_classes > 0:
+                colors = matplotlib.cm.rainbow(np.linspace(0, 1, self.num_classes))
+                ax1.scatter(x, y, c=colors[self.labels], s=1)
+            else:
+                ax1.scatter(x, y, c="lime", s=1)
+            data = tensor.data.cpu().numpy() if hasattr(tensor, "data") else tensor.cpu().numpy()
+            x, y = np.split(data, 2, axis=1)
+            x = x.flatten()
+            y = y.flatten()
+            ax1.scatter(x, y, c="red", marker=".", s=1)
+
+        plt.savefig(filename)
 
     def save_images(self, tensor, filename, discriminator=None):
         plt.interactive(False)
@@ -96,80 +147,72 @@ class Gaussian2DDataSet(Dataset):
             x, y = np.split(data, 2, axis=1)
             x = x.flatten()
             y = y.flatten()
-            ax1.scatter(x, y, c="lime", s=1)
-
+            if self.num_classes > 0:
+                colors = matplotlib.cm.rainbow(np.linspace(0, 1, self.num_classes))
+                ax1.scatter(x, y, c=colors[self.labels], s=1)
+            else:
+                ax1.scatter(x, y, c="lime", s=1)
             data = tensor.data.cpu().numpy() if hasattr(tensor, "data") else tensor.cpu().numpy()
             x, y = np.split(data, 2, axis=1)
             x = x.flatten()
             y = y.flatten()
             ax1.scatter(x, y, c="red", marker=".", s=1)
-        else:
-            if GridToyDataSet.colors is None:
-                GridToyDataSet.colors = [np.random.rand(3,) for _ in tensor]
-
-            plt.style.use("ggplot")
-            fig = plt.figure()
-            ax1 = fig.add_subplot(111)
-
-            GridToyDataSet._plot_discriminator(discriminator, ax1)
-            # Plot generator
-            x_original, y_original = self.points()
-            ax1.scatter(x_original, y_original, zorder=len(tensor) + 1, color="b")
-            cm = plt.get_cmap("gist_rainbow")
-            ax1.set_prop_cycle("color", [cm(1.0 * i / 10) for i in range(10)])
-            for i, element in enumerate(tensor):
-                data = element.data.cpu().numpy() if hasattr(element, "data") else element.cpu().numpy()
-                x, y = np.split(data, 2, axis=1)
-
-                ax1.scatter(
-                    x.flatten(), y.flatten(), color=GridToyDataSet.colors[i], zorder=len(tensor) - i, marker="x",
-                )
 
         plt.savefig(filename)
 
-        @staticmethod
-        def _plot_discriminator(discriminator, ax):
-            if discriminator is not None:
-                alphas = []
-                for x in np.linspace(-1, 1, 8, endpoint=False):
-                    for y in np.linspace(-1, 1, 8, endpoint=False):
-                        center = torch.zeros(2)
-                        center[0] = x + 0.125
-                        center[1] = y + 0.125
-                        alphas.append(float(discriminator.net(to_pytorch_variable(center))))
+    @staticmethod
+    def create_labels(number_of_modes):
+        label_list = list()
+        for label in range(number_of_modes):
+            aux_list = [0] * number_of_modes
+            aux_list[label] = 1
+            label_list.append(aux_list)
+        return label_list
 
-                alphas = np.asarray(alphas)
-                normalized = (alphas - min(alphas)) / (max(alphas) - min(alphas))
-                plt.text(
-                    0.1, 0.9, "Min: {}\nMax: {}".format(min(alphas), max(alphas)), transform=ax.transAxes,
-                )
+    def create_label(self, label):
+        aux_list = [0] * self.num_classes
+        aux_list[label] = 1
+        return aux_list
 
-                k = 0
-                for x in np.linspace(-1, 1, 8, endpoint=False):
-                    for y in np.linspace(-1, 1, 8, endpoint=False):
-                        center = torch.zeros(2)
-                        center[0] = x + 0.125
-                        center[1] = y + 0.125
-                        ax.fill(
-                            [x, x + 0.25, x + 0.25, x], [y, y, y + 0.25, y + 0.25], "r", alpha=normalized[k], zorder=0,
-                        )
-                        k += 1
+    @staticmethod
+    def get_label_id(label):
+        return label.index(1)
+
+    @staticmethod
+    def get_labels_id(labels_list):
+        return [label.index(1) for label in labels_list]
 
 
-class CircularToyDataSet(Gaussian2DDataSet):
+class LabeledCircularToyDataSet(Gaussian2DDataSet):
+    @property
+    def num_classes(self):
+        return self.cc.settings["dataloader"].get("number_of_modes", N_MODES)
+
     @staticmethod
     def points(number_of_modes):
         thetas = np.linspace(0, 2 * np.pi, number_of_modes + 1)[:-1]
-        return np.sin(thetas) * 10, np.cos(thetas) * 10
+        return np.sin(thetas) * FACTOR_SIZE, np.cos(thetas) * FACTOR_SIZE, list(range(number_of_modes))
 
 
-class GridToyDataSet(Gaussian2DDataSet):
+class UnlabeledCircularToyDataSet(LabeledCircularToyDataSet):
+    @property
+    def num_classes(self):
+        return 0
+
+
+class LabeledGridToyDataSet(Gaussian2DDataSet):
+    @property
+    def num_classes(self):
+        number_of_modes = self.cc.settings["dataloader"].get("number_of_modes", N_MODES)
+        points_per_row = int(sqrt(number_of_modes))
+        points_per_col = int(number_of_modes / points_per_row)
+        return points_per_col * points_per_row
+
     @staticmethod
     def points(number_of_modes):
         points_per_row = int(sqrt(number_of_modes))
         points_per_col = int(number_of_modes / points_per_row)
-        size = 5
-
+        size = FACTOR_SIZE
         incr_x = (size * 2) / (points_per_row - 1)
         incr_y = (size * 2) / (points_per_col - 1)
         xs = []
@@ -178,6 +221,10 @@ class GridToyDataSet(Gaussian2DDataSet):
             for j in range(points_per_col):
                 xs.append((i * incr_x) - size)
                 ys.append((j * incr_y) - size)
-        return xs, ys
+        return xs, ys, list(range(len(xs)))
 
-    colors = None
+
+class UnlabeledGridToyDataSet(LabeledGridToyDataSet):
+    @property
+    def num_classes(self):
+        return 0

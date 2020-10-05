@@ -102,7 +102,10 @@ def create_parser():
 
     group_score = subparsers.add_parser("score")
     group_score.add_argument(
-        "--generator", type=str, dest="generator_file", help="Generator .pkl file.",
+        "--generator",
+        type=str,
+        dest="generator_file",
+        help="Generator .pkl file.",
     )
     add_config_file(group_score, True)
 
@@ -155,18 +158,39 @@ def initialize_settings(args):
     return cc
 
 
-def calc_score(args, cc):
+def generate_table(args, cc):
     score_calc = ScoreCalculatorFactory.create()
     cc.settings["general"]["distribution"]["client_id"] = 0
     dataloader = cc.create_instance(cc.settings["dataloader"]["dataset_name"])
     network_factory = cc.create_instance(
-        cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
+        cc.settings["network"]["name"],
+        dataloader.n_input_neurons,
+        num_classes=dataloader.num_classes,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     generator = network_factory.create_generator()
     generator.net.load_state_dict(torch.load(args.generator_file, map_location=device))
     generator.net.eval()
+
+    generator.generate_samples_and_labels(size=1000)
+
+
+def calc_score(args, cc):
+    score_calc = ScoreCalculatorFactory.create()
+    cc.settings["general"]["distribution"]["client_id"] = 0
+    dataloader = cc.create_instance(cc.settings["dataloader"]["dataset_name"])
+    network_factory = cc.create_instance(
+        cc.settings["network"]["name"],
+        dataloader.n_input_neurons,
+        num_classes=dataloader.num_classes,
+    )
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    generator = network_factory.create_generator()
+    generator.net.load_state_dict(torch.load(args.generator_file, map_location=device))
+    generator.net.eval()
+
     individual = Individual(genome=generator, fitness=0, source="local")
 
     dataset = MixedGeneratorDataset(
@@ -192,7 +216,9 @@ def generate_samples(args, cc):
 
     dataloader = cc.create_instance(cc.settings["dataloader"]["dataset_name"])
     network_factory = cc.create_instance(
-        cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
+        cc.settings["network"]["name"],
+        dataloader.n_input_neurons,
+        num_classes=dataloader.num_classes,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -296,7 +322,9 @@ def test_classifiers(args, cc):
     test_loader = dataloader.load(train=False)
 
     network_factory = cc.create_instance(
-        cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
+        cc.settings["network"]["name"],
+        dataloader.n_input_neurons,
+        num_classes=dataloader.num_classes,
     )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
