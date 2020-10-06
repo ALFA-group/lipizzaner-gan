@@ -18,7 +18,10 @@ class MNISTDataLoader(DataLoader):
 
     @property
     def num_classes(self):
-        return 10
+        if self.cc.settings["dataloader"]["learning_type"] == "unsupervised":
+            return 0
+        else:
+            return 10
 
     def load(self, train=True):
         label_rate = self.cc.settings["dataloader"].get("label_rate", None)
@@ -42,7 +45,11 @@ class MNISTDataLoader(DataLoader):
     def transform(self):
         if self.cc.settings["network"]["name"] == "ssgan_convolutional_mnist":
             return transforms.Compose(
-                [transforms.Resize(64), transforms.ToTensor(), transforms.Normalize((0.5,), (0.5,)),]
+                [
+                    transforms.Resize(64),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5,), (0.5,)),
+                ]
             )
         else:
             return super().transform()

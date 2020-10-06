@@ -26,9 +26,10 @@ trainer:
 dataloader:
   dataset_name: mnist
   use_batch: True
-  batch_size: 400
-  n_batches: 10
+  batch_size: 100
+  n_batches: 2
   shuffle: True
+  learning_type: unsupervised #conditional #semissupervised
 network:
   name: four_layer_perceptron
   loss: bceloss
