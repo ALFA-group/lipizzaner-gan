@@ -68,13 +68,14 @@ class ClientAPI:
     def get_results():
         ClientAPI._lock.acquire()
 
-        dir = os.getcwd()
-        ClientAPI._logger.info("Experiments current working directory is {}".format(dir))
-        
+        # dir = os.getcwd()
+        # ClientAPI._logger.info("Experiments current working directory is {}".format(dir))
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
 
         if ClientAPI.is_busy:
-            if os.path.exists("sleepfile.txt") :
-                ClientAPI._logger.info('Client made to sleep')
+            if os.path.exists(path):
+                ClientAPI._logger.info('Experiments: sleep file found for client ' + str(ClientEnvironment.port))
                 response = Response() 
             else :
                 ClientAPI._logger.info('Sending neighbourhood results to master')
@@ -94,20 +95,21 @@ class ClientAPI:
     # used to create sleepfile if one doesn't exist and delete it if one does (toggle)
     def sleep(): 
         ClientAPI._lock.acquire()
-        dir = os.getcwd()
 
         response = Response()
 
         cc = ConfigurationContainer.instance()
         if hasattr(cc, "settings"):
-            output_base_dir = cc.output_dir
-            path = output_base_dir + "sleepfile.txt"
+            output_base_dir = cc.output_dir 
+            path = output_base_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
         
-        ClientAPI._logger.info("Sleep Request current working directory is {} and checking for sleepfile at {}".format(dir, path))
+        ClientAPI._logger.info("Sleep Request made with sleepfile at {}".format(path))
 
         if os.path.exists(path):
+            ClientAPI._logger.info("Removing sleep file or waking up client")
             os.remove(path)
         else:
+            ClientAPI._logger.info("Creating sleep file or killing client")
             with open(path, 'w+') as f:
                 f.write("sleep")
         ClientAPI._lock.release()
@@ -146,7 +148,7 @@ class ClientAPI:
         # new checkpoint 
         cc = ConfigurationContainer.instance()
 
-        ClientAPI._logger.info('CC dictionary is {}'.format(cc.__dict__))
+        # ClientAPI._logger.info('CC dictionary is {}'.format(cc.__dict__))
         result = {
             'busy': ClientAPI.is_busy,
             'finished': ClientAPI.is_finished
@@ -154,9 +156,9 @@ class ClientAPI:
 
         if hasattr(cc, "settings"):
             if 'general' in cc.settings.keys():
-                sleep_path = cc.output_dir + "sleepfile.txt"
+                sleep_path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
                 if os.path.exists(sleep_path) :
-                        ClientAPI._logger.info('Client made to sleep')
+                        ClientAPI._logger.info('Client made to sleep ' + str(ClientEnvironment.port))
                         response = Response()
                         response._status_code = 404 
                         return response

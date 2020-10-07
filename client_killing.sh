@@ -18,7 +18,7 @@ import time
 print("python code inside bash script. putting one clients to sleep \n")
 response = requests.get("http://127.0.0.1:5000/experiments/sleep") 
 print("Response to putting to sleep is " + str(response.status_code))
-time.sleep(20)
+time.sleep(50)
 response = requests.get("http://127.0.0.1:5000/experiments/sleep") 
 print("Response to waking up is " + str(response.status_code))
 print("Should have woken up client")
