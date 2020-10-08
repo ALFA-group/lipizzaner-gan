@@ -18,7 +18,8 @@ class MNISTDataLoader(DataLoader):
 
     @property
     def num_classes(self):
-        if self.cc.settings["dataloader"]["learning_type"] == "unsupervised":
+        training_type = self.cc.settings["trainer"].get("training_type", 'unsupervised')
+        if training_type == 'unsupervised':
             return 0
         else:
             return 10
