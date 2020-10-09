@@ -63,7 +63,7 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
                 else 0
             )
 
-            self.z = noise(n_samples, self.individuals[0].genome.data_size + num_classes)
+            self.z = noise(n_samples, self.individuals[0].genome.data_size)
         else:
             self.z = z
 

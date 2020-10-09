@@ -154,10 +154,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         else:
             self._logger.debug("Alpha and Beta are not set")
 
-        iteration = 0
-        begining_time = time()
-        while True:
-            # for iteration in range(n_iterations):
+        # iteration = 0
+        # begining_time = time()
+        # while True:
+        for iteration in range(n_iterations):
             self._logger.debug("Iteration {} started".format(iteration + 1))
             start_time = time()
 
@@ -378,7 +378,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             # Mutate mixture weights after selection
             if not self.optimize_weights_at_the_end:
-                self.mutate_mixture_weights_with_score(input_data)  # self.score is updated here
+                pass
+                # self.mutate_mixture_weights_with_score(input_data)  # self.score is updated here
 
             stop_time = time()
 
@@ -412,9 +413,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     self.neighbourhood.cell_number,
                     self.neighbourhood.grid_position,
                 )
-            iteration += 1
-            if (stop_time - begining_time) > 3600:
-                break
+            # iteration += 1
+            # if (stop_time - begining_time) > 3600:
+            #     break
 
         # Evaluate the discriminators when addressing Semi-supervised Learning
         if "ssgan" in self.cc.settings["network"]["name"]:
