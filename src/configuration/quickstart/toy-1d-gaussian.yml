@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 3
+  n_iterations: 500
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -27,12 +27,12 @@ dataloader:
   dataset_name: gaussian # Data are vectors with random values following a Normal distribution with mean 'mean' and standard deviation 'std'
   use_batch: True
   batch_size: 100
-  n_batches: 1
+  n_batches: 10
   shuffle: True
   mean: 3
   std: 1
   data_size: 500 # Size of the vectors
-  number_of_records: 50000
+  number_of_records: 10000
 network:
   name: three_layer_perceptron
   loss: bceloss

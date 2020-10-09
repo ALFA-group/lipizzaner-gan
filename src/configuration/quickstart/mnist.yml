@@ -1,12 +1,12 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 2
+  n_iterations: 3
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
   params:
     population_size: 1
-    tournament_size: 1
+    tournament_size: 2
     n_replacements: 1
     default_adam_learning_rate: 0.0002
     # Hyperparameter mutation
@@ -27,7 +27,7 @@ dataloader:
   dataset_name: mnist
   use_batch: True
   batch_size: 100
-  n_batches: 2
+  n_batches: 0
   shuffle: True
   learning_type: unsupervised #conditional #semissupervised
 network:
