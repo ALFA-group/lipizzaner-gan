@@ -7,7 +7,7 @@ from torch.nn import RNN
 from torch.autograd import Variable
 
 from helpers.configuration_container import ConfigurationContainer
-from networks.competetive_net import DiscriminatorNet, GeneratorNet, GeneratorNetSequential, DiscriminatorNetSequential
+from networks.competetive_net import DiscriminatorNet, GeneratorNet, GeneratorNetSequential, DiscriminatorNetSequential, DiscriminatorNetCovid, GeneratorNetCovid
 
 
 class NetworkFactory(ABC):
@@ -303,7 +303,7 @@ class ConvolutionalGrayscale128x128(NetworkFactory):
         return 128, 128
 
     def create_generator(self, parameters=None, encoded_parameters=None):
-        net = GeneratorNet(
+        net = GeneratorNetCovid(
             self.loss_function,
             nn.Sequential(
                 nn.ConvTranspose2d(100, self.complexity * 8, 8, 1, 0),
@@ -334,7 +334,7 @@ class ConvolutionalGrayscale128x128(NetworkFactory):
         return net
 
     def create_discriminator(self, parameters=None, encoded_parameters=None):
-        net = DiscriminatorNet(
+        net = DiscriminatorNetCovid(
             self.loss_function,
             Sequential(
                 nn.Conv2d(1, self.complexity, 4, 2, 3),
@@ -352,8 +352,8 @@ class ConvolutionalGrayscale128x128(NetworkFactory):
                 nn.Sigmoid()
             ),
             self.gen_input_size,
-            image_length=self.image_output_size[0],
-            image_width=self.image_output_size[1]
+            image_length=128,
+            image_width=128
         )
 
         if parameters is not None:
