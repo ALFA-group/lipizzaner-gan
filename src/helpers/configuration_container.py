@@ -21,6 +21,7 @@ class ConfigurationContainer:
         'gaussian': ('data.gaussian_data_loader', 'GaussianDataLoader'),
         'circular': ('data.circular_toy_data_loader', 'CircularToyDataLoader'),
         'grid': ('data.grid_toy_data_loader', 'GridToyDataLoader'),
+        'covid-unsupervised': ('data.covid_data_loader', 'CovidDataLoader'),
         'mooc': ('data.mooc_data_loader', 'MOOCDataLoader'),
         'mooc_file': ('data.mooc_data_loader', 'MOOCFileDataLoader'),
         'backprop': ('training.backpropagation_trainer', 'BackpropagationTrainer'),
@@ -33,8 +34,10 @@ class ConfigurationContainer:
         'mooc_net': ('networks.mooc_net', 'MOOCFourLayerPerceptronFactory'),
         'circular_problem_perceptron': ('networks.network_factory', 'CircularProblemFactory'),
         'rnn': ('networks.network_factory', 'RNNFactory'),
+        'convolutional_grayscale128x128': ('networks.network_factory', 'ConvolutionalGrayscale128x128'),
         'lipizzaner_gan': ('training.ea.lipizzaner_gan_trainer', 'LipizzanerGANTrainer'),
         'lipizzaner_wgan': ('training.ea.lipizzaner_wgan_trainer', 'LipizzanerWGANTrainer'),
+
     }
 
     _logger = logging.getLogger(__name__)
