@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import torch
+import math
 
 from helpers.coev_losswise_logger import CoevLosswiseLogger
 from helpers.configuration_container import ConfigurationContainer
@@ -63,8 +64,15 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
             individual.genome.parameters = params
 
     def tournament_selection(self, population, population_type, is_logging=False):
+        """
         assert 0 < self._tournament_size <= len(population.individuals), \
             "Invalid tournament size: {}".format(self._tournament_size)
+        """
+        if self._tournament_size > len(population.individuals):
+            self._logger.info("Invalid tournament size: {} for population: {}".format(self._tournament_size, [individual.name for individual in population.individuals]))
+            num_copies = int(math.ceil(self._tournament_size/len(population.individuals)))
+            population.individuals = population.individuals*num_copies
+            self._logger.info("New population: {}".format([individual.name for individual in population.individuals]))
 
         competition_population = Population(individuals=[], default_fitness=population.default_fitness)
         new_population = Population(individuals=[], default_fitness=population.default_fitness,
