@@ -1,0 +1,9 @@
+ensemble_optimization:
+  algorithm: greedy       # ga, greedy
+  params:
+    mode: random # ga: reo-gen, nreo-gen / greedy: random, iterative
+    max_ensemble_size: 3
+    max_iterations_without_improvemets: 0
+dataloader:
+  dataset_name: mnist
+general: !include general.yml
