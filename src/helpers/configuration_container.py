@@ -23,6 +23,7 @@ class ConfigurationContainer:
             "data.mnist_fashion_data_loader",
             "MNISTFashionDataLoader",
         ),
+        "covid-unsupervised": ("data.covid_data_loader", "CovidDataLoader"),
         "cifar": ("data.cifar10_data_loader", "CIFAR10DataLoader"),
         "svhn": ("data.svhn_data_loader", "SVHNDataLoader"),
         "celeba": ("data.celeba_data_loader", "CelebADataLoader"),
@@ -64,6 +65,10 @@ class ConfigurationContainer:
             "networks.network_factory",
             "FourLayerPerceptronFactory",
         ),
+        "five_layer_perceptron": (
+            "networks.network_factory",
+            "FiveLayerPerceptronFactory",
+        ),
         "conv_mnist_unsupervised": (
             "networks.network_factory",
             "ConvolutionalMNISTUnsupervised",
@@ -87,6 +92,10 @@ class ConfigurationContainer:
         "ssgan_conv_mnist_28x28": (
             "networks.network_factory",
             "SSGANConvMNIST28x28NetworkFactory",
+        ),
+        "convolutional_grayscale128x128": (
+            "networks.network_factory",
+            "ConvolutionalGrayscale128x128",
         ),
         "convolutional": (
             "networks.network_factory",

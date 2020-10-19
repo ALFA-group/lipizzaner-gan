@@ -16,6 +16,8 @@ from networks.competetive_net import (
     SSGeneratorNet,
     ConditionalDiscriminatorNet,
     ConditionalGeneratorNet,
+    DiscriminatorNetCovid,
+    GeneratorNetCovid,
 )
 
 
@@ -857,6 +859,141 @@ class SSGANPerceptronSVHNFactory(NetworkFactory):
             Sequential(nn.Conv2d(self.complexity * 8, self.num_classes + 1, 4, 1, 0)),
             self.gen_input_size,
             disc_output_reshape=(-1, 3, 32, 32),
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        elif encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+        else:
+            net.net.apply(self._init_weights)
+
+        return net
+
+    @staticmethod
+    def _init_weights(m):
+        if isinstance(m, nn.ConvTranspose2d) or isinstance(m, nn.Conv2d):
+            m.weight.data.normal_(0, 0.02)
+            m.bias.data.zero_()
+
+
+class FiveLayerPerceptronFactory(NetworkFactory):
+    @property
+    def gen_input_size(self):
+        return 64
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+
+        net = GeneratorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(64, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 512),
+                nn.LeakyReLU(0.2),
+                nn.Linear(512, self.input_data_size),
+                nn.Tanh(),
+            ),
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+
+        net = DiscriminatorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(self.input_data_size, 512),
+                nn.LeakyReLU(0.2),
+                nn.Linear(512, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 1),
+                nn.Sigmoid(),
+            ),
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+
+class ConvolutionalGrayscale128x128(NetworkFactory):
+    complexity = 128
+
+    @property
+    def gen_input_size(self):
+        return 100, 1, 1
+
+    @property
+    def image_output_size(self):
+        return 128, 128
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+        net = GeneratorNetCovid(
+            self.loss_function,
+            nn.Sequential(
+                nn.ConvTranspose2d(100, self.complexity * 8, 8, 1, 0),
+                nn.BatchNorm2d(self.complexity * 8),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity * 8, self.complexity * 4, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity * 4, self.complexity * 2, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 2),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity * 2, self.complexity, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.ConvTranspose2d(self.complexity, 1, 4, 2, 1),
+                nn.Tanh(),
+            ),
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        elif encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+        else:
+            net.net.apply(self._init_weights)
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+        net = DiscriminatorNetCovid(
+            self.loss_function,
+            Sequential(
+                nn.Conv2d(1, self.complexity, 4, 2, 3),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity, self.complexity * 2, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 2),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 2, self.complexity * 4, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 4, self.complexity * 4, 4, 2, 1),
+                nn.BatchNorm2d(self.complexity * 4),
+                nn.LeakyReLU(0.2, inplace=True),
+                nn.Conv2d(self.complexity * 4, 1, 8, 1, 0),
+                nn.Sigmoid(),
+            ),
+            self.gen_input_size,
+            image_length=128,
+            image_width=128,
         )
 
         if parameters is not None:
