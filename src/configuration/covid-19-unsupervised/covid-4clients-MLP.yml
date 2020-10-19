@@ -1,0 +1,43 @@
+trainer:
+  name: lipizzaner_gan
+  n_iterations: 200
+  calculate_net_weights_dist: True
+  # independent_probability, exact_proportion
+  mixture_generator_samples_mode: exact_proportion
+  params:
+    population_size: 1
+    tournament_size: 2
+    n_replacements: 1
+    default_adam_learning_rate: 0.0002
+    # Hyperparameter mutation
+    alpha: 0.0001
+    mutation_probability: 0.5
+    discriminator_skip_each_nth_step: 0
+    mixture_sigma: 0.01
+    enable_selection: False
+    evaluate_subpopulations_every: 10
+    subpopulation_sample_size: 1
+    score:
+      enabled: False
+      type: inception_score
+      score_sample_size: 1000
+      cuda: True
+    fitness:
+      fitness_sample_size: 1000
+      fitness_mode: average    # worse, best, average
+      fitness_batch_size: 50
+dataloader:
+  dataset_name: covid-unsupervised
+  use_batch: True
+  batch_size: 69
+  n_batches: 0
+  shuffle: True
+  smote_augmentation_times: 15
+network:
+  name: five_layer_perceptron
+  loss: bceloss
+master:
+  calculate_score: True
+  score_sample_size: 5000
+  cuda: True
+general: !include general-4clients.yml
