@@ -140,7 +140,7 @@ class GAEnsembleGenerator:
         cuda_availability = torch.cuda.is_available()
         cc = ConfigurationContainer.instance()
         settings = {
-            "trainer": {"params": {"score": {"type": "fid"}}},
+                "trainer": {"params": {"score": {"cuda": True, "type": "fid"}}},
             "dataloader": {"dataset_name": dataset},
             "master": {"cuda": cuda_availability},
             "network": {"loss": "bceloss", "name": "four_layer_perceptron"},

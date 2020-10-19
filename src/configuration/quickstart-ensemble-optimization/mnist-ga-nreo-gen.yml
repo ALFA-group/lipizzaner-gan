@@ -1,15 +1,19 @@
+trainer:
+  params:
+    score:
+      cuda: True
 ensemble_optimization:
   algorithm: ga       # ga, greedy
   params:
-    fitness_metric: fid # fid, tvd
+    fitness_metric: tvd # fid # fid, tvd
     mode: nreo-gen # ga: reo-gen, nreo-gen / greedy: random, iterative
     crossover_probability: 0.8
     mutation_probability: 0.2
-    population_size: 5
+    population_size: 10
     n_generations: 0 # If generation is 0, the stop condition is the number of fitness evaluations
-    n_fitness_evaluations: 10
-    min_ensemble_size: 2
-    max_ensemble_size: 8
+    n_fitness_evaluations: 250
+    min_ensemble_size: 3
+    max_ensemble_size: 5
     # ensemble_size: 7
   frequency_show_information: 2
 dataloader:

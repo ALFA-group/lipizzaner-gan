@@ -154,8 +154,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         else:
             self._logger.debug("Alpha and Beta are not set")
 
-        # iteration = 0
-        # begining_time = time()
+        iteration = 0
+        begining_time = time()
         # while True:
         for iteration in range(n_iterations):
             self._logger.debug("Iteration {} started".format(iteration + 1))
@@ -414,8 +414,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     self.neighbourhood.grid_position,
                 )
             # iteration += 1
-            # if (stop_time - begining_time) > 3600:
-            #     break
+            # if (stop_time - begining_time) > 4500:
+            #    break
 
         # Evaluate the discriminators when addressing Semi-supervised Learning
         if "ssgan" in self.cc.settings["network"]["name"]:
