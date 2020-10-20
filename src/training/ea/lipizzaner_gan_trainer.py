@@ -98,6 +98,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             self.fitness_sample_size = self.settings["fitness"].get("fitness_sample_size", fitness_sample_size)
             self.fitness_loaded = self.dataloader.load()
             self.fitness_iterator = iter(self.fitness_loaded)  # Create iterator for fitness loader
+            self.fitness_batch_size = self.settings["fitness"].get("fitness_batch_size", None)
 
             # Determine how to aggregate fitness calculated among neighbourhood
             self.fitness_mode = self.settings["fitness"].get("fitness_mode", fitness_mode)
