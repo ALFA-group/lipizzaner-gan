@@ -221,17 +221,31 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             # Fitness evaluation
             self._logger.debug("Evaluating fitness")
+            # Splitting fitness_samples
+            self._logger.debug(
+                "Non-split fitness samples size: {}. {}".format(len(fitness_samples), fitness_samples[0].size())
+            )
+            split = self.fitness_batch_size is not None
+            if split:
+                fitness_samples = torch.split(fitness_samples, int(self.fitness_batch_size))
+                # fitness_samples = torch.split(fitness_samples, int(len(fitness_samples)/self.fitness_batch_size))
+                self._logger.debug(
+                    "split fitness samples size: {}. {}".format(len(fitness_samples), fitness_samples[0].size())
+                )
+
             self.evaluate_fitness(
                 all_generators,
                 all_discriminators,
                 fitness_samples,
                 self.fitness_mode,
+                split,
             )
             self.evaluate_fitness(
                 all_discriminators,
                 all_generators,
                 fitness_samples,
                 self.fitness_mode,
+                split,
                 labels=fitness_labels,
                 logger=self._logger,
                 alpha=alpha,
@@ -322,12 +336,14 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     all_discriminators,
                     fitness_samples,
                     self.fitness_mode,
+                    split,
                 )
                 self.evaluate_fitness(
                     new_populations[TYPE_DISCRIMINATOR],
                     all_generators,
                     fitness_samples,
                     self.fitness_mode,
+                    split,
                     labels=fitness_labels,
                     alpha=alpha,
                     beta=beta,
@@ -355,6 +371,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 for i, individual in enumerate(local_discriminators.individuals):
                     individual.id = "{}/D{}".format(self.neighbourhood.cell_number, i)
                     individual.iteration = iteration + 1
+                del fitness_samples
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
             else:
                 # Re-evaluate fitness of local_generators and local_discriminators against neighborhood
                 self.evaluate_fitness(
@@ -362,17 +381,22 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     all_discriminators,
                     fitness_samples,
                     self.fitness_mode,
+                    split,
                 )
                 self.evaluate_fitness(
                     local_discriminators,
                     all_generators,
                     fitness_samples,
                     self.fitness_mode,
+                    split,
                     labels=fitness_labels,
                     alpha=alpha,
                     beta=beta,
                     iter=iteration,
                 )
+                del fitness_samples
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
 
             self.compute_mixture_generative_score()
 
@@ -714,6 +738,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         population_defender,
         input_var,
         fitness_mode,
+        split=False,
         labels=None,
         logger=None,
         alpha=None,
@@ -740,26 +765,67 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             return fitness
 
+        import logging
+
+        _logger = logging.getLogger(__name__)
+        _logger.debug("------------ Evaluating fitness ----------------")
+
         for individual_attacker in population_attacker.individuals:
             individual_attacker.fitness = float(
                 "-inf"
             )  # Reinitalize before evaluation started (Needed for average fitness)
             for individual_defender in population_defender.individuals:
                 if labels is None:
-                    fitness_attacker = float(
-                        individual_attacker.genome.compute_loss_against(individual_defender.genome, input_var)[0]
-                    )
+                    # Iterate through input
+                    if split:
+                        input_iterator = iter(input_var)
+                        batch_number = 0
+                        fitness_attacker_acum = 0
+                        max_batches = len(input_var)
+                        while batch_number < max_batches:  # len(input_var):
+                            _input = next(input_iterator)
+                            fitness_attacker_acum += float(
+                                individual_attacker.genome.compute_loss_against(individual_defender.genome, _input)[0]
+                            )
+                            batch_number += 1
+                            _logger.debug("     Batch: {}/{}".format(batch_number, max_batches))
+                        fitness_attacker = fitness_attacker_acum / batch_number
+                    else:
+                        fitness_attacker = float(
+                            individual_attacker.genome.compute_loss_against(individual_defender.genome, input_var)[0]
+                        )
                 else:
-                    fitness_attacker = float(
-                        individual_attacker.genome.compute_loss_against(
-                            individual_defender.genome,
-                            input_var,
-                            labels=labels,
-                            alpha=alpha,
-                            beta=beta,
-                            iter=iter,
-                        )[0]
-                    )
+                    if split:
+                        input_iterator = iter(input_var)
+                        batch_number = 0
+                        fitness_attacker_acum = 0
+                        max_batches = len(input_var)
+                        while batch_number < max_batches:  # len(input_var):
+                            _input = next(input_iterator)
+                            fitness_attacker_acum += float(
+                                individual_attacker.genome.compute_loss_against(
+                                    individual_defender.genome,
+                                    input_var,
+                                    labels=labels,
+                                    alpha=alpha,
+                                    beta=beta,
+                                    iter=iter,
+                                )[0]
+                            )
+                            batch_number += 1
+                            _logger.debug("     Batch: {}/{}".format(batch_number, max_batches))
+                        fitness_attacker = fitness_attacker_acum / batch_number
+                    else:
+                        fitness_attacker = float(
+                            individual_attacker.genome.compute_loss_against(
+                                individual_defender.genome,
+                                input_var,
+                                labels=labels,
+                                alpha=alpha,
+                                beta=beta,
+                                iter=iter,
+                            )[0]
+                        )
 
                 individual_attacker.fitness = compare_fitness(
                     fitness_attacker, individual_attacker.fitness, fitness_mode
@@ -793,6 +859,13 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             accuracy = discriminator_output[2]
             if discriminator.name == "SemiSupervisedDiscriminator" and accuracy is not None:
                 logger.info(f"Iteration {iter},  Label Prediction Accuracy: {100 * accuracy}% ")
+
+        if split:
+            del _input
+            del input_iterator
+        del input_var
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
     def compute_mixture_generative_score(self):
         # Not necessary for single-cell grids, as mixture must always be [1]
