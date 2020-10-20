@@ -63,6 +63,7 @@ class InceptionCalculator(ScoreCalculator):
             if (
                 cc.settings["dataloader"]["dataset_name"] == "mnist"
                 or cc.settings["dataloader"]["dataset_name"] == "mnist_fashion"
+                or cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised"
             ):
                 rgb_batch = self._convert_grey_to_square_rgb(batch)
             else:
@@ -96,9 +97,14 @@ class InceptionCalculator(ScoreCalculator):
         assert (
             cc.settings["dataloader"]["dataset_name"] == "mnist"
             or cc.settings["dataloader"]["dataset_name"] == "mnist_fashion"
+            or cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised"
         )
+
         # Pad the same data in all 3 dimensions
-        return grey_img.reshape(-1, 28, 28).unsqueeze(1).repeat(1, 3, 1, 1)
+        if cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised":
+            return grey_img.reshape(-1, 128, 128).unsqueeze(1).repeat(1, 3, 1, 1)
+        else:  # MNIST-like data
+            return grey_img.reshape(-1, 28, 28).unsqueeze(1).repeat(1, 3, 1, 1)
 
     @property
     def is_reversed(self):
