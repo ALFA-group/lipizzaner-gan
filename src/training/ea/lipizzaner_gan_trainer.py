@@ -215,7 +215,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             elif self.cc.settings["dataloader"]["dataset_name"] == "network_traffic":
                 fitness_samples = generate_random_sequences(self.fitness_sample_size)
             else:
-                # fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
+                fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
                 # fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
                 fitness_labels = to_pytorch_variable(fitness_labels.view(self.fitness_sample_size, -1))
 
