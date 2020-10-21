@@ -229,8 +229,9 @@ class LipizzanerMaster:
                         "Node {} with weights {} yielded a score of {}".format(node_name, weights_generator, score)
                     )
                     scores.append((node, score))
-
-                    if best_score is None or (best_score is not None and score[0] < best_score):
+                    
+                    # HACK
+                    if best_score is None or (best_score is not None and score[0] > best_score):
                         best_score = score[0]
                         generators_to_be_optimized = generator_pop
                         weights_generator_to_be_optimized = weights_generator
