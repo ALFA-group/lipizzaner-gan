@@ -15,7 +15,7 @@ from torch.autograd import Variable
 from imblearn.over_sampling import SMOTE  # New packege
 
 # Images size
-WIDTH = 128
+WIDTH = 128 
 HEIGHT = 128
 
 

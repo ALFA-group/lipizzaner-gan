@@ -181,6 +181,9 @@ class LipizzanerMaster:
 
         results = node_client.gather_results(self.cc.settings["general"]["distribution"]["client_nodes"], 120)
 
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()  
+
         scores = []
         for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator) in results:
             node_name = "{}:{}".format(node["address"], node["port"])
@@ -238,6 +241,9 @@ class LipizzanerMaster:
                         best_score = score[0]
                         generators_to_be_optimized = generator_pop
                         weights_generator_to_be_optimized = weights_generator
+
+                if torch.cuda.is_available():        
+                    torch.cuda.empty_cache()  
 
                 if db_logger.is_enabled and self.experiment_id is not None:
                     db_logger.add_experiment_results(self.experiment_id, node_name, image_paths, score)
