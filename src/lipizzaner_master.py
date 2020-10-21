@@ -168,6 +168,9 @@ class LipizzanerMaster:
             exit(return_code)
 
     def _gather_results(self):
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         self._logger.info("Collecting results from clients...")
 
         # Initialize node client
