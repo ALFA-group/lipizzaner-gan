@@ -213,9 +213,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 fitness_samples = to_pytorch_variable(fitness_samples)
                 fitness_labels = to_pytorch_variable(fitness_labels)
             elif self.cc.settings["dataloader"]["dataset_name"] == "network_traffic":
-                fitness_samples = to_pytorch_variable(generate_random_sequences(self.fitness_sample_size))
+                fitness_samples = generate_random_sequences(self.fitness_sample_size)
             else:
-                fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
+                # fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
+                # fitness_samples = to_pytorch_variable(fitness_samples.view(self.fitness_sample_size, -1))
                 fitness_labels = to_pytorch_variable(fitness_labels.view(self.fitness_sample_size, -1))
 
             fitness_labels = torch.squeeze(fitness_labels)
@@ -229,11 +230,11 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             split = self.fitness_batch_size is not None
             if split:
                 fitness_samples = torch.split(fitness_samples, int(self.fitness_batch_size))
+
                 # fitness_samples = torch.split(fitness_samples, int(len(fitness_samples)/self.fitness_batch_size))
                 self._logger.debug(
                     "split fitness samples size: {}. {}".format(len(fitness_samples), fitness_samples[0].size())
                 )
-
             self.evaluate_fitness(
                 all_generators,
                 all_discriminators,
@@ -779,12 +780,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 if labels is None:
                     # Iterate through input
                     if split:
-                        input_iterator = iter(input_var)
                         batch_number = 0
                         fitness_attacker_acum = 0
                         max_batches = len(input_var)
-                        while batch_number < max_batches:  # len(input_var):
-                            _input = next(input_iterator)
+                        for _input in input_var:
                             fitness_attacker_acum += float(
                                 individual_attacker.genome.compute_loss_against(individual_defender.genome, _input)[0]
                             )
@@ -797,16 +796,14 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                         )
                 else:
                     if split:
-                        input_iterator = iter(input_var)
                         batch_number = 0
                         fitness_attacker_acum = 0
                         max_batches = len(input_var)
-                        while batch_number < max_batches:  # len(input_var):
-                            _input = next(input_iterator)
+                        for _input in input_var:
                             fitness_attacker_acum += float(
                                 individual_attacker.genome.compute_loss_against(
                                     individual_defender.genome,
-                                    input_var,
+                                    _input,
                                     labels=labels,
                                     alpha=alpha,
                                     beta=beta,
@@ -863,7 +860,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         if split:
             del _input
-            del input_iterator
+            # del input_iterator
         del input_var
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
@@ -904,6 +901,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         sampled_data, sampled_labels, self.fitness_iterator = get_next_batch(self.fitness_iterator, self.fitness_loaded)
         batch_size = sampled_data.size(0)
+
+        if self.cc.settings["dataloader"]["dataset_name"] == "network_traffic":
+            return to_pytorch_variable(generate_random_sequences(fitness_sample_size))
 
         if fitness_sample_size < batch_size:
             return (
