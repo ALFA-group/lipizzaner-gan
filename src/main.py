@@ -321,63 +321,63 @@ def test_classifiers(args, cc):
     dataloader = cc.create_instance(cc.settings["dataloader"]["dataset_name"])
     test_loader = dataloader.load(train=False)
 
-    network_factory = cc.create_instance(
-        cc.settings["network"]["name"],
-        dataloader.n_input_neurons,
-        num_classes=dataloader.num_classes,
-    )
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    discriminators_mixture_definition = read_settings(os.path.join(discriminators_source, "discriminator_mixture.yml"))
-    discriminators = []
-    _logger.info("Reading discriminator files: ")
-    for net, classification_layer in discriminators_mixture_definition.items():
-        net_path = os.path.join(discriminators_source, net)
-        _logger.info(f"{net} {classification_layer}")
-        classification_layer_path = os.path.join(discriminators_source, classification_layer)
-        discriminator = network_factory.create_discriminator()
-        discriminator.net.load_state_dict(torch.load(net_path, map_location=device))
-        discriminator.net.eval()
-        discriminator.classification_layer.load_state_dict(torch.load(classification_layer_path, map_location=device))
-        discriminator.classification_layer.eval()
-        discriminators.append(discriminator)
-
-    if cc.settings["network"]["name"] == "ssgan_perceptron":
-        view_shape = (-1, 784)
-    elif cc.settings["network"]["name"] == "ssgan_conv_mnist_28x28":
-        view_shape = (-1, 1, 28, 28)
-    else:
-        if cc.settings["dataloader"]["dataset_name"] == "cifar":
-            view_shape = (-1, 3, 64, 64)
-        else:
-            view_shape = (-1, 1, 64, 64)
-
-    correct = 0
-    _logger.info("Starting Majority Voting Process")
-    i = 0
-    with torch.no_grad():
-        for data, target in test_loader:
-            data, target = data.to(device), target.to(device)
-            data = data.view(view_shape)
-            pred_accumulator = []
-            for model in discriminators:
-                output = model.classification_layer(model.net(data))
-                output = output.view(-1, 11)
-                pred = output.argmax(dim=1, keepdim=True)
-                pred_accumulator.append(pred.view(-1))
-            label_votes = to_pytorch_variable(torch.tensor(list(zip(*pred_accumulator))))
-            prediction = to_pytorch_variable(
-                torch.tensor([labels.bincount(minlength=11).argmax() for labels in label_votes])
-            )
-            correct += prediction.eq(target.view_as(prediction)).sum().item()
-            _logger.info(f"Batch: {i}")
-            i += 1
-
-    num_samples = len(test_loader.dataset)
-    accuracy = 100.0 * float(correct / num_samples)
-    _logger.info("Completed Majority Voting Process")
-    _logger.info(f"Majority Voting Test Accuracy: {correct}/{num_samples} ({accuracy}%)")
+    # network_factory = cc.create_instance(
+    #     cc.settings["network"]["name"],
+    #     dataloader.n_input_neurons,
+    #     num_classes=dataloader.num_classes,
+    # )
+    #
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #
+    # discriminators_mixture_definition = read_settings(os.path.join(discriminators_source, "discriminator_mixture.yml"))
+    # discriminators = []
+    # _logger.info("Reading discriminator files: ")
+    # for net, classification_layer in discriminators_mixture_definition.items():
+    #     net_path = os.path.join(discriminators_source, net)
+    #     _logger.info(f"{net} {classification_layer}")
+    #     classification_layer_path = os.path.join(discriminators_source, classification_layer)
+    #     discriminator = network_factory.create_discriminator()
+    #     discriminator.net.load_state_dict(torch.load(net_path, map_location=device))
+    #     discriminator.net.eval()
+    #     discriminator.classification_layer.load_state_dict(torch.load(classification_layer_path, map_location=device))
+    #     discriminator.classification_layer.eval()
+    #     discriminators.append(discriminator)
+    #
+    # if cc.settings["network"]["name"] == "ssgan_perceptron":
+    #     view_shape = (-1, 784)
+    # elif cc.settings["network"]["name"] == "ssgan_conv_mnist_28x28":
+    #     view_shape = (-1, 1, 28, 28)
+    # else:
+    #     if cc.settings["dataloader"]["dataset_name"] == "cifar":
+    #         view_shape = (-1, 3, 64, 64)
+    #     else:
+    #         view_shape = (-1, 1, 64, 64)
+    #
+    # correct = 0
+    # _logger.info("Starting Majority Voting Process")
+    # i = 0
+    # with torch.no_grad():
+    #     for data, target in test_loader:
+    #         data, target = data.to(device), target.to(device)
+    #         data = data.view(view_shape)
+    #         pred_accumulator = []
+    #         for model in discriminators:
+    #             output = model.classification_layer(model.net(data))
+    #             output = output.view(-1, 11)
+    #             pred = output.argmax(dim=1, keepdim=True)
+    #             pred_accumulator.append(pred.view(-1))
+    #         label_votes = to_pytorch_variable(torch.tensor(list(zip(*pred_accumulator))))
+    #         prediction = to_pytorch_variable(
+    #             torch.tensor([labels.bincount(minlength=11).argmax() for labels in label_votes])
+    #         )
+    #         correct += prediction.eq(target.view_as(prediction)).sum().item()
+    #         _logger.info(f"Batch: {i}")
+    #         i += 1
+    #
+    # num_samples = len(test_loader.dataset)
+    # accuracy = 100.0 * float(correct / num_samples)
+    # _logger.info("Completed Majority Voting Process")
+    # _logger.info(f"Majority Voting Test Accuracy: {correct}/{num_samples} ({accuracy}%)")
 
 
 if __name__ == "__main__":
