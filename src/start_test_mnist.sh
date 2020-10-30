@@ -52,13 +52,14 @@ sleep 100
 sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
 
 
-sleep 300 
+sleep 60 
 sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml &  
 sleep 120  
 sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml 
 
 sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml &                                    
-sleep 120                                                                                                                                                               sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml       
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml       
 
 sleep 300  
 sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 

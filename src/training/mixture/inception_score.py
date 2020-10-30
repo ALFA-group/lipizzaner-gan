@@ -18,7 +18,7 @@ class InceptionCalculator(ScoreCalculator):
     TODO: Modify to similar implementation of FID on MNIST dataset
     """
 
-    def __init__(self, cuda=False, batch_size=32, resize=True):
+    def __init__(self, cuda=False, batch_size=32, resize=False):
         """
         :param cuda: Whether or not to run on GPU. WARNING: Requires enormous amounts of memory.
         :param batch_size: Batch size for feeding into Inception v3
@@ -99,11 +99,11 @@ class InceptionCalculator(ScoreCalculator):
             or cc.settings["dataloader"]["dataset_name"] == "mnist_fashion"
             or cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised"
         )
-
+        
         # Pad the same data in all 3 dimensions
         if cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised":
             return grey_img.reshape(-1, 128, 128).unsqueeze(1).repeat(1, 3, 1, 1)
-        else:  # MNIST-like data
+        else: # MNIST-like data
             return grey_img.reshape(-1, 28, 28).unsqueeze(1).repeat(1, 3, 1, 1)
 
     @property
