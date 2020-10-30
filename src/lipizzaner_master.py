@@ -179,6 +179,9 @@ class LipizzanerMaster:
         results = node_client.gather_results(self.cc.settings["general"]["distribution"]["client_nodes"], 120)
 
         scores = []
+        best_score = None
+        generators_to_be_optimized = None
+        best_node = None
         for (node, generator_pop, discriminator_pop, weights_generator, weights_discriminator) in results:
             node_name = "{}:{}".format(node["address"], node["port"])
             try:
@@ -213,8 +216,6 @@ class LipizzanerMaster:
 
                 # Calculate inception or FID score
                 score = float("-inf")
-                generators_to_be_optimized = None
-                best_score = None
                 if self.cc.settings["master"]["calculate_score"]:
                     calc = ScoreCalculatorFactory.create()
                     self._logger.info("Score calculator: {}".format(type(calc).__name__))
@@ -230,7 +231,21 @@ class LipizzanerMaster:
                     )
                     scores.append((node, score))
 
-                    if best_score is None or (best_score is not None and score[0] < best_score):
+                    if (
+                        (best_score is None)
+                        or (best_score > score[0] and calc.is_reversed)
+                        or (best_score < score[0] and (not calc.is_reversed))
+                    ):
+                        # if best_score is None or (best_score is not None and score[0] < best_score):
+                        if best_score is not None:
+                            self._logger.info(
+                                "Node {} with is better than {} ({} vs {}). Now, it is the best'".format(
+                                    node_name, best_node, score[0], best_score
+                                )
+                            )
+                        else:
+                            self._logger.info("Node {} with an score of {} is the best'".format(node_name, score[0]))
+                        best_node = node_name
                         best_score = score[0]
                         generators_to_be_optimized = generator_pop
                         weights_generator_to_be_optimized = weights_generator
@@ -260,7 +275,7 @@ class LipizzanerMaster:
         generators = generators_to_be_optimized
         weights_generators = weights_generator_to_be_optimized
         population_size = len(weights_generator_to_be_optimized)
-        generations = 200
+        generations = 5
         score_sample_size = self.cc.settings["master"]["score_sample_size"]
         mixture_generator_samples_mode = self.cc.settings["trainer"]["mixture_generator_samples_mode"]
         mixture_sigma = self.cc.settings["trainer"]["params"]["mixture_sigma"]
@@ -359,8 +374,6 @@ class LipizzanerMaster:
                 score = calc.calculate(dataset)
                 self._logger.info("Generator {} yielded a score of {}".format(generator.source, score))
                 generators_score[generator.source] = score[0]  # FID
-
-        print(generators_score)
 
         self._logger.info("-------------------------------------------------------------------")
         self._logger.info("-------------------------------------------------------------------")
