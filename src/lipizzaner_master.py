@@ -260,7 +260,7 @@ class LipizzanerMaster:
         generators = generators_to_be_optimized
         weights_generators = weights_generator_to_be_optimized
         population_size = len(weights_generator_to_be_optimized)
-        generations = 200
+        generations = 100
         score_sample_size = self.cc.settings["master"]["score_sample_size"]
         mixture_generator_samples_mode = self.cc.settings["trainer"]["mixture_generator_samples_mode"]
         mixture_sigma = self.cc.settings["trainer"]["params"]["mixture_sigma"]
