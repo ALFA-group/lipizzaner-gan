@@ -1,12 +1,12 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 50
+  n_iterations: 20
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
   params:
     population_size: 1
-    tournament_size: 2
+    tournament_size: 1
     n_replacements: 1
     default_adam_learning_rate: 0.00005
     # Hyperparameter mutation
@@ -36,4 +36,4 @@ master:
   calculate_score: True
   score_sample_size: 50000
   cuda: True
-general: !include ../general-1x1.yml
+general: !include general-1x1.yml
