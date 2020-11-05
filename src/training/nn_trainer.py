@@ -124,7 +124,7 @@ class NeuralNetworkTrainer(ABC):
                 if self.network_factory.num_classes is not None and self.network_factory.num_classes != 0
                 else 0
             )
-            z = noise(batch_size, self.network_factory.gen_input_size + num_classes)
+            z = noise(batch_size, self.network_factory.gen_input_size)
             gen = self.population_gen.individuals[0].genome.net
             gen.eval()
             generated_output = gen(z)
