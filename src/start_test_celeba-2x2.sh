@@ -15,13 +15,13 @@ sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --
 
 
 
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
-sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.sh
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
+sleep $sleep_time ;CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/celeba-2x2.yml
