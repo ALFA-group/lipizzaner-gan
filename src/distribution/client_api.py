@@ -53,10 +53,17 @@ class ClientAPI:
     @app.route('/experiments', methods=['DELETE'])
     def terminate_experiment():
         ClientAPI._lock.acquire()
+        
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
 
         if ClientAPI.is_busy:
-            ClientAPI._logger.warning('Received stop signal from master, experiment will be quit.')
-            ClientAPI._stop_event.set()
+            if os.path.exists(path):
+                ClientAPI._logger.info('Experiments DEL: sleep file found for client ' + str(ClientEnvironment.port))
+                response = Response() 
+            else :
+                ClientAPI._logger.warning('Received stop signal from master, experiment will be quit.')
+                ClientAPI._stop_event.set()
         else:
             ClientAPI._logger.warning('Received stop signal from master, but no experiment is running.')
 
@@ -68,14 +75,12 @@ class ClientAPI:
     def get_results():
         ClientAPI._lock.acquire()
 
-        # dir = os.getcwd()
-        # ClientAPI._logger.info("Experiments current working directory is {}".format(dir))
         cc = ConfigurationContainer.instance()
         path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
 
         if ClientAPI.is_busy:
             if os.path.exists(path):
-                ClientAPI._logger.info('Experiments: sleep file found for client ' + str(ClientEnvironment.port))
+                ClientAPI._logger.info('Experiments GET: sleep file found for client ' + str(ClientEnvironment.port))
                 response = Response() 
             else :
                 ClientAPI._logger.info('Sending neighbourhood results to master')
@@ -102,6 +107,7 @@ class ClientAPI:
         if hasattr(cc, "settings"):
             output_base_dir = cc.output_dir 
             path = output_base_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+            # TODO set flag in client environment to be accessed in lipi gan trainer 
         
         ClientAPI._logger.info("Sleep Request made with sleepfile at {}".format(path))
 
@@ -158,7 +164,7 @@ class ClientAPI:
             if 'general' in cc.settings.keys():
                 sleep_path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
                 if os.path.exists(sleep_path) :
-                        ClientAPI._logger.info('Client made to sleep ' + str(ClientEnvironment.port))
+                        ClientAPI._logger.info('STATUS Client made to sleep ' + str(ClientEnvironment.port))
                         response = Response()
                         response._status_code = 404 
                         return response
@@ -180,6 +186,14 @@ class ClientAPI:
     def get_discriminators():
         populations = ConcurrentPopulations.instance()
 
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy: # not sure if I should have this check
+            if os.path.exists(path):
+                ClientAPI._logger.info('Discriminators GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response() 
+
         populations.lock()
         if populations.discriminator is not None:
             parameters = [ClientAPI._individual_to_json(i) for i in populations.discriminator.individuals]
@@ -194,7 +208,16 @@ class ClientAPI:
     @app.route('/parameters/discriminators/best', methods=['GET'])
     def get_best_discriminator():
         populations = ConcurrentPopulations.instance()
+        
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
 
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Discriminators BEST GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response() 
+            
+        ClientAPI._logger.info('Discriminators BEST GET for ' + str(ClientEnvironment.port))
         populations.lock()
         if populations.discriminator is not None:
             best_individual = sorted(populations.discriminator.individuals, key=lambda x: x.fitness)[0]
@@ -211,6 +234,14 @@ class ClientAPI:
     def get_generators():
         populations = ConcurrentPopulations.instance()
 
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Generators GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response()
+
         populations.lock()
         if populations.generator is not None:
             parameters = [ClientAPI._individual_to_json(i) for i in populations.generator.individuals]
@@ -225,6 +256,14 @@ class ClientAPI:
     @app.route('/parameters/generators/best', methods=['GET'])
     def get_best_generator():
         populations = ConcurrentPopulations.instance()
+
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Generators BEST GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response()
 
         if populations.generator is not None:
             best_individual = sorted(populations.generator.individuals, key=lambda x: x.fitness)[0]

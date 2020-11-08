@@ -1,10 +1,14 @@
 import random
-from time import time
+import os
+import time 
+# from time import time
 from collections import OrderedDict
 
 import numpy as np
 import torch
 
+from distribution.client_api import ClientAPI
+from distribution.client_environment import ClientEnvironment
 from distribution.concurrent_populations import ConcurrentPopulations
 from distribution.neighbourhood import Neighbourhood
 from helpers.configuration_container import ConfigurationContainer
@@ -110,7 +114,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         for iteration in range(n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
-            start_time = time()
+            start_time = time.time()
 
             all_generators = self.neighbourhood.all_generators
             all_discriminators = self.neighbourhood.all_discriminators
@@ -194,7 +198,19 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             self.batch_number = 0
             data_iterator = iter(loaded)
-            while self.batch_number < len(loaded):
+            while self.batch_number < len(loaded): 
+               
+                # TODO check its still alive and do nothing if "sleeping"
+                # sleep for 10 seconds at a time 
+                # check if sleepfile exists 
+                
+                path = self.cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+                # self._logger.info('Gan Trainer got path ' + path)
+                
+                if os.path.exists(path):
+                    self._logger.info('Gan Trainer stopping training [CLIENT ' + str(ClientEnvironment.port) + ']')
+                    time.sleep(10)
+                    continue 
                 if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
                     input_data = to_pytorch_variable(next(data_iterator))
                     batch_size = input_data.size(0)
@@ -300,7 +316,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             if not self.optimize_weights_at_the_end:
                 self.mutate_mixture_weights_with_score(input_data)  # self.score is updated here
 
-            stop_time = time()
+            stop_time = time.time()
 
             path_real_images, path_fake_images = \
                 self.log_results(batch_size, iteration, input_data, loaded,
@@ -619,7 +635,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                                                'mixture_generator_samples_mode'])
 
             if self.score_calc is not None:
-                self._logger.info('Calculating FID/inception score.')
+                # self._logger.info('Calculating FID/inception score.')
 
                 score_before_mutation = self.score_calc.calculate(dataset_before_mutation)[0]
                 score_after_mutation = self.score_calc.calculate(dataset_after_mutation)[0]
@@ -633,6 +649,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 else:
                     # Do not adopt the mutated mixture_weights here
                     self.score = score_before_mutation
+                self._logger.info('Calculating FID/inception score: ' + str(self.score))
 
     def generate_random_fitness_samples(self, fitness_sample_size):
         """

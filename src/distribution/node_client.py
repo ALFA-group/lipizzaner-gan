@@ -107,6 +107,7 @@ class NodeClient:
                 # TODO if checkpoint newer then call the checkpoint func 
                 result['address'] = address
                 result['alive'] = True
+                result['port'] = client['port']
                 statuses.append(result)
                 # if there's a new checkpoint from the client then retrieve it 
                 # if resp.json()['new_checkpoint']:
