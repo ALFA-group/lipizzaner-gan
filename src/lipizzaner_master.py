@@ -49,6 +49,8 @@ class LipizzanerMaster:
             clients = self.cc.settings['general']['distribution']['client_nodes']
         accessible_clients = self._accessible_clients(clients)
 
+        self._logger.info('LIPIZZANER MASTER clients are {}'.format(clients))
+
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
                                   .format(len(accessible_clients)))
@@ -70,7 +72,8 @@ class LipizzanerMaster:
         self.heartbeat_event = Event()
         self.heartbeat_thread = Heartbeat(self.heartbeat_event,
                                           self.cc.settings['general']['distribution']['master_node'][
-                                              'exit_clients_on_disconnect']) 
+                                              'exit_clients_on_disconnect'],
+                                          self) 
                                               # if exit_clients_on_disconnect set to false then recovery will happen
 
         signal.signal(signal.SIGINT, self._sigint)
@@ -264,3 +267,6 @@ class LipizzanerMaster:
                 for port in range(int(rng[0]), int(rng[1]) + 1):
                     clients.append({'address': client['address'], 'port': port})
             self.cc.settings['general']['distribution']['client_nodes'] = clients
+
+    def restart_client(self, dead_port):
+        self._logger.info('able to call master function and failing one is {}'.format(dead_port))

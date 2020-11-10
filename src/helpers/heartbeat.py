@@ -1,20 +1,26 @@
 import logging
+# import sys
 import time 
 from threading import Thread
 
 from distribution.node_client import NodeClient
+# import LipizzanerMaster, GENERATOR_PREFIX
+
 _logger = logging.getLogger(__name__)
 
 HEARTBEAT_FREQUENCY_SEC = 3
 
 
 class Heartbeat(Thread):
-    def __init__(self, event, kill_clients_on_disconnect):
+    def __init__(self, event, kill_clients_on_disconnect, master):
         Thread.__init__(self)
         self.kill_clients_on_disconnect = kill_clients_on_disconnect
         self.stopped = event
+        self.master = master # reference to LipizzanerMaster object
         self.success = None
         self.node_client = NodeClient(None)
+
+        _logger.info('HEARTBEAT passed master ref to heartbeat {}'.format(master))
 
     def run(self):
         # TESTING CODE ONLY
@@ -61,6 +67,7 @@ class Heartbeat(Thread):
                     # still dead after 3 attempts to reconnect, create new client
                     if still_dead_clients != []:
                         _logger.info('Heartbeat: STILL DEAD after 3 attempts to reconnect. Should create new client')
+                        self.master.restart_client(still_dead_clients[0])
 
             elif all(c['finished'] for c in alive_clients):
                 _logger.info('Heartbeat: All clients finished their experiments.')

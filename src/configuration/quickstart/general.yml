@@ -15,5 +15,6 @@ distribution:
   client_nodes:
     - address: 127.0.0.1 # Fill in IP address here
       port: 5000-5003
+      backup_port: 5004-5005
 seed: 1
 num_workers: 0    # how many subprocesses to use for data loading
