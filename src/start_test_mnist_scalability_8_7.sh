@@ -3,7 +3,7 @@
 killall python
 
 # 1st argument specifies the number of clients to create
-num_processes=16
+num_processes=14
 
 sleep_time=3
 
@@ -24,7 +24,7 @@ sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --
 array+=($!)
 echo $(($num_processes - 1))
 
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8.yml &
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
 
 # Start the silent client processes
 for ((i=$half_processes;i<$num_processes-1;i++))
@@ -41,41 +41,37 @@ echo $(($num_processes - 1))
 
 sleep 100
 
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8-b.yml
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
+
+
+sleep 60
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
+
+
+sleep 60
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
+
+
+sleep 60
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
+
+sleep 60
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
+
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --client > /dev/null 2>&1 &
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --client > /dev/null 2>&1 &
+
 
 
 sleep 60
 sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8.yml &
 sleep 120
 sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8-b.yml
-
-sleep 60
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8.yml &
-sleep 120
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8-b.yml
-
-sleep 60
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8.yml &
-sleep 120
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-8-b.yml
-
-
-sleep 60
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
-sleep 120
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
-
-sleep 60
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
-sleep 120
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
-
-sleep 60
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
-sleep 120
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
-
-sleep 60
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7.yml &
-sleep 120
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf-mnist-scaling/mnist-7-b.yml
