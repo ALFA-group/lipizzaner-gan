@@ -296,7 +296,7 @@ def optimize_ga(args, cc):
     mutation_probability = args.mutation_probability
     crossover_probability = args.crossover_probability
     n_samples = args.n_samples
-    max_generators_index = 218
+    max_generators_index = 200
     ensemble_size = ensemble_max_size
 
     print('Starting experiments....')

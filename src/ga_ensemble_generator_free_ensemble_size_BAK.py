@@ -49,36 +49,25 @@ class TVDBasedSizeFreeGA:
     def __init__(self, precision=100, generators_path='./generators/', min_ensmbe_size=3, max_ensmbe_size=8):
         self.generators_path = generators_path
         self.generators_in_path = self.get_all_generators_in_path()
-        self.generators_in_path = 6
+        #self.generators_in_path = 6
         self.precision = precision
         self.possible_weights = self.create_weights_list(0, self.precision+1, 1)
         self.min_ensmbe_size = min_ensmbe_size
         self.max_ensmbe_size = self.generators_in_path  if max_ensmbe_size > self.generators_in_path else max_ensmbe_size
-        self.mutation = self.mutate_no_ensemblesize if self.min_ensmbe_size == self.max_ensmbe_size else mutate_include_ensemblesize
 
-
-    def initialize_generators_index(self, generators_in_path):
-        """Initialize the generators identifiers segment of the chromosome.
-
-        Args:
-            generators_in_path: number of the generators in the path
-        Returns:
-            generators_inex: List of shuffled index of the generators
-        """
-        assert max_generator_elements > 0, 'There are not generators in the generators path.'
-        generators_inex =list(range(generators_in_path))
+    def initialize_generators_index(self, max_generator_elements):
+        generators_inex =list(range(max_generator_elements))
         random.shuffle(generators_inex)
         return generators_inex
 
     def initialize_weights(self, max_generator_elements):
-        return [random.randint(1,10) for i in range(max_generator_elements)]
+        return [random.randint(0,10) for i in range(max_generator_elements)]
 
-    def create_individual(self, individual_class=None):
+    def create_individual(self, individual_class):
         ensemble_size = [random.randint(self.min_ensmbe_size, self.max_ensmbe_size)]
         generators_index = self.initialize_generators_index(self.generators_in_path)
         weights = self.initialize_weights(self.generators_in_path)
         individual = self.normalize_weights(ensemble_size+generators_index+weights)
-        return individual
         return individual_class(individual)
 
     def get_all_generators_in_path(self):
@@ -87,8 +76,8 @@ class TVDBasedSizeFreeGA:
     def create_weights_list(self, min_value, max_value, step_size):
         return np.arange(min_value, max_value, step_size)
 
-    def mutate_include_ensemblesize(self, individual, low, up, indpb):
-        print('Include Ensemble size')
+
+    def mutate(self, individual, low, up, indpb):
         prob = random.random()
         if prob < 0.25:
             mutation_type = 'just-weight-probabilty'
@@ -100,27 +89,6 @@ class TVDBasedSizeFreeGA:
             mutation_type = 'just-ensemble-size'
         individual, = self.mutations(individual, low, up, indpb, mutation_type=mutation_type)
         return individual,
-
-
-    def mutate_no_ensemblesize(self, individual, low, up, indpb):
-        print('NOOOR Include Ensemble size')
-        prob = random.random()
-        if prob < 0.33:
-            mutation_type = 'just-weight-probabilty'
-        elif prob < 0.66:
-            mutation_type = 'just-generator-index'
-        else:
-            mutation_type = 'generator-and-weight'
-        individual, = self.mutations(individual, low, up, indpb, mutation_type=mutation_type)
-        return individual,
-
-    def mutate_ensemble_size(self, individual):
-        ensemble_size_range = self.max_ensmbe_size - self.min_ensmbe_size
-        additive_value = random.randint(1, ensemble_size_range)
-        aux = (individual[0] + additive_value)%ensemble_size_range
-
-
-
 
     def mutations(self, individual, low, up, indpb, mutation_type='generator-and-weight'):
         #print('Lets mutate - Probabolity:' + str(indpb)+ ' Mutation type: ' + mutation_type)
@@ -305,16 +273,7 @@ class TVDBasedSizeFreeGA:
             i += 1
         return np.array(result) / self.precision, len(result)
 
-min_ensmbe_size = 5
-max_ensmbe_size = 5
-ga = TVDBasedSizeFreeGA(min_ensmbe_size=min_ensmbe_size, max_ensmbe_size=max_ensmbe_size)
-ind = ga.create_individual(3, 5)
-print(ind)
-ga.mutate()
-#
-# individual, low, up, indpb
-
-    # def main():
+# def main():
 #
 #     def evalOneMax(individual, network_factory, mixture_generator_samples_mode='exact_proportion', fitness_type='TVD'):
 #         population = Population(individuals=[], default_fitness=0)
@@ -343,13 +302,13 @@ ga.mutate()
 #
 #     min_ensmbe_size = 3
 #     max_ensmbe_size = 8
-# #
+#
 #     ga = TVDBasedSizeFreeGA(min_ensmbe_size=min_ensmbe_size, max_ensmbe_size=max_ensmbe_size)
-    # score_calc = ScoreCalculatorFactory.create()
-    # dataloader = 'mnist'
-    # network_name = 'four_layer_perceptron'
-    # mixture_generator_samples_mode = 'exact_proportion'
-    # network_factory = NetworkFactory(network_name, dataloader.n_input_neurons)
+#     # score_calc = ScoreCalculatorFactory.create()
+#     # dataloader = 'mnist'
+#     # network_name = 'four_layer_perceptron'
+#     # mixture_generator_samples_mode = 'exact_proportion'
+#     # network_factory = NetworkFactory(network_name, dataloader.n_input_neurons)
 #
 #     max_generators_index = 10
 #     ensemble_size = 5
