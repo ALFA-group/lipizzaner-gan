@@ -514,8 +514,8 @@ class LipizzanerMaster:
             "Calculating score score of {}. Depending on the type, this may take very long.".format(weights_generators)
         )
 
-        score = score_calc.calculate(dataset)[0]
-        init_score = score
+        init_score, tvd = score_calc.calculate(dataset)
+        score = init_score
 
         self._logger.info("Mixture weight mutation - Starting mixture weights optimization ...")
         self._logger.info("Init score: {}\tInit weights: {}.".format(init_score, weights_generators))
