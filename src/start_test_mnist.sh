@@ -20,11 +20,11 @@ do
   echo $i
 done
 
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --client & 
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --client &
 array+=($!)
-echo $(($num_processes - 1)) 
+echo $(($num_processes - 1))
 
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml &
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
 
 # Start the silent client processes
 for ((i=$half_processes;i<$num_processes-1;i++))
@@ -45,58 +45,58 @@ echo $(($num_processes - 1))
 #   kill -9 $i
 # done
 
-#sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml &
+#sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
 
 sleep 100
 
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
 
-sleep 60 
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml &  
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml 
-
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml &                                    
+sleep 60
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
 sleep 120
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml       
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/quickstart/mnist.yml & 
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
 
-sleep 300  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist.yml &
-sleep 120  
-sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/quickstart/mnist-2.yml
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=0 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
+
+sleep 300
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist.yml &
+sleep 120
+sleep $sleep_time ; CUDA_VISIBLE_DEVICES=1 python main.py train --distributed --master -f configuration/golf/mnist-2.yml
