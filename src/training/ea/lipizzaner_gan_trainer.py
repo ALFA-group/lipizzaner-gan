@@ -331,8 +331,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                            path_real_images, path_fake_images)
 
             if self.checkpoint_period>0 and (iteration+1)%self.checkpoint_period==0:
+                self._logger.info('calling save checkpoint with port {}'.format(ClientEnvironment.port))
                 self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
-                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position)
+                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position, 
+                                     ClientEnvironment.port)
                 #TODO send checkpoint back to master on a thread that's waiting to hear back 
 
         if self.optimize_weights_at_the_end:

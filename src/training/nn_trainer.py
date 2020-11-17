@@ -132,7 +132,7 @@ class NeuralNetworkTrainer(ABC):
             self.dataloader.save_images(generated_output, shape, path_fake)
             gen.train()
 
-    def save_checkpoint(self, generators, discriminators, cell_number, grid_position):
+    def save_checkpoint(self, generators, discriminators, cell_number, grid_position, port):
         def get_individuals_information(individuals, prefix, cell_number):
             individuals_info = dict()
 
@@ -151,12 +151,12 @@ class NeuralNetworkTrainer(ABC):
                     indiv["source"] = individual.source
                     individuals_info["individuals"].append(indiv)
 
-                    if indiv["is_local"]:
-                        filename = "{}{}.pkl".format(prefix, cell_number)
-                        torch.save(
-                            individual.genome.net.state_dict(),
-                            os.path.join(self.cc.output_dir, filename),
-                        )
+                    # if indiv["is_local"]:
+                    #     filename = "{}{}.pkl".format(prefix, cell_number)
+                    #     torch.save(
+                    #         individual.genome.net.state_dict(),
+                    #         os.path.join(self.cc.output_dir, filename),
+                    #     )
             return individuals_info
 
         checkpoint = dict()
@@ -170,7 +170,8 @@ class NeuralNetworkTrainer(ABC):
         self._checkpoint = checkpoint
 
         # add timestamp to end of path by sorting then retrieve the latest 
-        path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}-{}.yml'.format(cell_number, checkpoint['time']))
+        path_checkpoint = os.path.join(self.cc.output_dir, 'checkpoint-{}.yml'.format(str(port)))
+        
         with open(path_checkpoint, 'w+') as file:
             yaml.dump(checkpoint, file)
         

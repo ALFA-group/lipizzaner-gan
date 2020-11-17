@@ -27,6 +27,7 @@ class Heartbeat(Thread):
         start_time = 0
         while not self.stopped.wait(HEARTBEAT_FREQUENCY_SEC):
             client_statuses = self.node_client.get_client_statuses()
+            # TODO request checkpoint from client using statuses and call master checkpoint func to save new one in output/master
             dead_clients = [c for c in client_statuses if not c['alive'] or not c['busy']]
             alive_clients = [c for c in client_statuses if c['alive'] and c['busy']]
 
@@ -43,9 +44,8 @@ class Heartbeat(Thread):
                     return
                 else:
                     _logger.info("Heartbeat: Dead clients {} but will attempt to reconnect to them".format(printable_names)) 
-                    # TODO try to reconnect 3 times
                     # otherwise assume dead and start a new client
-                    sleep_time = 10
+                    sleep_time = 5
                     for i in range(3):
                         # could also iterate through clients
                         new_client_statuses = self.node_client.get_client_statuses()
@@ -62,12 +62,12 @@ class Heartbeat(Thread):
                                 _logger.info("Heartbeat: dead after attempt {} to reconnect {}".format(str(i+1), still_dead_clients))
                             
                         time.sleep(sleep_time)
-                        sleep_time += 10
+                        sleep_time += 2
                     
                     # still dead after 3 attempts to reconnect, create new client
                     if still_dead_clients != []:
                         _logger.info('Heartbeat: STILL DEAD after 3 attempts to reconnect. Should create new client')
-                        self.master.restart_client(still_dead_clients[0])
+                        self.master.restart_client(still_dead_clients[0]['port'])
 
             elif all(c['finished'] for c in alive_clients):
                 _logger.info('Heartbeat: All clients finished their experiments.')

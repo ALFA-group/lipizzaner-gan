@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 import signal
@@ -9,6 +10,7 @@ import requests
 import torch
 import torch.utils.data
 from torch.autograd import Variable
+import yaml
 
 from distribution.node_client import NodeClient
 from helpers.configuration_container import ConfigurationContainer
@@ -17,6 +19,7 @@ from helpers.heartbeat import Heartbeat
 from helpers.math_helpers import is_square
 from helpers.network_helpers import get_network_devices
 from helpers.reproducible_helpers import set_random_seed
+from helpers.yaml_include_loader import YamlIncludeLoader
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
@@ -50,7 +53,8 @@ class LipizzanerMaster:
         accessible_clients = self._accessible_clients(clients)
 
         self._logger.info('LIPIZZANER MASTER clients are {}'.format(clients))
-
+        self._logger.info('BACKUP NODES ARE {}'.format(self.cc.settings['general']['distribution']['backup_client_nodes']))
+        self._logger.info('MASTER OUTPUT DIR IS {}'.format(self.cc.output_dir))
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
                                   .format(len(accessible_clients)))
@@ -270,3 +274,53 @@ class LipizzanerMaster:
 
     def restart_client(self, dead_port):
         self._logger.info('able to call master function and failing one is {}'.format(dead_port))
+        backup_ports = self.cc.settings['general']['distribution']['backup_client_nodes']
+
+        self._logger.info('backup ports are {} output directory is {}'.format(backup_ports, self.cc.output_dir))
+
+        # read in checkpoint of dead port
+        dataset_name = self.cc.settings["dataloader"]["dataset_name"]
+        # timestamp = self.cc.settings["general"]["distribution"]["start_time"] # TODO see why this isn't working when i use it in the path
+
+        path_to_find = os.path.join(self.cc.output_dir, 'distributed', dataset_name, '*/*/checkpoint-' + str(dead_port) + '.yml') 
+        
+        self._logger.info("expecting name {}".format(path_to_find))
+
+        checkpoints = glob.glob(path_to_find)
+        checkpoints.sort()
+        self._logger.info("all paths are {}".format(", ".join(checkpoints)))
+        lastCheckpoint = checkpoints[len(checkpoints) - 1]
+        self._logger.info('found path called {}'.format(lastCheckpoint))
+        with open(lastCheckpoint, 'r') as config_file:
+            checkpoint = yaml.load(config_file, YamlIncludeLoader)
+            
+            # self._logger.info('CHECKPOINT IS {}'.format(checkpoint))
+
+            discriminators = checkpoint['discriminators']
+            generators = checkpoint['generators']
+
+            # get neighbors of dead port by checking the 'is_local' flag in the checkpoint 
+            neighbors = []
+            for d in discriminators['individuals']:
+                if not d['is_local']:
+                    neighbors.append(d['source'])
+
+            self._logger.info('got the neighbors {}'.format(neighbors))
+ 
+        # pass checkpoint info and neighbor info to client at backup port ~ experiments API call  
+        # loop through backup clients and break look if try works
+        # address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
+        #     self.cc.settings['general']['distribution']['client_id'] = client_id
+            # try:
+            #     resp = requests.post(address, json=self.cc.settings)
+            #     assert resp.status_code == 200, resp.text
+            #     self._logger.info('Successfully started experiment on {}'.format(address))
+                # break 
+            # except AssertionError as err:
+            #     self._logger.critical('Could not start experiment on {}: {}'.format(address, err))
+            #     self._terminate()
+            # if it fails use next back up client until it works (new_port)
+        
+        # tell each of the neighbors of dead port the new port number
+        # make API calls to neighbors with param being the dead port, new_port to replace it with 
+
