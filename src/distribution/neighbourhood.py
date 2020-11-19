@@ -169,10 +169,15 @@ class Neighbourhood:
 
         def neighbours(x, y):
             # indices = np.array([(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)])
-            indices = np.array([x - 1, x + 1])
+            # indices = np.array([x - 1, x + 1])
+            indices = np.array([x - 2, x - 1, x + 1, x + 2])
             # Start at 0 when x or y is out of bounds
-            indices[indices >= dim] = 0
+            print(node)
+            print(indices)
+            indices[indices == dim] = 0
+            indices[indices == dim + 1] = 1
             indices[indices == -1] = dim - 1
+            indices[indices == -2] = dim - 2
             print(indices)
             # Remove duplicates (needed for smaller grids), and convert to (x,y) tuples
             return indices
