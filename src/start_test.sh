@@ -2,7 +2,7 @@
 
 # 1st argument specifies the number of clients to create
 num_processes=$1
-sleep_time=5
+sleep_time=3
 array=()
 
 # Start the silent client processes
@@ -19,7 +19,9 @@ array+=($!)
 echo $(($num_processes - 1))
 
 # Kill all the processes once a key is entered into the terminal
-read -p "Press Enter to Quit. "
-for i in "${array[@]}"; do
-  kill -9 $i
-done
+#read -p "Press Enter to Quit. "
+#for i in "${array[@]}"; do
+#  kill -9 $i
+#done
+
+sleep $sleep_time ; python main.py train --distributed --master -f configuration/golf/mnist-16.yml
