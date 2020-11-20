@@ -3,7 +3,7 @@
 killall python
 
 # 1st argument specifies the number of clients to create
-num_processes=$1
+num_processes=18
 
 sleep_time=3
 
