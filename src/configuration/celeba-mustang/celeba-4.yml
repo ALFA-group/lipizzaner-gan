@@ -1,0 +1,38 @@
+trainer:
+  name: lipizzaner_gan
+  n_iterations: 80
+  mixture_generator_samples_mode: exact_proportion
+  params:
+    population_size: 1
+    tournament_size: 1
+    n_replacements: 1
+    default_adam_learning_rate: 0.0002
+    # Hyperparameter mutation
+    alpha: 0.0001
+    mutation_probability: 0
+    discriminator_skip_each_nth_step: 0
+    mixture_sigma: 0.01
+    enable_selection: False
+    optimize_weights_at_the_end: False
+    score:
+      enabled: False
+      type: fid
+      score_sample_size: 1000
+      cuda: True
+    fitness:
+      fitness_sample_size: 1000
+      fitness_mode: average    # worse, best, average
+dataloader:
+  dataset_name: celeba
+  use_batch: True
+  batch_size: 128
+  n_batches: 0
+  shuffle: True
+network:
+  name: convolutional
+  loss: bceloss
+master:
+  calculate_score: True
+  score_sample_size: 50000
+  cuda: True
+general: !include general-4.yml
