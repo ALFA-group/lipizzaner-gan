@@ -274,10 +274,11 @@ class LipizzanerMaster:
 
     def restart_client(self, dead_port):
         self._logger.info('able to call master function and failing one is {}'.format(dead_port))
+        address = self.cc.settings['general']['distribution']['client_nodes'][0]['address']
         backup_ports = self.cc.settings['general']['distribution']['backup_client_nodes']
-
-        self._logger.info('backup ports are {} output directory is {}'.format(backup_ports, self.cc.output_dir))
-
+        backup_ports = backup_ports['port'].split('-')
+        self._logger.info('address is {} backup ports are {} output directory is {}'.format(address, backup_ports, self.cc.output_dir))
+        
         # read in checkpoint of dead port
         dataset_name = self.cc.settings["dataloader"]["dataset_name"]
         # timestamp = self.cc.settings["general"]["distribution"]["start_time"] # TODO see why this isn't working when i use it in the path
@@ -298,27 +299,44 @@ class LipizzanerMaster:
 
             discriminators = checkpoint['discriminators']
             generators = checkpoint['generators']
-
+            last_iteration = discriminators['iteration']
             # get neighbors of dead port by checking the 'is_local' flag in the checkpoint 
             neighbors = []
             for d in discriminators['individuals']:
                 if not d['is_local']:
-                    neighbors.append(d['source'])
+                    formatted = {'id' : d['source']}
+                    formatted['address'] = address
+                    formatted['port'] = formatted['id'].split(':')[0]
+                    neighbors.append(formatted)
 
-            self._logger.info('got the neighbors {}'.format(neighbors))
- 
+            self._logger.info('got the neighbors {} and last iteration {} with n_iterations being {}'.format(neighbors, last_iteration, self.cc.settings['trainer']['n_iterations']))
+            self.cc.settings['general']['distribution']['neighbors'] = neighbors
+
+        # remove dead port from client nodes list
+        all_clients = self.cc.settings['general']['distribution']['client_nodes']
+        self.cc.settings['general']['distribution']['client_nodes'] = [c for c in all_clients if c['port'] != dead_port]
+        alive_clients = self.cc.settings['general']['distribution']['client_nodes']
+        assert(len(alive_clients) == len(all_clients) - 1)
+        
         # pass checkpoint info and neighbor info to client at backup port ~ experiments API call  
         # loop through backup clients and break look if try works
-        # address = 'http://{}:{}/experiments'.format(client['address'], client['port'])
-        #     self.cc.settings['general']['distribution']['client_id'] = client_id
-            # try:
-            #     resp = requests.post(address, json=self.cc.settings)
-            #     assert resp.status_code == 200, resp.text
-            #     self._logger.info('Successfully started experiment on {}'.format(address))
-                # break 
-            # except AssertionError as err:
-            #     self._logger.critical('Could not start experiment on {}: {}'.format(address, err))
-            #     self._terminate()
+        for backup_port in backup_ports:
+            # add address of backup port into list
+            self.cc.settings['general']['distribution']['client_nodes'].append({'address': address, 'port': backup_port})
+
+            api_call_address = 'http://{}:{}/experiments'.format(address, backup_port)
+            self.cc.settings['general']['distribution']['client_id'] = backup_port
+            self.cc.settings['trainer']['iterations_left'] = self.cc.settings['trainer']['n_iterations'] - last_iteration
+            try:
+                resp = requests.post(api_call_address, json=self.cc.settings)
+                assert resp.status_code == 200, resp.text
+                self._logger.info('Successfully started backup experiment on {} with iteration {}'.format(api_call_address, self.cc.settings['trainer']['iterations_left']))
+                break 
+            except AssertionError as err:
+                self._logger.critical('Could not start experiment on {}: {}'.format(api_call_address, err))
+                # change the ports back to contain only alive clients
+                self.cc.settings['general']['distribution']['client_nodes'] = alive_clients
+                # self._terminate()
             # if it fails use next back up client until it works (new_port)
         
         # tell each of the neighbors of dead port the new port number

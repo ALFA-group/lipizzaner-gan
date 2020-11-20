@@ -1,6 +1,7 @@
 from math import sqrt
 from collections import OrderedDict
 
+import logging
 import numpy as np
 
 from distribution.client_environment import ClientEnvironment
@@ -12,11 +13,11 @@ from helpers.network_helpers import is_local_host
 from helpers.population import Population, TYPE_GENERATOR, TYPE_DISCRIMINATOR
 from helpers.singleton import Singleton
 
-
+_logger = logging.getLogger(__name__)
 @Singleton
 class Neighbourhood:
 
-    def __init__(self):
+    def __init__(self, neighbors=None):
         self.cc = ConfigurationContainer.instance()
         self.concurrent_populations = ConcurrentPopulations.instance()
 
@@ -26,7 +27,10 @@ class Neighbourhood:
 
         self.grid_size, self.grid_position, self.local_node = self._load_topology_details()
         self.cell_number = self._load_cell_number()
-        self.neighbours = self._adjacent_cells()
+        if neighbors != None:
+            self.neighbours = neighbors
+        else:
+            self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]
 
         self.mixture_weights_generators = self._init_mixture_weights()
@@ -141,6 +145,7 @@ class Neighbourhood:
         mask = np.zeros((dim, dim))
         mask[tuple(neighbours(x, y).T)] = 1
 
+        # _logger.info('adjacent cell format {}'.format(nodes[mask == 1].tolist()))
         return nodes[mask == 1].tolist()
 
     def _all_nodes_on_grid(self):

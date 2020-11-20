@@ -275,7 +275,7 @@ class ClientAPI:
         return Response(response=data, status=200, mimetype="application/json")
 
     @staticmethod
-    def _run_lipizzaner(config):
+    def _run_lipizzaner(config, iterations=None):
         LogHelper.log_only_flask_warnings()
 
         cc = ConfigurationContainer.instance()
@@ -290,10 +290,15 @@ class ClientAPI:
         ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(cc.output_dir))
 
         try:
-            lipizzaner = Lipizzaner() 
+            lipizzaner = Lipizzaner(_neighbors=cc.settings['general']['distribution']['neighbors']) 
             ClientAPI._lipizzaner = lipizzaner # NEW saving the instance here to access checkpoint later 
             # initialize lipizzaner_gan_trainer instance and neighborhood 
-            lipizzaner.run(cc.settings['trainer']['n_iterations'], ClientAPI._stop_event)
+            n_iterations = cc.settings['trainer']['n_iterations']
+            neighbors = None
+            if iterations != None:
+                n_iterations = iterations 
+                neighbors = cc.settings['general']['distribution']['neighbors'] 
+            lipizzaner.run(n_iterations, ClientAPI._stop_event)
             ClientAPI.is_finished = True
 
             # Wait until master finishes experiment, i.e. collects results, or experiment is terminated

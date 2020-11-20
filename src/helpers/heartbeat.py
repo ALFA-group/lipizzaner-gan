@@ -45,7 +45,7 @@ class Heartbeat(Thread):
                 else:
                     _logger.info("Heartbeat: Dead clients {} but will attempt to reconnect to them".format(printable_names)) 
                     # otherwise assume dead and start a new client
-                    sleep_time = 5
+                    sleep_time = 2
                     for i in range(3):
                         # could also iterate through clients
                         new_client_statuses = self.node_client.get_client_statuses()
@@ -62,7 +62,7 @@ class Heartbeat(Thread):
                                 _logger.info("Heartbeat: dead after attempt {} to reconnect {}".format(str(i+1), still_dead_clients))
                             
                         time.sleep(sleep_time)
-                        sleep_time += 2
+                        sleep_time += 3
                     
                     # still dead after 3 attempts to reconnect, create new client
                     if still_dead_clients != []:

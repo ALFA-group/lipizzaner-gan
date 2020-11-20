@@ -32,7 +32,7 @@ class Lipizzaner:
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, trainer=None):
+    def __init__(self, trainer=None, _neighbors=[]):
         """
         :param trainer: An implementation of NeuralNetworkTrainer that will be used to train both networks.
         Read from config if None.
@@ -45,7 +45,7 @@ class Lipizzaner:
             network_factory = self.cc.create_instance(
                 self.cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
             )
-            self.trainer = self.cc.create_instance(self.cc.settings["trainer"]["name"], dataloader, network_factory,)
+            self.trainer = self.cc.create_instance(self.cc.settings["trainer"]["name"], dataloader, network_factory, neighbors=_neighbors)
 
         # TODO if checkpoint here then update the trainer attributes 
 

@@ -34,7 +34,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                  mixture_sigma=0.01, score_sample_size=10000, discriminator_skip_each_nth_step=0,
                  enable_selection=True, fitness_sample_size=10000, calculate_net_weights_dist=False,
                  fitness_mode='worst',  es_generations=10, es_score_sample_size=10000, es_random_init=False,
-                 checkpoint_period=0):
+                 checkpoint_period=0, neighbors=[]):
 
         super().__init__(dataloader, network_factory, population_size, tournament_size, mutation_probability,
                          n_replacements, sigma, alpha)
@@ -48,7 +48,12 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self._enable_selection = self.settings.get('enable_selection', enable_selection)
         self.mixture_sigma = self.settings.get('mixture_sigma', mixture_sigma)
 
-        self.neighbourhood = Neighbourhood.instance()
+        if neighbors != []:
+            self.neighbourhood = Neighbourhood(neighbors=neighbors)
+            other = Neighbourhood.instance()
+            self._logger.info('one neighborhood instance {} and the other {}'.format(self.neighbourhood, other))
+        else:
+            self.neighbourhood = Neighbourhood.instance()
 
         for i, individual in enumerate(self.population_gen.individuals):
             individual.learning_rate = self._default_adam_learning_rate
