@@ -1,13 +1,14 @@
-# TODO: Cleanup dependencies and pip packages that are not used
 name: lipizzaner
 channels:
   - pytorch
   - defaults
 dependencies:
+  - blas=1.0=mkl
   - ca-certificates=2018.03.07=0
   - certifi=2018.1.18=py36_0
   - cffi=1.11.5=py36h9745a5d_0
-  - cudatoolkit
+  - cuda100=1.0=0
+  #- cudatoolkit=8.0=3
   - cudnn=7.0.5=cuda8.0_0
   - cycler=0.10.0=py36h93f1223_0
   - dbus=1.13.2=hc3f9b76_0
@@ -35,9 +36,11 @@ dependencies:
   - mkl_fft=1.0.1=py36h3010b51_0
   - mkl_random=1.0.1=py36h629b387_0
   - ncurses=6.0=h9df7e31_2
+  - ninja=1.8.2=py36h6bb024c_1
   - numpy=1.14.2=py36hdbf6ddf_1
   - olefile=0.45.1=py36_0
   - openssl=1.0.2o=h20670df_0
+  - patsy=0.5.1=py36_0
   - pcre=8.41=hc27e229_1
   - pillow=5.0.0=py36h3deb7b8_0
   - pip=9.0.3=py36_0
@@ -46,38 +49,51 @@ dependencies:
   - pyqt=5.6.0=py36h0386399_5
   - python=3.6.5=hc3d631a_0
   - python-dateutil=2.7.2=py36_0
+  - pytorch=0.4.1=py36_py35_py27__9.0.176_7.1.2_2
   - pytz=2018.3=py36_0
   - pyyaml=3.12=py36hafb9ca4_1
   - qt=5.6.2=hd25b39d_14
   - readline=7.0=ha6073c6_4
   - scipy=1.0.1=py36hfc37229_0
+  - seaborn=0.9.0=py36_0
   - setuptools=39.0.1=py36_0
   - sip=4.18.1=py36h51ed4ed_2
   - six=1.11.0=py36h372c433_1
   - sqlite=3.22.0=h1bed415_0
+  - statsmodels=0.9.0=py36h035aef0_0
   - tk=8.6.7=hc745277_3
+  - torchvision=0.2.1=py36_0
   - tornado=5.0.1=py36_1
+  - tqdm=4.28.1=py36h28b3542_0
   - wheel=0.31.0=py36_0
   - xz=5.2.3=h55aa19d_2
   - yaml=0.1.7=had09818_2
   - zlib=1.2.11=ha838bed_2
-  - pytorch=0.3.1=py36_cuda8.0.61_cudnn7.0.5_2
-  - torchvision=0.2.0=py36h17b6947_1
   - pip:
     - absl-py==0.2.0
     - appdirs==1.4.3
     - astor==0.6.2
+    - backcall==0.1.0
     - bleach==1.5.0
+    - blessings==1.7
     - chardet==3.0.4
     - click==6.7
+    - deap==1.3.0
+    - decorator==4.3.0
     - flask==0.12.2
     - gast==0.2.0
+    - gpustat==0.6.0
     - grpcio==1.11.0
     - html5lib==0.9999999
     - idna==2.6
     - imageio==2.3.0
+    - imbalanced-learn==0.7.0
+    - ipython==7.2.0
+    - ipython-genutils==0.2.0
     - itsdangerous==0.24
+    - jedi==0.13.2
     - jinja2==2.10
+    - joblib==0.14.0
     - lanscan==0.9.5
     - lmdb==0.94
     - losswise==2.0
@@ -85,18 +101,32 @@ dependencies:
     - markupsafe==1.0
     - netaddr==0.7.19
     - netifaces==0.10.6
+    - nvidia-ml-py3==7.352.0
     - pandas==0.22.0
-    - protobuf==3.5.2.post1
+    - parso==0.3.1
+    - pexpect==4.6.0
+    - pickleshare==0.7.5
+    - prompt-toolkit==2.0.7
+    - protobuf==3.11.3
+    - psutil==5.7.0
+    - ptyprocess==0.6.0
+    - pygments==2.3.1
     - pymongo==3.6.1
     - python-nmap==0.6.1
     - requests==2.18.4
     - scapy-python3==0.23
+    - scikit-learn==0.23.2
+    - scikit-posthocs==0.6.1
+    - sklearn==0.0
     - tensorboard==1.8.0
+    - tensorboardx==2.0
     - tensorflow-gpu==1.8.0
     - termcolor==1.1.0
     - texttable==1.2.1
+    - threadpoolctl==2.1.0
     - torch==0.3.1
+    - traitlets==4.3.2
     - urllib3==1.22
+    - wcwidth==0.1.7
     - werkzeug==0.14.1
     - zignor==0.1.8
-prefix: ~/miniconda/envs/lipizzaner

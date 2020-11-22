@@ -118,7 +118,12 @@ class InceptionV3(nn.Module):
         List of torch.autograd.Variable, corresponding to the selected output 
         block, sorted ascending by index
         """
-        assert len(inp.shape) == 4 and inp.shape[1] == 3
+	
+        print("Z inp.shape = " + str(inp.shape) )
+        print("Z inp.shape[1] = " + str(inp.shape[1]))
+
+
+        assert len(inp.shape) == 4 and inp.shape[1] == 3, ("inp.shape = " + str(inp.shape) + " inp.shape[1] = " + str(inp.shape[1]))
 
         outp = []
         x = inp
