@@ -18,4 +18,9 @@ sandbox/toy_problem/experiment_results
 __pycache__
 
 
-src/data/datasets
+src/data/datasets/*
+
+
+!src/data/datasets/base_dir
+
+
