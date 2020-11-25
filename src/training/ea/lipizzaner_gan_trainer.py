@@ -360,6 +360,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         return self.result()
 
+    def replace_neighbor_of_trainer(self, dead_port, replacement):
+        self._logger.info('Lipizzaner Gan Trainer replacement func called to replace {} with {}'.format(dead_port, replacement))
+        self.neighbourhood.replace_neighbor(dead_port, replacement)
+
     def optimize_generator_mixture_weights(self):
         generators = self.neighbourhood.best_generators
         weights_generators = self.neighbourhood.mixture_weights_generators

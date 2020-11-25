@@ -99,6 +99,15 @@ class Neighbourhood:
     def best_discriminator_parameters(self):
         return self.node_client.load_best_discriminators_from_api(self.neighbours + [self.local_node])
 
+    def replace_neighbor(self, dead_port, replacement):
+        _logger.info('Neighborhood class: neighbors were {}'.format(self.neighbours)) 
+        for neighbor in self.neighbours:
+            if neighbor['port'] == dead_port:
+                neighbor['port'] = replacement
+                neighbor['id'] = neighbor['address'] + ':' + replacement
+                break 
+        _logger.info('Neighborhood class: neighbors changed to {}'.format(self.neighbours)) 
+    
     def _load_topology_details(self):
         client_nodes = self._all_nodes_on_grid()
 

@@ -121,10 +121,34 @@ class ClientAPI:
         ClientAPI._lock.release()
         return response
 
+    @staticmethod
+    @app.route('/replaceNeighbor', methods=['POST'])
+    def replace_neighbor():
+        config = request.get_json()
+        ClientAPI._lock.acquire()
+
+        response = Response()
+
+        cc = ConfigurationContainer.instance()
+        cc.settings = config
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Replace Neighbor: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response() 
+        
+        dead_port = cc.settings['general']['distribution']['dead_port']
+        replacement_port = cc.settings['general']['distribution']['replacement']
+
+        ClientAPI._lipizzaner.replace_neighbor(dead_port, replacement_port)
+
+        return response
+
 
     # NEW METHOD for requesting checkpoint from each cell 
     @staticmethod
-    @app.route('/experiments/checkpoint', methods=['GET']) # How is this route made? 
+    @app.route('/experiments/checkpoint', methods=['GET']) 
     def get_checkpoints(): 
         ClientAPI._lock.acquire()
 

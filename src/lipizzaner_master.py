@@ -341,6 +341,18 @@ class LipizzanerMaster:
 
         # tell each of the neighbors of dead port the new port number
         # make API calls to neighbors with param being the dead port, new_port to replace it with 
+        self.cc.settings['general']['distribution']['dead_port'] = dead_port
+        self.cc.settings['general']['distribution']['replacement'] = backup_port_used
+
         for neighbor in neighbors:
-            pass
+            api_call_address = 'http://{}:{}/replaceNeighbor'.format(address, neighbor['port'])
+
+            try:
+                resp = requests.post(api_call_address, json=self.cc.settings)
+                assert resp.status_code == 200, resp.text
+                self._logger.info('Successfully replaced dead port {} for neighbor {}'.format(dead_port, neighbor['port']))
+            except AssertionError as err:
+                self._logger.critical('Could not replace deadport on {}: {}'.format(api_call_address, err))
+                # change the ports back to contain only alive clients
+                self.cc.settings['general']['distribution']['client_nodes'] = alive_clients 
 
