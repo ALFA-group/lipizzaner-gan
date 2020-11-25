@@ -306,7 +306,7 @@ class LipizzanerMaster:
                 if not d['is_local']:
                     formatted = {'id' : d['source']}
                     formatted['address'] = address
-                    formatted['port'] = formatted['id'].split(':')[0]
+                    formatted['port'] = formatted['id'].split(':')[1]
                     neighbors.append(formatted)
 
             self._logger.info('got the neighbors {} and last iteration {} with n_iterations being {}'.format(neighbors, last_iteration, self.cc.settings['trainer']['n_iterations']))
@@ -320,6 +320,7 @@ class LipizzanerMaster:
         
         # pass checkpoint info and neighbor info to client at backup port ~ experiments API call  
         # loop through backup clients and break look if try works
+        backup_port_used = None
         for backup_port in backup_ports:
             # add address of backup port into list
             self.cc.settings['general']['distribution']['client_nodes'].append({'address': address, 'port': backup_port})
@@ -331,14 +332,15 @@ class LipizzanerMaster:
                 resp = requests.post(api_call_address, json=self.cc.settings)
                 assert resp.status_code == 200, resp.text
                 self._logger.info('Successfully started backup experiment on {} with iteration {}'.format(api_call_address, self.cc.settings['trainer']['iterations_left']))
+                backup_port_used = backup_port
                 break 
             except AssertionError as err:
                 self._logger.critical('Could not start experiment on {}: {}'.format(api_call_address, err))
                 # change the ports back to contain only alive clients
                 self.cc.settings['general']['distribution']['client_nodes'] = alive_clients
-                # self._terminate()
-            # if it fails use next back up client until it works (new_port)
-        
+
         # tell each of the neighbors of dead port the new port number
         # make API calls to neighbors with param being the dead port, new_port to replace it with 
+        for neighbor in neighbors:
+            pass
 

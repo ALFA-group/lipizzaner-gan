@@ -50,10 +50,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         if neighbors != []:
             self.neighbourhood = Neighbourhood(neighbors=neighbors)
-            other = Neighbourhood.instance()
-            self._logger.info('one neighborhood instance {} and the other {}'.format(self.neighbourhood, other))
+            # other = Neighbourhood.instance()
+            self._logger.info('made the other type of neighborhood {}'.format(self.neighbourhood))
         else:
-            self.neighbourhood = Neighbourhood.instance()
+            self.neighbourhood = Neighbourhood() # Neighbourhood.instance()
 
         for i, individual in enumerate(self.population_gen.individuals):
             individual.learning_rate = self._default_adam_learning_rate

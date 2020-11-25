@@ -14,7 +14,7 @@ from helpers.population import Population, TYPE_GENERATOR, TYPE_DISCRIMINATOR
 from helpers.singleton import Singleton
 
 _logger = logging.getLogger(__name__)
-@Singleton
+# @Singleton
 class Neighbourhood:
 
     def __init__(self, neighbors=None):
@@ -29,6 +29,7 @@ class Neighbourhood:
         self.cell_number = self._load_cell_number()
         if neighbors != None:
             self.neighbours = neighbors
+            _logger.info('created Neighborhood with the neighbors {}'.format(neighbors))
         else:
             self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]

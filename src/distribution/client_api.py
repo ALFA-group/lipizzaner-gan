@@ -290,7 +290,11 @@ class ClientAPI:
         ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(cc.output_dir))
 
         try:
-            lipizzaner = Lipizzaner(_neighbors=cc.settings['general']['distribution']['neighbors']) 
+            if 'neighbors' in cc.settings['general']['distribution']:
+                lipizzaner = Lipizzaner(_neighbors=cc.settings['general']['distribution']['neighbors'])
+            else:
+                lipizzaner = Lipizzaner()
+    
             ClientAPI._lipizzaner = lipizzaner # NEW saving the instance here to access checkpoint later 
             # initialize lipizzaner_gan_trainer instance and neighborhood 
             n_iterations = cc.settings['trainer']['n_iterations']
@@ -330,7 +334,7 @@ class ClientAPI:
 
     @staticmethod
     def _gather_results():
-        neighbourhood = Neighbourhood.instance()
+        neighbourhood = Neighbourhood() # Neighbourhood.instance()
         cc = ConfigurationContainer.instance()
         results = {
             'generators': neighbourhood.best_generator_parameters,

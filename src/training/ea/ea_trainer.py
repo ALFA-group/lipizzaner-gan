@@ -64,7 +64,7 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
 
     def tournament_selection(self, population, population_type, is_logging=False):
         assert 0 < self._tournament_size <= len(population.individuals), \
-            "Invalid tournament size: {}".format(self._tournament_size)
+            "Invalid tournament size: {} because population size is {}".format(self._tournament_size, len(population.individuals))
 
         competition_population = Population(individuals=[], default_fitness=population.default_fitness)
         new_population = Population(individuals=[], default_fitness=population.default_fitness,
