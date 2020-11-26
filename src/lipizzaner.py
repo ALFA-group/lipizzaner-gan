@@ -78,6 +78,6 @@ class Lipizzaner:
         torch.save(generator.net.state_dict(), os.path.join(self.cc.output_dir, 'generator.pkl'))
         torch.save(discriminator.net.state_dict(), os.path.join(self.cc.output_dir, 'discriminator.pkl'))
 
-    def replace_neighbor(self, dead_port, replacement_port):
-        self._logger.info("Lipizzaner class received call to replace {} with {}".format(dead_port, replacement_port))
-        self.trainer.replace_neighbor_of_trainer(dead_port, replacement_port)
+    def replace_neighbor(self, dead_client, replacement_client):
+        self._logger.info("Lipizzaner class received call to replace {} with {}".format(dead_client, replacement_client))
+        self.trainer.replace_neighbor_of_trainer(dead_client, replacement_client)

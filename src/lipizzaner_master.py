@@ -165,7 +165,7 @@ class LipizzanerMaster:
             exit(return_code)
 
     def _gather_results(self):
-        self._logger.info('Collecting results from clients...')
+        self._logger.info('Collecting results from clients... where clients are {}'.format(self.cc.settings['general']['distribution']['client_nodes']))
 
         # Initialize node client
         dataloader = self.cc.create_instance(self.cc.settings["dataloader"]["dataset_name"])
@@ -316,6 +316,7 @@ class LipizzanerMaster:
         all_clients = self.cc.settings['general']['distribution']['client_nodes']
         self.cc.settings['general']['distribution']['client_nodes'] = [c for c in all_clients if c['port'] != dead_port]
         alive_clients = self.cc.settings['general']['distribution']['client_nodes']
+        self._logger.info('alive clients are {}'.format(alive_clients))
         assert(len(alive_clients) == len(all_clients) - 1)
         
         # pass checkpoint info and neighbor info to client at backup port ~ experiments API call  
@@ -341,8 +342,8 @@ class LipizzanerMaster:
 
         # tell each of the neighbors of dead port the new port number
         # make API calls to neighbors with param being the dead port, new_port to replace it with 
-        self.cc.settings['general']['distribution']['dead_port'] = dead_port
-        self.cc.settings['general']['distribution']['replacement'] = backup_port_used
+        self.cc.settings['general']['distribution']['dead_client'] = address + ':' + str(dead_port)
+        self.cc.settings['general']['distribution']['replacement_client'] = address + ':' + backup_port_used
 
         for neighbor in neighbors:
             api_call_address = 'http://{}:{}/replaceNeighbor'.format(address, neighbor['port'])
@@ -354,5 +355,5 @@ class LipizzanerMaster:
             except AssertionError as err:
                 self._logger.critical('Could not replace deadport on {}: {}'.format(api_call_address, err))
                 # change the ports back to contain only alive clients
-                self.cc.settings['general']['distribution']['client_nodes'] = alive_clients 
+                # self.cc.settings['general']['distribution']['client_nodes'] = alive_clients 
 

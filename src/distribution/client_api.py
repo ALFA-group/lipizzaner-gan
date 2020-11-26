@@ -77,7 +77,8 @@ class ClientAPI:
 
         cc = ConfigurationContainer.instance()
         path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
-
+        ClientAPI._logger.info('Master requested experiments from client {}'.format(ClientEnvironment.port))
+        
         if ClientAPI.is_busy:
             if os.path.exists(path):
                 ClientAPI._logger.info('Experiments GET: sleep file found for client ' + str(ClientEnvironment.port))
@@ -138,10 +139,10 @@ class ClientAPI:
                 ClientAPI._logger.info('Replace Neighbor: sleep file found for client ' + str(ClientEnvironment.port))
                 return Response() 
         
-        dead_port = cc.settings['general']['distribution']['dead_port']
-        replacement_port = cc.settings['general']['distribution']['replacement']
+        dead_client = cc.settings['general']['distribution']['dead_client']
+        replacement_client = cc.settings['general']['distribution']['replacement_client']
 
-        ClientAPI._lipizzaner.replace_neighbor(dead_port, replacement_port)
+        ClientAPI._lipizzaner.replace_neighbor(dead_client, replacement_client)
 
         return response
 
@@ -299,7 +300,7 @@ class ClientAPI:
         return Response(response=data, status=200, mimetype="application/json")
 
     @staticmethod
-    def _run_lipizzaner(config, iterations=None):
+    def _run_lipizzaner(config):
         LogHelper.log_only_flask_warnings()
 
         cc = ConfigurationContainer.instance()
@@ -322,10 +323,8 @@ class ClientAPI:
             ClientAPI._lipizzaner = lipizzaner # NEW saving the instance here to access checkpoint later 
             # initialize lipizzaner_gan_trainer instance and neighborhood 
             n_iterations = cc.settings['trainer']['n_iterations']
-            neighbors = None
-            if iterations != None:
-                n_iterations = iterations 
-                neighbors = cc.settings['general']['distribution']['neighbors'] 
+            if 'iterations_left' in cc.settings['trainer']:
+                n_iterations = cc.settings['trainer']['iterations_left'] 
             lipizzaner.run(n_iterations, ClientAPI._stop_event)
             ClientAPI.is_finished = True
 

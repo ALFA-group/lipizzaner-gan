@@ -1,14 +1,10 @@
 import random
-import os
-import time 
-# from time import time
+from time import time
 from collections import OrderedDict
 
 import numpy as np
 import torch
 
-from distribution.client_api import ClientAPI
-from distribution.client_environment import ClientEnvironment
 from distribution.concurrent_populations import ConcurrentPopulations
 from distribution.neighbourhood import Neighbourhood
 from helpers.configuration_container import ConfigurationContainer
@@ -34,7 +30,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                  mixture_sigma=0.01, score_sample_size=10000, discriminator_skip_each_nth_step=0,
                  enable_selection=True, fitness_sample_size=10000, calculate_net_weights_dist=False,
                  fitness_mode='worst',  es_generations=10, es_score_sample_size=10000, es_random_init=False,
-                 checkpoint_period=0, neighbors=[]):
+                 checkpoint_period=0):
 
         super().__init__(dataloader, network_factory, population_size, tournament_size, mutation_probability,
                          n_replacements, sigma, alpha)
@@ -48,12 +44,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self._enable_selection = self.settings.get('enable_selection', enable_selection)
         self.mixture_sigma = self.settings.get('mixture_sigma', mixture_sigma)
 
-        if neighbors != []:
-            self.neighbourhood = Neighbourhood(neighbors=neighbors)
-            # other = Neighbourhood.instance()
-            self._logger.info('made the other type of neighborhood {}'.format(self.neighbourhood))
-        else:
-            self.neighbourhood = Neighbourhood() # Neighbourhood.instance()
+        self.neighbourhood = Neighbourhood.instance()
 
         for i, individual in enumerate(self.population_gen.individuals):
             individual.learning_rate = self._default_adam_learning_rate
@@ -119,7 +110,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         for iteration in range(n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
-            start_time = time.time()
+            start_time = time()
 
             all_generators = self.neighbourhood.all_generators
             all_discriminators = self.neighbourhood.all_discriminators
@@ -203,19 +194,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
             self.batch_number = 0
             data_iterator = iter(loaded)
-            while self.batch_number < len(loaded): 
-               
+            while self.batch_number < len(loaded):  
                 # TODO check its still alive and do nothing if "sleeping"
                 # sleep for 10 seconds at a time 
                 # check if sleepfile exists 
-                
-                path = self.cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
-                # self._logger.info('Gan Trainer got path ' + path)
-                
-                if os.path.exists(path):
-                    self._logger.info('Gan Trainer stopping training [CLIENT ' + str(ClientEnvironment.port) + ']')
-                    time.sleep(10)
-                    continue 
                 if self.cc.settings['dataloader']['dataset_name'] == 'network_traffic':
                     input_data = to_pytorch_variable(next(data_iterator))
                     batch_size = input_data.size(0)
@@ -321,7 +303,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             if not self.optimize_weights_at_the_end:
                 self.mutate_mixture_weights_with_score(input_data)  # self.score is updated here
 
-            stop_time = time.time()
+            stop_time = time()
 
             path_real_images, path_fake_images = \
                 self.log_results(batch_size, iteration, input_data, loaded,
@@ -336,10 +318,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                            path_real_images, path_fake_images)
 
             if self.checkpoint_period>0 and (iteration+1)%self.checkpoint_period==0:
-                self._logger.info('calling save checkpoint with port {}'.format(ClientEnvironment.port))
                 self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
-                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position, 
-                                     ClientEnvironment.port)
+                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position)
                 #TODO send checkpoint back to master on a thread that's waiting to hear back 
 
         if self.optimize_weights_at_the_end:
@@ -360,9 +340,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
         return self.result()
 
-    def replace_neighbor_of_trainer(self, dead_port, replacement):
-        self._logger.info('Lipizzaner Gan Trainer replacement func called to replace {} with {}'.format(dead_port, replacement))
-        self.neighbourhood.replace_neighbor(dead_port, replacement)
+    def replace_neighbor_of_trainer(self, dead_client, replacement_client):                                               
+        self._logger.info('Lipizzaner Gan Trainer replacement func called to replace {} with {}'.format(dead_client, replacement_client))                                                                                                           
+        self.neighbourhood.replace_neighbor(dead_client=dead_client, replacement_client=replacement_client)
 
     def optimize_generator_mixture_weights(self):
         generators = self.neighbourhood.best_generators
