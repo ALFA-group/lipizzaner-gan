@@ -143,7 +143,7 @@ class ClientAPI:
         replacement_client = cc.settings['general']['distribution']['replacement_client']
 
         ClientAPI._lipizzaner.replace_neighbor(dead_client, replacement_client)
-
+        ClientAPI._lock.release()
         return response
 
 

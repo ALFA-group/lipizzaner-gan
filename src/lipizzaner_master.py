@@ -354,6 +354,3 @@ class LipizzanerMaster:
                 self._logger.info('Successfully replaced dead port {} for neighbor {}'.format(dead_port, neighbor['port']))
             except AssertionError as err:
                 self._logger.critical('Could not replace deadport on {}: {}'.format(api_call_address, err))
-                # change the ports back to contain only alive clients
-                # self.cc.settings['general']['distribution']['client_nodes'] = alive_clients 
-

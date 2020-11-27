@@ -42,7 +42,7 @@ class GaussianToyDistancesCalculator2D(ScoreCalculator):
 
     @property
     def is_reversed(self):
-        return False
+        return True
 
 
 class GaussianToyDistancesCalculator1D(ScoreCalculator):
@@ -68,4 +68,4 @@ class GaussianToyDistancesCalculator1D(ScoreCalculator):
 
     @property
     def is_reversed(self):
-        return False
+        return True

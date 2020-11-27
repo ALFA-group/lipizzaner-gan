@@ -102,22 +102,22 @@ class Neighbourhood:
     # @property
     def replace_neighbor(self, dead_client, replacement_client):
         _logger.info('Neighborhood class: neighbors were {}'.format(self.neighbours)) 
-        pass 
-        # self.neighbours.append({'id': replacement_client, 'port': replacement_client.split(':')[1], 'address': '127.0.0.1'})
-        # for neighbor in self.neighbours:
-        #     if neighbor['id'] == dead_client:
-        #         neighbor['id'] = replacement_client
-        #         neighbor['port'] = replacement_client.split(':')[1]
-        #         break 
-        # _logger.info('Neighborhood class: neighbors changed to {}'.format(self.neighbours)) 
+        # pass 
+        self.neighbours.append({'id': replacement_client, 'port': replacement_client.split(':')[1], 'address': '127.0.0.1'})
+        for neighbor in self.neighbours:
+            if neighbor['id'] == dead_client:
+                neighbor['id'] = replacement_client
+                neighbor['port'] = replacement_client.split(':')[1]
+                break 
+        _logger.info('Neighborhood class: neighbors changed to {}'.format(self.neighbours)) 
         
-        # _logger.info('Neighborhood class: mixture weights generator were {} and \n discriminator were {}'.format(self.mixture_weights_generators, self.mixture_weights_discriminators))
-        # # replace dead client in mixture weights of generators if necessary
-        # if dead_client in self.mixture_weights_generators:
-        #     weight = self.mixture_weights_generators[dead_client]
-        #     self.mixture_weights_generators[replacement_client] = weight
-        #     del self.mixture_weights_generators[dead_client]
-        # _logger.info('Neighborhood class: mixture weights generator changed to {}'.format(self.mixture_weights_generators))
+        _logger.info('Neighborhood class: mixture weights generator were {} and \n discriminator were {}'.format(self.mixture_weights_generators, self.mixture_weights_discriminators))
+        # replace dead client in mixture weights of generators if necessary
+        if dead_client in self.mixture_weights_generators:
+            weight = self.mixture_weights_generators[dead_client]
+            self.mixture_weights_generators[replacement_client] = weight
+            del self.mixture_weights_generators[dead_client]
+        _logger.info('Neighborhood class: mixture weights generator changed to {}'.format(self.mixture_weights_generators))
     
     def _load_topology_details(self):
         client_nodes = self._all_nodes_on_grid()
