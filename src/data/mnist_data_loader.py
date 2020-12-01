@@ -10,3 +10,7 @@ class MNISTDataLoader(DataLoader):
     @property
     def n_input_neurons(self):
         return 784
+
+    @property
+    def num_classes(self):
+        return 0 

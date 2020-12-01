@@ -81,6 +81,7 @@ class GaussianDataSet(Dataset):
                 ax[i][j].set_yticks([])
                 ax[i][j].set_xlim([x_min, x_max])
         plt.savefig(filename)
+        plt.close()
 
     @property
     def points(modes):
