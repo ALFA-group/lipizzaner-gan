@@ -1,0 +1,19 @@
+#BSUB -L /bin/bash
+#BSUB -J "lipi-mnist-satori"
+#BSUB -o "lipi-mnist-satori_o.%J"
+#BSUB -e "lipi-mnist-satori_e.%J"
+#BSUB -n 4
+#BSUB -R "span[ptile=4]"
+#BSUB -gpu "num=4"
+#BSUB -q "normal"
+#BSUB -x 
+
+HOME2=/nobackup/users/umustafi
+PYTHON_VIRTUAL_ENVIRONMENT=lipi
+CONDA_ROOT=$HOME2/anaconda3
+source ${CONDA_ROOT}/etc/profile.d/conda.sh
+conda activate $PYTHON_VIRTUAL_ENVIRONMENT
+
+cd $HOME2/projects/lipizzaner-gan/
+bash gan-script.sh
+
