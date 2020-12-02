@@ -1,21 +1,15 @@
-from abc import abstractmethod, ABC
-
 import copy
 import logging
+from abc import ABC, abstractmethod
+
 import numpy as np
 import torch
-from torch.nn import Softmax, BCELoss, CrossEntropyLoss
-from torch.nn.utils.weight_norm import WeightNorm
-from helpers.configuration_container import ConfigurationContainer
-
-
 from distribution.state_encoder import StateEncoder
-from helpers.pytorch_helpers import (
-    to_pytorch_variable,
-    is_cuda_enabled,
-    size_splits,
-    noise,
-)
+from helpers.configuration_container import ConfigurationContainer
+from helpers.pytorch_helpers import (is_cuda_enabled, noise, size_splits,
+                                     to_pytorch_variable)
+from torch.nn import BCELoss, CrossEntropyLoss, Softmax
+from torch.nn.utils.weight_norm import WeightNorm
 
 
 class CompetetiveNet(ABC):
@@ -160,17 +154,41 @@ class GeneratorNet(CompetetiveNet):
         beta=None,
         iter=None,
         log_class_distribution=False,
+        fitness=False,
     ):
         batch_size = input.size(0)
 
-        real_labels = to_pytorch_variable(torch.ones(batch_size))
 
         z = noise(batch_size, self.data_size)
+        real_labels = to_pytorch_variable(torch.ones(batch_size))
 
-        fake_images = self.net(z)
-        outputs = opponent.net(fake_images).view(-1)
+        if fitness:
+            fake_labels = to_pytorch_variable(torch.zeros(batch_size))
+            with torch.no_grad():
+                fake_images = self.net(z)
 
-        return self.loss_function(outputs, real_labels), fake_images, None
+            real_outputs = opponent.net(input).view(-1)
+            fake_outputs = opponent.net(fake_images).view(-1)
+            output_loss = self.loss_function(real_outputs, real_labels) + self.loss_function(fake_outputs, fake_labels)
+
+            gradients = torch.autograd.grad(outputs=output_loss, inputs=opponent.net.parameters(),
+                                        grad_outputs=torch.ones(output_loss.size()).to(self.device),
+                                        create_graph=True, retain_graph=True, only_inputs=True)
+            with torch.no_grad():
+                allgrad = gradients[0]
+                for i, grad in enumerate(gradients[1:]):
+                    grad = grad.view(-1)
+                    allgrad = torch.cat([allgrad,grad]) 
+
+            Fd = -torch.log(torch.norm(allgrad)).data.cpu().numpy()
+            Fq = self.loss_function(fake_outputs, real_labels)
+            
+            return alpha*Fd + beta*Fq, fake_images, None
+            
+        else:
+            fake_images = self.net(z)
+            outputs = opponent.net(fake_images).view(-1)
+            return self.loss_function(outputs, real_labels), fake_images, None
 
 
 class DiscriminatorNet(CompetetiveNet):
