@@ -155,6 +155,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         for iteration in range(n_iterations):
             self._logger.debug("Iteration {} started".format(iteration + 1))
             start_time = time()
+            
+            if self.neighbourhood.scheduler is not None and iteration in self.neighbourhood.scheduler:
+                alpha = self.neighbourhood.scheduler[iteration]['alpha']
+                beta = self.neighbourhood.scheduler[iteration]['beta']
 
             all_generators = self.neighbourhood.all_generators
             all_discriminators = self.neighbourhood.all_discriminators
