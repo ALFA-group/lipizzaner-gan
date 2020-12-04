@@ -240,8 +240,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 alpha=alpha,
                 beta=beta,
                 iter=iteration,
-                log_class_distribution=True,
-                diverse_fitness=diverse_fitness
+                log_class_distribution=True
             )
             self._logger.debug("Finished evaluating fitness")
 
