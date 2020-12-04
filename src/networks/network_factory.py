@@ -7,12 +7,18 @@ from torch.nn import RNN
 from torch.autograd import Variable
 
 from helpers.configuration_container import ConfigurationContainer
-from networks.competetive_net import DiscriminatorNet, GeneratorNet, GeneratorNetSequential, DiscriminatorNetSequential
-
+from networks.competetive_net import (
+    DiscriminatorNet,
+    GeneratorNet,
+    GeneratorNetSequential,
+    DiscriminatorNetSequential,
+    ConditionalDiscriminatorNet,
+    ConditionalGeneratorNet
+)
 
 class NetworkFactory(ABC):
 
-    def __init__(self, input_data_size, loss_function=None):
+    def __init__(self, input_data_size, num_classes= None, loss_function=None):
         """
         :param loss_function: The loss function computing the network error, e.g. BCELoss. Read from config if not set.
         :param input_data_size: The number of discriminator input/generator output neurons,
@@ -25,7 +31,7 @@ class NetworkFactory(ABC):
             self.loss_function = loss_function
 
         self.input_data_size = input_data_size
-
+        self.num_classes = 7
 
     @abstractmethod
     def create_generator(self, parameters=None):
@@ -132,7 +138,6 @@ class CircularProblemFactory(NetworkFactory):
 
 
 class FourLayerPerceptronFactory(NetworkFactory):
-
     @property
     def gen_input_size(self):
         return 64
@@ -147,7 +152,10 @@ class FourLayerPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 256),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, self.input_data_size),
-                nn.Tanh()), self.gen_input_size)
+                nn.Tanh(),
+            ),
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -166,7 +174,64 @@ class FourLayerPerceptronFactory(NetworkFactory):
                 nn.Linear(256, 256),
                 nn.LeakyReLU(0.2),
                 nn.Linear(256, 1),
-                nn.Sigmoid()), self.gen_input_size)
+                nn.Sigmoid(),
+            ),
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+
+class ConditionalFourLayerPerceptronFactory(NetworkFactory):
+    # TEMPORAL!!!!
+    @property
+    def gen_input_size(self):
+        return 64
+
+    def create_generator(self, parameters=None, encoded_parameters=None):
+
+        print(self.num_classes)
+        net = ConditionalGeneratorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(self.gen_input_size + self.num_classes, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, self.input_data_size),
+                # nn.Tanh()
+            ),
+            self.num_classes,
+            self.gen_input_size,
+        )
+
+        if parameters is not None:
+            net.parameters = parameters
+        if encoded_parameters is not None:
+            net.encoded_parameters = encoded_parameters
+
+        return net
+
+    def create_discriminator(self, parameters=None, encoded_parameters=None):
+
+        net = ConditionalDiscriminatorNet(
+            self.loss_function,
+            Sequential(
+                nn.Linear(self.input_data_size + self.num_classes, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 256),
+                nn.LeakyReLU(0.2),
+                nn.Linear(256, 1),
+                nn.Sigmoid(),
+            ),
+            self.num_classes,
+            self.gen_input_size,
+        )
 
         if parameters is not None:
             net.parameters = parameters
@@ -289,3 +354,4 @@ class SimpleRNN(nn.Module):
             outputs[:, step, :] = output
 
         return outputs
+

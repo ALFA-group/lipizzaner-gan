@@ -3,7 +3,14 @@ import collections
 import numpy as np
 import torch.utils.data
 
-from helpers.pytorch_helpers import noise
+from helpers.configuration_container import ConfigurationContainer
+
+from helpers.pytorch_helpers import (
+    to_pytorch_variable,
+    is_cuda_enabled,
+    noise,
+)
+
 
 
 class MixedGeneratorDataset(torch.utils.data.Dataset):
@@ -24,6 +31,8 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
         for individual in self.individuals:
             individual.genome.net.eval()
         self.data = []
+
+        self.cc = ConfigurationContainer.instance()
 
         weights = collections.OrderedDict(sorted(weights.items()))
         weights = {k: v for k, v in weights.items() if any([i for i in self.individuals if i.source == k])}
@@ -46,8 +55,29 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
             raise NotImplementedError(
                 "Invalid argument for mixture_generator_samples_mode: {}".format(mixture_generator_samples_mode)
             )
+
+        num_classes = self.individuals[0].genome.num_classes if hasattr(self.individuals[0].genome, 'num_classes') \
+                                                                and self.individuals[0].genome.num_classes != 0 else 0
+
         if z is None:
-            self.z = noise(n_samples, self.individuals[0].genome.data_size)
+            z = noise(n_samples, self.individuals[0].genome.data_size)
+
+            if num_classes != 0 and self.cc.settings["network"]["name"] == 'conditional_four_layer_perceptron':
+                FloatTensor = torch.cuda.FloatTensor if is_cuda_enabled() else torch.FloatTensor
+                LongTensor = torch.cuda.LongTensor if is_cuda_enabled() else torch.LongTensor
+                self.labels = LongTensor(np.random.randint(0, num_classes, n_samples))  # random labels between 0 and 9, output of shape batch_size
+
+                self.labels = self.labels.view(-1, 1)
+                labels_onehot = torch.FloatTensor(n_samples, num_classes)
+                labels_onehot.zero_()
+                labels_onehot.scatter_(1, self.labels, 1)
+
+                input_labels = to_pytorch_variable(labels_onehot.type(FloatTensor))
+
+                self.z = torch.cat((input_labels, z), -1)
+            else:
+                self.z = z
+
         else:
             self.z = z
 
