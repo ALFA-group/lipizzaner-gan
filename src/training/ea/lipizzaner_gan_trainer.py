@@ -148,7 +148,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         alpha = self.neighbourhood.alpha
         beta = self.neighbourhood.beta
 
-        fitness_diverse = self.cc.settings["trainer"]["params"]["fitness"].get("diverse",False)
+        diverse_fitness = self.cc.settings["trainer"]["params"]["fitness"].get("diverse",False)
 
         if alpha is not None:
             self._logger.info(f"Alpha is {alpha} and Beta is {beta}")
@@ -228,7 +228,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 all_discriminators,
                 fitness_samples,
                 self.fitness_mode,
-                fitness_diverse=fitness_diverse
+                diverse_fitness=diverse_fitness
             )
             self.evaluate_fitness(
                 all_discriminators,
@@ -241,7 +241,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 beta=beta,
                 iter=iteration,
                 log_class_distribution=True,
-                fitness_diverse=fitness_diverse
+                diverse_fitness=diverse_fitness
             )
             self._logger.debug("Finished evaluating fitness")
 
@@ -716,7 +716,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         beta=None,
         iter=None,
         log_class_distribution=False,
-        fitness_diverse=False
+        diverse_fitness=False
     ):
         # Single direction only: Evaluate fitness of attacker based on defender
         # TODO: Simplify and refactor this function
@@ -744,7 +744,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             for individual_defender in population_defender.individuals:
                 if labels is None:
                     fitness_attacker = float(
-                        individual_attacker.genome.compute_loss_against(individual_defender.genome, input_var, fitness_diverse=fitness_diverse)[0]
+                        individual_attacker.genome.compute_loss_against(individual_defender.genome, input_var, diverse_fitness=diverse_fitness)[0]
                     )
                 else:
                     fitness_attacker = float(
@@ -755,7 +755,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                             alpha=alpha,
                             beta=beta,
                             iter=iter,
-                            fitness_diverse=fitness_diverse,
+                            diverse_fitness=diverse_fitness,
                         )[0]
                     )
 
