@@ -154,7 +154,7 @@ class GeneratorNet(CompetetiveNet):
         beta=None,
         iter=None,
         log_class_distribution=False,
-        fitness=False,
+        diverse_fitness=False,
     ):
         batch_size = input.size(0)
 
@@ -162,7 +162,7 @@ class GeneratorNet(CompetetiveNet):
         z = noise(batch_size, self.data_size)
         real_labels = to_pytorch_variable(torch.ones(batch_size))
 
-        if fitness:
+        if diverse_fitness:
             fake_labels = to_pytorch_variable(torch.zeros(batch_size))
             with torch.no_grad():
                 fake_images = self.net(z)
