@@ -240,7 +240,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 alpha=alpha,
                 beta=beta,
                 iter=iteration,
-                log_class_distribution=True
+                log_class_distribution=True,
             )
             self._logger.debug("Finished evaluating fitness")
 
@@ -325,6 +325,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     all_discriminators,
                     fitness_samples,
                     self.fitness_mode,
+                    diverse_fitness=diverse_fitness
                 )
                 self.evaluate_fitness(
                     new_populations[TYPE_DISCRIMINATOR],
@@ -365,6 +366,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     all_discriminators,
                     fitness_samples,
                     self.fitness_mode,
+                    diverse_fitness=diverse_fitness
                 )
                 self.evaluate_fitness(
                     local_discriminators,

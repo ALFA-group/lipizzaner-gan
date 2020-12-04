@@ -230,6 +230,7 @@ class DiscriminatorNet(CompetetiveNet):
         beta=None,
         iter=None,
         log_class_distribution=False,
+        diverse_fitness=False,
     ):
 
         # If HeuristicLoss is applied in the Generator, the Discriminator applies BCELoss
