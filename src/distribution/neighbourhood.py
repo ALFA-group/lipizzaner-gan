@@ -30,13 +30,13 @@ class Neighbourhood:
 
         num_clients = self.cc.settings["general"]["distribution"].get("num_clients", None)
 
-        self.scheduler = self.cc.settings["trainer"]["fitness"].get("scheduler", None)
+        self.scheduler = self.cc.settings["trainer"]["params"]["fitness"].get("scheduler", None)
         if self.scheduler is not None:
             self.alpha= self.scheduler[0]['alpha']
             self.beta = self.scheduler[0]['beta']
         else:
-            self.alpha = self.cc.settings["trainer"]["fitness"].get("alpha", None)
-            self.beta = self.cc.settings["trainer"]["fitness"].get("beta", None)
+            self.alpha = self.cc.settings["trainer"]["params"]["fitness"].get("alpha", None)
+            self.beta = self.cc.settings["trainer"]["params"]["fitness"].get("beta", None)
             if num_clients is not None and (self.alpha is None or self.beta is None):
                 if num_clients == 1:
                     self.alpha = 0.5

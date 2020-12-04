@@ -148,7 +148,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         alpha = self.neighbourhood.alpha
         beta = self.neighbourhood.beta
 
-        fitness_diverse = self.cc.settings['params']['fitness'].get('diverse',False)
+        fitness_diverse = self.cc.settings["trainer"]["params"]["fitness"].get("diverse",False)
 
         if alpha is not None:
             self._logger.info(f"Alpha is {alpha} and Beta is {beta}")
