@@ -17,7 +17,7 @@ from scipy.stats import shapiro
 
 output_folder = '../../../../lipizzaner-gan/src/output/'
 data_folder = '../../data/'
-dataset = 'gaussian' #'mnist'
+dataset = 'mnist' #'mnist'
 
 
 def get_stats(values):

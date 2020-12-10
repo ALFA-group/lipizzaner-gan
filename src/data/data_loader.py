@@ -1,6 +1,7 @@
 import os
 from abc import ABC, abstractmethod
 
+import logging
 import torch
 import torch.utils.data
 from torchvision.transforms import transforms
@@ -13,8 +14,10 @@ from torch.utils.data import Sampler, SubsetRandomSampler
 from helpers.reproducible_helpers import set_random_seed
 import random
 
+_logger = logging.getLogger()
 
 class DataLoader(ABC):
+
     """
     Abstract base class for all dataloaders, cannot be instanced.
     """
@@ -83,12 +86,11 @@ class DataLoader(ABC):
         )
 
     def transform(self):
-        return transforms.Compose(
-            [
-                transforms.ToTensor(),
-                transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
-            ]
-        )
+        # return super.transform()
+        return transforms.Compose([
+                            transforms.ToTensor(),
+                            transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5))
+         ])
 
     def transpose_data(self, data):
         return data.view(self.batch_size, -1)

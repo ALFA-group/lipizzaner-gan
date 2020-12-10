@@ -18,7 +18,7 @@ from scipy.stats import shapiro
 
 output_folder = '../../../../lipizzaner-gan/src/output/'
 data_folder = '../../data/'
-dataset = 'gaussian'  #'circular' 
+dataset = 'mnist'  #'circular' 
 
 def get_all_master_log_files():
     return [filepath for filepath in glob.iglob(output_folder + 'log/*.log')]

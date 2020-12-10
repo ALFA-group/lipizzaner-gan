@@ -329,6 +329,7 @@ class LipizzanerMaster:
             api_call_address = 'http://{}:{}/experiments'.format(address, backup_port)
             self.cc.settings['general']['distribution']['client_id'] = backup_port
             self.cc.settings['trainer']['iterations_left'] = self.cc.settings['trainer']['n_iterations'] - last_iteration
+            self._logger.info('backup api call to {} with json {}'.format(api_call_address, self.cc.settings))
             try:
                 resp = requests.post(api_call_address, json=self.cc.settings)
                 assert resp.status_code == 200, resp.text

@@ -7,9 +7,8 @@ from scipy.spatial import distance
 from scipy.stats import wasserstein_distance
 import numpy as np
 
-
+_logger = logging.getLogger()
 class GaussianToyDistancesCalculator2D(ScoreCalculator):
-    _logger = logging.getLogger(__name__)
 
     def __init__(
         self,
@@ -46,7 +45,6 @@ class GaussianToyDistancesCalculator2D(ScoreCalculator):
 
 
 class GaussianToyDistancesCalculator1D(ScoreCalculator):
-    _logger = logging.getLogger(__name__)
 
     def __init__(
         self,
@@ -57,7 +55,9 @@ class GaussianToyDistancesCalculator1D(ScoreCalculator):
     ):
         self.cc = ConfigurationContainer.instance()
         self.score_sample_size = self.cc.settings["trainer"]["params"]["score"].get("sample_size", score_sample_size)
-        self.target_distribution = np.array(target_distribution[0]).reshape(1, -1)  # [0] are the samples
+        _logger.info('target distribution is {} and type is {}'.format(target_distribution[0], type(target_distribution[0])))
+        array = target_distribution[0].cpu().data.numpy() # np.array(target_distribution[0].cpu().data) # np.array()
+        self.target_distribution = array.reshape(1, -1)  # [0] are the samples
 
     def calculate(self, imgs, exact=True):  # The score is the Wasserstein distance between both distributions
         samples = list()

@@ -131,6 +131,7 @@ def initialize_settings(args):
     if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
         log_dir = os.path.join(cc.settings['general']['output_dir'], 'log')
         LogHelper.setup(cc.settings['general']['logging']['log_level'], log_dir)
+        _logger.info("set up log_dir to be {}".format(log_dir))
     if cc.is_losswise_enabled:
         losswise.set_api_key(cc.settings['general']['losswise']['api_key'])
 
@@ -253,6 +254,7 @@ if __name__ == '__main__':
         if args.distributed:
             if args.master:
                 initialize_settings(args)
+                _logger.info("initializing settings")
                 LipizzanerMaster().run()
             elif args.client:
                 LipizzanerClient().run()

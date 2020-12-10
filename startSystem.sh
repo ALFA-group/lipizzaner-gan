@@ -12,8 +12,8 @@ cat status
 
 # call the client killing script
 netstat_output_path=../netstatOutputPath.txt 
-sleep_time=8
+sleep_time=5
 port_path=../ports.txt 
-# bash -x ../client_killing.sh ${netstat_output_path} ${sleep_time} ${port_path} &
+bash -x ../client_killing.sh ${netstat_output_path} ${sleep_time} ${port_path} &
 
 python main.py train --distributed --master -f configuration/quickstart/toy-1d-gaussian.yml #mnist.yml

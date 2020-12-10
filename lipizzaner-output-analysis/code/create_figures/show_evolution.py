@@ -234,8 +234,9 @@ log_file = '/home/jamal/Documents/Research/sourcecode/lipizzaner-output-analysis
 #createa_video(acc_label_log_file, acc_log_file, fid_log_file, client_id, step=1)
 #show_evolution_fid_vs_acc(acc_log_file, fid_log_file)
 
-show_evolution('/home/ubuntu/lipizzaner-gan/lipizzaner-output-analysis/data/final/gaussian-fid-evolution-lipizzaner_2020-12-01_02-00-4_grid-.csv', filename='test_100_iter_2.png')
-# show_all_experiments_evolution('*', experiment='mnist', metric='fid', grid_size=25, filename='test2.png')
+# show_evolution('/home/ubuntu/lipizzaner-output-analysis/data/final/mnist-fid-evolution-lipizzaner_2020-12-07_16-38-3_grid-.csv', filename='mnist_test_100.png')
+# show_evolution('/nobackup/users/umustafi/projects/lipizzaner-gan/lipizzaner-output-analysis/data/final/mnist-fid-evolution-lipizzaner_2020-12-09_05-14-4_grid-.csv', filename='mnist_ctrl_2_iter_4.png')
+show_all_experiments_evolution('*12-09*', experiment='mnist', metric='fid', grid_size=4, filename='control_2.png')
 # show_evolution(log_file, 0, 'test3.png')
 
 # show_all_experiments_evolution('2020-10-06')
