@@ -176,15 +176,15 @@ class GeneratorNet(CompetetiveNet):
                                         create_graph=True, retain_graph=True, only_inputs=True)
             with torch.no_grad():
                 allgrad = gradients[0]
-                for i, grad in enumerate(gradients[1:]):
+                for grad in gradients[1:]:
                     grad = grad.view(-1)
-                    allgrad = torch.cat([allgrad,grad]) 
+                    allgrad = torch.cat([allgrad,grad])
 
             Fd = -torch.log(torch.norm(allgrad)).data.cpu().numpy()
             Fq = self.loss_function(fake_outputs, real_labels)
-            
+
             return alpha*Fd + beta*Fq, fake_images, None
-            
+
         else:
             fake_images = self.net(z)
             outputs = opponent.net(fake_images).view(-1)
