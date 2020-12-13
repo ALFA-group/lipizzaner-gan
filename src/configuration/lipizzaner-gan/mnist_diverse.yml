@@ -17,8 +17,8 @@ trainer:
     enable_selection: True
     score:
       enabled: True
-      type: fid
-      score_sample_size: 1000
+      type: prdc
+      score_sample_size: 10000
       cuda: True
     fitness:
       fitness_sample_size: 1000

@@ -1,13 +1,13 @@
 import os
 
-from torchvision import transforms
-
 from helpers.configuration_container import ConfigurationContainer
 from helpers.ignore_label_dataset import IgnoreLabelDataset
-from training.mixture.fid_score import FIDCalculator
-from training.mixture.inception_score import InceptionCalculator
+from torchvision import transforms
 from training.mixture.constant_score import ConstantCalculator
-from training.mixture.gaussian_score import GaussianToyDistancesCalculator2D, GaussianToyDistancesCalculator1D
+from training.mixture.fid_score import FIDCalculator
+from training.mixture.gaussian_score import GaussianToyDistancesCalculator1D, GaussianToyDistancesCalculator2D
+from training.mixture.inception_score import InceptionCalculator
+from training.mixture.prdc_score import PRDCCalculator
 
 
 class ScoreCalculatorFactory:
@@ -60,6 +60,23 @@ class ScoreCalculatorFactory:
             return InceptionCalculator(cuda=cc.settings["master"].get("cuda", False), resize=True)
         elif score_type == "constant":
             return ConstantCalculator(cuda=cc.settings["master"].get("cuda", False), resize=True)
+        elif score_type == "prdc":
+            transforms_op = [
+                transforms.ToTensor(),
+                transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+            ]
+            dataset_params = {
+                "root": os.path.join(cc.settings["general"]["output_dir"], "data"),
+                "train": True,
+                "transform": transforms.Compose(transforms_op),
+            }
+            dataset = dataloader.dataset(**dataset_params)
+
+            return PRDCCalculator(
+                IgnoreLabelDataset(dataset),
+                cuda=cc.settings["master"].get("cuda", False),
+                n_samples=settings["score"].get("score_sample_size", 10000),
+            )
         else:
             raise Exception(
                 'Mixture score type {} is not supported. Use either "inception_score" or "fid".'.format(score_type)
