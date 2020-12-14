@@ -152,11 +152,14 @@ def createa_video(acc_label_log_file, acc_log_file, fid_log_file, client_id, ste
     print('Finished: Created animation in file {}'.format(experiment + '.gif'))
 
 
-def show_all_experiments_evolution(pattern, experiment='mnist', metric='fid', grid_size=None, filename=None):
+def show_all_experiments_evolution(pattern, experiment='mnist', metric='fid', grid_size=None, filename=None, group=None):
     print('Control that you are using the same experiment files')
     import glob
     grid_size_pattern = '{}_grid*'.format(grid_size) if grid_size is not None else '*'
-    files = [filepath for filepath in glob.iglob(data_folder + '/final/'+ experiment + '-' + metric + '*_' + pattern + '_*' + grid_size_pattern +'.csv')]
+    if group == None:
+        files = [filepath for filepath in glob.iglob(data_folder + '/final/'+ experiment + '-' + metric + '*_' + pattern + '_*' + grid_size_pattern +'.csv')]
+    else:
+        files = [filepath for filepath in glob.iglob(data_folder + '/final/'+ group + '/' + experiment + '-' + metric + '*_' + pattern + '_*' + grid_size_pattern +'.csv')]
     print(len(files))
     print(files)
     df_list =  list()
@@ -236,7 +239,7 @@ log_file = '/home/jamal/Documents/Research/sourcecode/lipizzaner-output-analysis
 
 # show_evolution('/home/ubuntu/lipizzaner-output-analysis/data/final/mnist-fid-evolution-lipizzaner_2020-12-07_16-38-3_grid-.csv', filename='mnist_test_100.png')
 # show_evolution('/nobackup/users/umustafi/projects/lipizzaner-gan/lipizzaner-output-analysis/data/final/mnist-fid-evolution-lipizzaner_2020-12-09_05-14-4_grid-.csv', filename='mnist_ctrl_2_iter_4.png')
-show_all_experiments_evolution('*12-09*', experiment='mnist', metric='fid', grid_size=4, filename='control_2.png')
+show_all_experiments_evolution('*', experiment='mnist', metric='fid', grid_size=4, filename='experiment_1.png', group='experiment_1')
 # show_evolution(log_file, 0, 'test3.png')
 
 # show_all_experiments_evolution('2020-10-06')

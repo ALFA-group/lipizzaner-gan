@@ -94,6 +94,8 @@ class LipizzanerMaster:
         else:
             self._terminate(stop_clients=False, return_code=-1)
 
+        return True 
+
     def _sigint(self, signal, frame):
         self._terminate()
 

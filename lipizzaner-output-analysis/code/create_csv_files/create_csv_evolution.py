@@ -16,15 +16,18 @@ import glob
 import sys
 from scipy.stats import shapiro
 
-output_folder = '../../../../lipizzaner-gan/src/output/'
+output_folder = '../../../../lipizzaner-gan/src/output/' #'../../experiments/control_1' # 
 data_folder = '../../data/'
 dataset = 'mnist'  #'circular' 
 
 def get_all_master_log_files():
+    # master_log_files = [filepath for filepath in glob.iglob(output_folder + 'log/*.log')]
+    # print(master_log_files)
     return [filepath for filepath in glob.iglob(output_folder + 'log/*.log')]
 
 def get_distributed_log_files_given_master_log(master_log_filename):
     return [filepath for filepath in glob.iglob(output_folder +'lipizzaner_gan/distributed/' + dataset + '/*/*/' + master_log_filename)]
+    # files = [filepath for filepath in glob.iglob(output_folder + '/*/*/' + master_log_filename)]
 
 def get_independent_run_params(file_name):
     parameters = None

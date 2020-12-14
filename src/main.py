@@ -255,7 +255,8 @@ if __name__ == '__main__':
             if args.master:
                 initialize_settings(args)
                 _logger.info("initializing settings")
-                LipizzanerMaster().run()
+                result = LipizzanerMaster().run()
+                _logger.info("finished running master {}".format(result))
             elif args.client:
                 LipizzanerClient().run()
         else:
