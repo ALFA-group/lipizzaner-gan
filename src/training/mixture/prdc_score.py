@@ -11,15 +11,7 @@ from training.mixture.score_calculator import ScoreCalculator
 class PRDCCalculator(ScoreCalculator):
     _logger = logging.getLogger(__name__)
 
-    def __init__(
-        self,
-        imgs_original,
-        batch_size=64,
-        dims=10,
-        n_samples=10000,
-        cuda=True,
-        verbose=False,
-    ):
+    def __init__(self, imgs_original, batch_size=64, dims=10, n_samples=10000, cuda=True, verbose=False, nearest_k=5):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10
         :param batch_size: Batch size that will be used, 64 is recommended.
@@ -36,9 +28,10 @@ class PRDCCalculator(ScoreCalculator):
         self.verbose = verbose
         self.dataset = self.cc.settings["dataloader"]["dataset_name"]
         self.network = self.cc.settings["network"]["name"]
+        self.nearest_k = nearest_k
         self.dims = dims  # For MNIST the dimension of feature map is 10
 
-    def calculate(self, imgs, exact=True, nearest_k=10):
+    def calculate(self, imgs, exact=True):
         """
         Calculates the Manifold Precision, Manifold Recall, Density and Coverage of two PyTorch datasets, which must have the same dimensions.
 
@@ -60,7 +53,7 @@ class PRDCCalculator(ScoreCalculator):
         real_act = self.get_activations(self.imgs_original, model)
         fake_act = self.get_activations(imgs, model)
 
-        metrics = compute_prdc(real_features=real_act, fake_features=fake_act, nearest_k=nearest_k)
+        metrics = compute_prdc(real_features=real_act, fake_features=fake_act, nearest_k=self.nearest_k)
         harmonic_mean = 2 * (metrics["density"] * metrics["coverage"]) / (metrics["density"] + metrics["coverage"])
 
         return harmonic_mean, metrics

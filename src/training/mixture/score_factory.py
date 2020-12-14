@@ -76,6 +76,7 @@ class ScoreCalculatorFactory:
                 IgnoreLabelDataset(dataset),
                 cuda=cc.settings["master"].get("cuda", False),
                 n_samples=settings["score"].get("score_sample_size", 10000),
+                nearest_k=settings["score"].get("nearest_k", 5),
             )
         else:
             raise Exception(

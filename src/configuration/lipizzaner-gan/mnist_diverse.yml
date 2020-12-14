@@ -18,8 +18,9 @@ trainer:
     score:
       enabled: True
       type: prdc
-      score_sample_size: 10000
+      score_sample_size: 1000
       cuda: True
+      nearest_k: 5
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average # worse, best, average
