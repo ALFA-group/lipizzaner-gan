@@ -4,7 +4,6 @@ import numpy as np
 import torch
 from helpers.configuration_container import ConfigurationContainer
 from prdc import compute_prdc
-from torch.autograd import Variable
 from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.score_calculator import ScoreCalculator
 
@@ -97,28 +96,29 @@ class PRDCCalculator(ScoreCalculator):
         n_used_imgs = n_batches * self.batch_size
 
         pred_arr = np.empty((n_used_imgs, self.dims))
-        for i in range(n_batches):
-            if self.verbose:
-                print(
-                    "\rPropagating batch %d/%d" % (i + 1, n_batches),
-                    end="",
-                    flush=True,
-                )
-            start = i * self.batch_size
-            end = start + self.batch_size
+        with torch.no_grad():
+            for i in range(n_batches):
+                if self.verbose:
+                    print(
+                        "\rPropagating batch %d/%d" % (i + 1, n_batches),
+                        end="",
+                        flush=True,
+                    )
+                start = i * self.batch_size
+                end = start + self.batch_size
 
-            batch = torch.stack(images[start:end])
-            batch = Variable(batch, volatile=True)
-            if self.cuda:
-                batch = batch.cuda()
-            else:
-                # .cpu() is required to convert to torch.FloatTensor because image
-                # might be generated using CUDA and in torch.cuda.FloatTensor
-                batch = batch.cpu()
+                batch = torch.stack(images[start:end])
+                batch = torch.tensor(batch)
+                if self.cuda:
+                    batch = batch.cuda()
+                else:
+                    # .cpu() is required to convert to torch.FloatTensor because image
+                    # might be generated using CUDA and in torch.cuda.FloatTensor
+                    batch = batch.cpu()
 
-            pred = model(batch)[0]
+                pred = model(batch)[0]
 
-            pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
+                pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
         if self.verbose:
             print(" done")
