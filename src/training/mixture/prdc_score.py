@@ -77,10 +77,15 @@ class PRDCCalculator(ScoreCalculator):
         """
         model.eval()
 
-        # Reshape to 2D images as required by MNISTCnn class
-        images = [img.view(-1, 28, 28) for img in images]
+        final_images = []
+        assert len(images) >= self.n_samples, "Cannot draw enough samples from dataset"
 
-        d0 = len(images)
+        for i in range(self.n_samples):
+            # Reshape to 2D images as required by MNISTCnn class
+            img = images[i].view(-1, 28, 28)
+            final_images.append(img)
+
+        d0 = len(final_images)
         if self.batch_size > d0:
             print(("Warning: batch size is bigger than the data size. " "Setting batch size to data size"))
             self.batch_size = d0
@@ -100,7 +105,7 @@ class PRDCCalculator(ScoreCalculator):
                 start = i * self.batch_size
                 end = start + self.batch_size
 
-                batch = torch.stack(images[start:end])
+                batch = torch.stack(final_images[start:end])
                 batch = torch.tensor(batch)
                 if self.cuda:
                     batch = batch.cuda()
