@@ -42,12 +42,12 @@ class PRDCCalculator(ScoreCalculator):
         if self.dataset == "mnist":  # Gray dataset
             model = MNISTCnn()
             model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
-        else:  # Other RGB dataset
+        elif self.dataset not in ["unlabeled_gaussian_grid", "unlabeled_gaussian_circle"]:  # Other RGB dataset
             # TODO: Add Dynamic definition of ConvNet.
             #       With matching input size to dataset and output size to self.dims.
             raise Exception('Datset {} is not supported. Use "MNIST".'.format(self.dataset))
 
-        if self.cuda:
+        if model and self.cuda:
             model.cuda()
 
         real_act = self.get_activations(self.imgs_original, model)
@@ -75,48 +75,52 @@ class PRDCCalculator(ScoreCalculator):
            activations of the given tensor when feeding inception with the
            query tensor.
         """
-        model.eval()
-
-        final_images = []
         assert len(images) >= self.n_samples, "Cannot draw enough samples from dataset"
+        if model:
+            model.eval()
 
-        for i in range(self.n_samples):
-            # Reshape to 2D images as required by MNISTCnn class
-            img = images[i].view(-1, 28, 28)
-            final_images.append(img)
+            final_images = []
 
-        d0 = len(final_images)
-        if self.batch_size > d0:
-            print(("Warning: batch size is bigger than the data size. " "Setting batch size to data size"))
-            self.batch_size = d0
+            for i in range(self.n_samples):
+                # Reshape to 2D images as required by MNISTCnn class
+                img = images[i].view(-1, 28, 28)
+                final_images.append(img)
 
-        n_batches = d0 // self.batch_size
-        n_used_imgs = n_batches * self.batch_size
+            d0 = len(final_images)
+            if self.batch_size > d0:
+                print(("Warning: batch size is bigger than the data size. " "Setting batch size to data size"))
+                self.batch_size = d0
 
-        pred_arr = np.empty((n_used_imgs, self.dims))
-        with torch.no_grad():
-            for i in range(n_batches):
-                if self.verbose:
-                    print(
-                        "\rPropagating batch %d/%d" % (i + 1, n_batches),
-                        end="",
-                        flush=True,
-                    )
-                start = i * self.batch_size
-                end = start + self.batch_size
+            n_batches = d0 // self.batch_size
+            n_used_imgs = n_batches * self.batch_size
 
-                batch = torch.stack(final_images[start:end])
-                batch = torch.tensor(batch)
-                if self.cuda:
-                    batch = batch.cuda()
-                else:
-                    # .cpu() is required to convert to torch.FloatTensor because image
-                    # might be generated using CUDA and in torch.cuda.FloatTensor
-                    batch = batch.cpu()
+            pred_arr = np.empty((n_used_imgs, self.dims))
+            with torch.no_grad():
+                for i in range(n_batches):
+                    if self.verbose:
+                        print(
+                            "\rPropagating batch %d/%d" % (i + 1, n_batches),
+                            end="",
+                            flush=True,
+                        )
+                    start = i * self.batch_size
+                    end = start + self.batch_size
 
-                pred = model(batch)[0]
+                    batch = torch.stack(final_images[start:end])
+                    batch = torch.tensor(batch)
+                    if self.cuda:
+                        batch = batch.cuda()
+                    else:
+                        # .cpu() is required to convert to torch.FloatTensor because image
+                        # might be generated using CUDA and in torch.cuda.FloatTensor
+                        batch = batch.cpu()
 
-                pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
+                    pred = model(batch)[0]
+
+                    pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
+
+        else:
+            pred_arr = [images[i] for i in range(self.n_samples)]
 
         if self.verbose:
             print(" done")
