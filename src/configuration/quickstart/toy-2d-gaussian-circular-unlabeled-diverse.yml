@@ -23,7 +23,7 @@ trainer:
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average # worse, best, average
-      diverse_fitness: True
+      diverse_fitness: egan
       alpha: 0.5
       beta: 0.5
 dataloader:

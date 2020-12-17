@@ -1,22 +1,19 @@
 import random
-from time import time
 from collections import OrderedDict
+from time import time
 
 import numpy as np
 import torch
-
+from data.network_data_loader import generate_random_sequences
 from distribution.concurrent_populations import ConcurrentPopulations
 from distribution.neighbourhood import Neighbourhood
 from helpers.configuration_container import ConfigurationContainer
 from helpers.db_logger import DbLogger
-from helpers.population import TYPE_GENERATOR, TYPE_DISCRIMINATOR
-from helpers.pytorch_helpers import to_pytorch_variable
-from helpers.pytorch_helpers import noise
+from helpers.population import TYPE_DISCRIMINATOR, TYPE_GENERATOR
+from helpers.pytorch_helpers import noise, to_pytorch_variable
 from training.ea.ea_trainer import EvolutionaryAlgorithmTrainer
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
-
-from data.network_data_loader import generate_random_sequences
 
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
@@ -148,7 +145,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         alpha = self.neighbourhood.alpha
         beta = self.neighbourhood.beta
 
-        diverse_fitness = self.cc.settings["trainer"]["params"]["fitness"].get("diverse",False)
+        diverse_fitness = self.cc.settings["trainer"]["params"]["fitness"].get(
+            "diverse_fitness", None
+        )
 
         if alpha is not None:
             self._logger.info(f"Alpha is {alpha} and Beta is {beta}")
@@ -158,10 +157,13 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         for iteration in range(n_iterations):
             self._logger.debug("Iteration {} started".format(iteration + 1))
             start_time = time()
-            
-            if self.neighbourhood.scheduler is not None and iteration in self.neighbourhood.scheduler:
-                alpha = self.neighbourhood.scheduler[iteration]['alpha']
-                beta = self.neighbourhood.scheduler[iteration]['beta']
+
+            if (
+                self.neighbourhood.scheduler is not None
+                and iteration in self.neighbourhood.scheduler
+            ):
+                alpha = self.neighbourhood.scheduler[iteration]["alpha"]
+                beta = self.neighbourhood.scheduler[iteration]["beta"]
 
             all_generators = self.neighbourhood.all_generators
             all_discriminators = self.neighbourhood.all_discriminators
@@ -717,7 +719,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         beta=None,
         iter=None,
         log_class_distribution=False,
-        diverse_fitness=False
+        diverse_fitness=None
     ):
         # Single direction only: Evaluate fitness of attacker based on defender
         # TODO: Simplify and refactor this function

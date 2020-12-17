@@ -154,15 +154,18 @@ class GeneratorNet(CompetetiveNet):
         beta=None,
         iter=None,
         log_class_distribution=False,
-        diverse_fitness=False,
+        diverse_fitness=None,
     ):
         batch_size = input.size(0)
-
 
         z = noise(batch_size, self.data_size)
         real_labels = to_pytorch_variable(torch.ones(batch_size))
 
-        if diverse_fitness:
+        _logger = logging.getLogger(__name__)
+
+        if diverse_fitness == "egan":
+            _logger.info(f"Using diverse fitness")
+
             fake_labels = to_pytorch_variable(torch.zeros(batch_size))
             with torch.no_grad():
                 fake_images = self.net(z)
@@ -230,7 +233,7 @@ class DiscriminatorNet(CompetetiveNet):
         beta=None,
         iter=None,
         log_class_distribution=False,
-        diverse_fitness=False,
+        diverse_fitness=None,
     ):
 
         # If HeuristicLoss is applied in the Generator, the Discriminator applies BCELoss

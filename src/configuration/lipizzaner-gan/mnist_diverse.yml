@@ -26,7 +26,7 @@ trainer:
       fitness_mode: average # worse, best, average
       alpha: 0.7
       beta: 0.3
-      diverse_fitness: True
+      diverse_fitness: egan
 dataloader:
   dataset_name: mnist
   use_batch: True
