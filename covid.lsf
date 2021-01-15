@@ -1,0 +1,28 @@
+#!/bin/bash
+# Begin BSUB Options
+#BSUB -P csc387
+#BSUB -W 01:00
+#BSUB -nnodes 1
+#BSUB -alloc_flags "gpumps"
+#BSUB -J ganwork
+#BSUB -o ganwork.%J
+#BSUB -e ganwork.%J
+
+# Load Modules - IBM WML sets up conda environment
+module load ibm-wml-ce/1.7.0-3
+module load git-lfs
+
+# Set user base for installing additional libraries
+export PYTHONUSERBASE=$PWD/.local/
+
+# Experiment Paths/Parameters
+RUNID=ganrun_000
+NODES=1
+export PYTHON_EGG_CACHE=$PWD/.cache
+export NUM_CLIENTS_PER_NODE=6
+export PORT_UPPER_LIMIT=5005
+cd $PROJWORK/csc387/floresd/lipizzaner-gan
+
+# Run Code
+cp src/configuration/covid-19-unsupervised/general.yml.bak src/configuration/covid-19-unsupervised/general.yml
+jsrun -n $NODES -g 6 -c 42 -r 1 -a 1  bash covid-script.sh

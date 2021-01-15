@@ -8,6 +8,8 @@ losswise:
   enabled: False
   api_key: # Fill in API key 
 output_dir: ./output
+seed: 1
+num_workers: 0    # how many subprocesses to use for data loading
 distribution:
   auto_discover: False
   master_node:
@@ -15,5 +17,3 @@ distribution:
   client_nodes:
     - address: 127.0.0.1 # Fill in IP address here 
       port: 5000
-seed: 1
-num_workers: 0    # how many subprocesses to use for data loading
