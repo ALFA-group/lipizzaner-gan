@@ -15,15 +15,6 @@ distribution:
   master_node:
     exit_clients_on_disconnect: True
   client_nodes:
-    - address: h32n10
+    - address: h19n15
       port: 5000-5005
-    - address: h22n15
-      port: 5000-5005
-    - address: h31n12
-      port: 5000-5005
-    - address: h34n08
-      port: 5000-5005
-    - address: h34n12
-      port: 5000-5005
-    - address: h35n12
-      port: 5000-5005
+

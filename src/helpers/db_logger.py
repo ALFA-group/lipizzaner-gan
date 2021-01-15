@@ -4,7 +4,8 @@ import copy
 import logging
 import math
 
-from bson import ObjectId, Binary
+from bson.objectid import ObjectId
+from bson.binary import Binary
 from datetime import datetime, timezone
 from pymongo import MongoClient
 from pymongo.errors import ServerSelectionTimeoutError

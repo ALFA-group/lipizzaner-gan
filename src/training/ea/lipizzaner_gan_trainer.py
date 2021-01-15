@@ -288,7 +288,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             try:
                 # change this because this is a master function
                 output_dir = self.get_and_create_output_dir(node)
-                self._logger.info("Output dir: " + self.cc.output_dir)
+                self._logger.info("Output dir: " + output_dir)
                 for generator in generator_pop.individuals:
                     source = generator.source.replace(':', '-')
                     filename = '{}{}.pkl'.format(GENERATOR_PREFIX, source)
@@ -572,10 +572,11 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             return sampled_data
 
     def get_and_create_output_dir(self, node):
-        directory = os.path.join(self.cc.output_dir, 'master', self.cc.settings['general']['distribution']['start_time'],
+        output_base_dir = self.cc.output_dir.split('/distributed')[0]
+        self._logger.info("BASE DIR: {}".format(output_base_dir))
+        directory = os.path.join(output_base_dir, 'master', self.cc.settings['general']['distribution']['start_time'],
                                  '{}-{}'.format(node['address'], node['port']))
         os.makedirs(directory, exist_ok=True)
-        self._logger.info("Client trainer directory:" + directory)
         return directory
 
     def save_samples(self, dataset, output_dir, image_specific_loader, n_images=10, batch_size=100):
