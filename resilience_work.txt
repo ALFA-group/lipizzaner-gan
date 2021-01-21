@@ -1,0 +1,46 @@
+The following is a brief summary of my work and instructions on how to run experiments. 
+
+Mimicking client death or connection issue
+- toggle the endpoint /experiments/sleep GET in client_api.py (99) 
+- all API calls and the lipizzaner_gan_trainer.py look for the existence of the sleepfile.txt created
+    before returning a response. This will mimic an unresponsive client. 
+
+Real-time Checkpointing 
+- Every five heartbeats, uses node_client.py to request the neighbours and iteration from all of the clients
+- Passes this information to lipizzaner_master.py with update_neighbours(neighbours_info) to update the log 
+    with the neighbours of every client and its training iteration. 
+
+Reconnection to client 
+The first important change is to continue training clients even after one is registered as "missing" or 
+ "dead". This is done by setting the flag "self.kill_clients_on_disconnect" in the yml file. This change 
+can be found in heartbeat.py (line 46). If the flag is true, then we stop the experiments. Otherwise, we
+attempt to reconnect (checking the status three times) with increasing waiting periods between checks. 
+
+Restarting client
+- call master.restart_client(dead_client_port) on line 78 of heartbeat.py 
+- sleep between calls to restart a client to allow one client to be restarted fully before trying the 
+    subsequent one
+- if you want to restart the client then maintain the "if" statement on line 83 of heartbeat.py. If you want
+    to test the experiment continuing without restart, then comment out the "else" block on lines 56-79 and
+    use the "elif" on line 82 instead of "if" on line 83
+
+restart_client(dead_port) in lipizzaner_master.py 
+- obtains backup ports that have not been used 
+- uses the checkpoint information from the log stored in lipizzaner_master.py (port_to_iteration and 
+    port_to_neighbours)
+- iterates through the backup ports to make an API call to start an experiment on that port using the 
+    iterations left for the dead client (/experiments)
+- makes a call to all of the neighbours of the dead client to replace the dead port with new one in 
+    Neighbourhood.py of the nieghbours using /replaceNeighbor endpoint. 
+- API calls access lipizzaner.py -> lipizzaner_gan_trainer.py -> neighbourhood.py to make changes to 
+    ports and mixtures 
+
+Make CSVs with resurrected clients
+- use create_csv_revived_evolution.py in lipizzaner-output-analysis/code/create_csv_files
+- its current hardcoded to join dead client scores with resurrected of three clients for a 3x3 but should 
+    be amended to be more configurable for different grid sizes and number of clients dying
+- you can use the resurrected_clients_only flag on line 429 to only see the evolution of resurrected clients   
+    (not ones that continued training)
+
+Create Figures
+- altered show_evolution.py to print statistics about the best client at iterations 75, 100, 200
