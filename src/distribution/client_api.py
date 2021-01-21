@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re 
 import traceback
 from threading import Thread, Lock, Event
 
@@ -26,6 +27,7 @@ class ClientAPI:
     _lock = Lock()
 
     _logger = logging.getLogger(__name__)
+    _lipizzaner = None 
 
     @staticmethod
     @app.route('/experiments', methods=['POST'])
@@ -50,10 +52,17 @@ class ClientAPI:
     @app.route('/experiments', methods=['DELETE'])
     def terminate_experiment():
         ClientAPI._lock.acquire()
+        
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
 
         if ClientAPI.is_busy:
-            ClientAPI._logger.warning('Received stop signal from master, experiment will be quit.')
-            ClientAPI._stop_event.set()
+            if os.path.exists(path):
+                ClientAPI._logger.info('Experiments DEL: sleep file found for client ' + str(ClientEnvironment.port))
+                response = Response() 
+            else :
+                ClientAPI._logger.warning('Received stop signal from master, experiment will be quit.')
+                ClientAPI._stop_event.set()
         else:
             ClientAPI._logger.warning('Received stop signal from master, but no experiment is running.')
 
@@ -65,10 +74,19 @@ class ClientAPI:
     def get_results():
         ClientAPI._lock.acquire()
 
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+        ClientAPI._logger.info('Master requested experiments from client {}'.format(ClientEnvironment.port))
+        
         if ClientAPI.is_busy:
-            ClientAPI._logger.info('Sending neighbourhood results to master')
-            response = jsonify(ClientAPI._gather_results())
-            ClientAPI._finish_event.set()
+            if os.path.exists(path):
+                ClientAPI._logger.info('Experiments GET: sleep file found for client ' + str(ClientEnvironment.port))
+                response = Response() 
+            else :
+                ClientAPI._logger.info('Sending neighbourhood results to master')
+                response = jsonify(ClientAPI._gather_results())
+                ClientAPI._finish_event.set()
+
         else:
             ClientAPI._logger.warning('Master requested results, but no experiment is running.')
             response = Response()
@@ -78,18 +96,116 @@ class ClientAPI:
         return response
 
     @staticmethod
+    @app.route('/experiments/sleep', methods=['GET'])
+    # used to create sleepfile if one doesn't exist and delete it if one does (toggle)
+    def sleep(): 
+        ClientAPI._lock.acquire()
+
+        response = Response()
+
+        cc = ConfigurationContainer.instance()
+        if hasattr(cc, "settings"):
+            output_base_dir = cc.output_dir 
+            path = output_base_dir + "/sleepfile.txt" + str(ClientEnvironment.port) 
+        
+        ClientAPI._logger.info("Sleep Request made with sleepfile at {}".format(path))
+
+        if os.path.exists(path):
+            ClientAPI._logger.info("Removing sleep file or waking up client")
+            os.remove(path)
+        else:
+            ClientAPI._logger.info("Creating sleep file or killing client")
+            with open(path, 'w+') as f:
+                f.write("sleep")
+        ClientAPI._lock.release()
+        return response
+
+    @staticmethod
+    @app.route('/replaceNeighbor', methods=['POST'])
+    # replaces dead port with backup one in neighbors of dead client 
+    def replace_neighbor():
+        config = request.get_json()
+        ClientAPI._lock.acquire()
+
+        response = Response()
+
+        cc = ConfigurationContainer.instance()
+        cc.settings = config
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Replace Neighbor: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response() 
+        
+        dead_client = cc.settings['general']['distribution']['dead_client']
+        replacement_client = cc.settings['general']['distribution']['replacement_client']
+
+        ClientAPI._lipizzaner.replace_neighbor(dead_client, replacement_client)
+        ClientAPI._lock.release()
+        return response
+
+    @staticmethod
+    @app.route('/neighbours', methods=['GET'])
+    def get_neighbours():
+
+        config = request.get_json()
+        ClientAPI._lock.acquire()
+
+        result = {}
+
+        cc = ConfigurationContainer.instance()
+        cc.settings = config
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Get Neighbors: sleep file found for client ' + str(ClientEnvironment.port))
+                ClientAPI._lock.release()
+                return Response() 
+
+        if ClientAPI._lipizzaner != None:
+            neighbours, iteration = ClientAPI._lipizzaner.get_neighbours()
+            result['neighbours'] = neighbours
+            result['iteration'] = iteration
+
+        ClientAPI._lock.release()
+        return jsonify(result)
+
+    @staticmethod
     @app.route('/status', methods=['GET'])
     def get_status():
+        cc = ConfigurationContainer.instance()
+
         result = {
             'busy': ClientAPI.is_busy,
             'finished': ClientAPI.is_finished
         }
+
+        if hasattr(cc, "settings"):
+            if 'general' in cc.settings.keys():
+                sleep_path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+                if os.path.exists(sleep_path) :
+                        # makes Master register client as dead if sleepfile exists
+                        ClientAPI._logger.info('STATUS Client made to sleep ' + str(ClientEnvironment.port))
+                        response = Response()
+                        response._status_code = 404 
+                        return response
+                
         return jsonify(result)
 
     @staticmethod
     @app.route('/parameters/discriminators', methods=['GET'])
     def get_discriminators():
         populations = ConcurrentPopulations.instance()
+
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy: 
+            if os.path.exists(path):
+                ClientAPI._logger.info('Discriminators GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response() 
 
         populations.lock()
         if populations.discriminator is not None:
@@ -105,7 +221,16 @@ class ClientAPI:
     @app.route('/parameters/discriminators/best', methods=['GET'])
     def get_best_discriminator():
         populations = ConcurrentPopulations.instance()
+        
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
 
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Discriminators BEST GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response() 
+            
+        ClientAPI._logger.info('Discriminators BEST GET for ' + str(ClientEnvironment.port))
         populations.lock()
         if populations.discriminator is not None:
             best_individual = sorted(populations.discriminator.individuals, key=lambda x: x.fitness)[0]
@@ -122,6 +247,14 @@ class ClientAPI:
     def get_generators():
         populations = ConcurrentPopulations.instance()
 
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Generators GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response()
+
         populations.lock()
         if populations.generator is not None:
             parameters = [ClientAPI._individual_to_json(i) for i in populations.generator.individuals]
@@ -136,6 +269,14 @@ class ClientAPI:
     @app.route('/parameters/generators/best', methods=['GET'])
     def get_best_generator():
         populations = ConcurrentPopulations.instance()
+
+        cc = ConfigurationContainer.instance()
+        path = cc.output_dir + "/sleepfile.txt" + str(ClientEnvironment.port)
+
+        if ClientAPI.is_busy:
+            if os.path.exists(path):
+                ClientAPI._logger.info('Generators BEST GET: sleep file found for client ' + str(ClientEnvironment.port))
+                return Response()
 
         if populations.generator is not None:
             best_individual = sorted(populations.generator.individuals, key=lambda x: x.fitness)[0]
@@ -162,8 +303,18 @@ class ClientAPI:
         ClientAPI._logger.info('Distributed training recognized, set log directory to {}'.format(cc.output_dir))
 
         try:
-            lipizzaner = Lipizzaner()
-            lipizzaner.run(cc.settings['trainer']['n_iterations'], ClientAPI._stop_event)
+            if 'neighbors' in cc.settings['general']['distribution']:
+                lipizzaner = Lipizzaner(_neighbors=cc.settings['general']['distribution']['neighbors'])
+            else:
+                lipizzaner = Lipizzaner()
+    
+            ClientAPI._lipizzaner = lipizzaner # NEW saving the instance here to access checkpoint later 
+            # initialize lipizzaner_gan_trainer instance and neighborhood 
+            n_iterations = cc.settings['trainer']['n_iterations']
+            client_id = cc.settings['general']['distribution']['client_id']
+            if 'iterations_left' in cc.settings['trainer']:
+                n_iterations = cc.settings['trainer']['iterations_left'] 
+            lipizzaner.run(n_iterations, ClientAPI._stop_event)
             ClientAPI.is_finished = True
 
             # Wait until master finishes experiment, i.e. collects results, or experiment is terminated
@@ -195,7 +346,7 @@ class ClientAPI:
 
     @staticmethod
     def _gather_results():
-        neighbourhood = Neighbourhood.instance()
+        neighbourhood = Neighbourhood() # Neighbourhood.instance()
         cc = ConfigurationContainer.instance()
         results = {
             'generators': neighbourhood.best_generator_parameters,

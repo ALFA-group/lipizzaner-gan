@@ -32,7 +32,7 @@ class Lipizzaner:
 
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, trainer=None):
+    def __init__(self, trainer=None, _neighbors=[]):
         """
         :param trainer: An implementation of NeuralNetworkTrainer that will be used to train both networks.
         Read from config if None.
@@ -41,9 +41,13 @@ class Lipizzaner:
             self.trainer = trainer
         else:
             self.cc = ConfigurationContainer.instance()
-            dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-            network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
-            self.trainer = self.cc.create_instance(self.cc.settings['trainer']['name'], dataloader, network_factory)
+            dataloader = self.cc.create_instance(self.cc.settings["dataloader"]["dataset_name"])
+            network_factory = self.cc.create_instance(
+                self.cc.settings["network"]["name"], dataloader.n_input_neurons, num_classes=dataloader.num_classes,
+            )
+            self.trainer = self.cc.create_instance(self.cc.settings["trainer"]["name"], dataloader, network_factory, neighbors=_neighbors)
+
+        # TODO if checkpoint here then update the trainer attributes 
 
         if 'params' in self.cc.settings['trainer'] and 'score' in self.cc.settings['trainer']['params']:
             self.cuda = self.cc.settings['trainer']['params']['score']['cuda']
@@ -73,3 +77,11 @@ class Lipizzaner:
         # Save the trained parameters
         torch.save(generator.net.state_dict(), os.path.join(self.cc.output_dir, 'generator.pkl'))
         torch.save(discriminator.net.state_dict(), os.path.join(self.cc.output_dir, 'discriminator.pkl'))
+
+    def replace_neighbor(self, dead_client, replacement_client):
+        self._logger.info("Lipizzaner class received call to replace {} with {}".format(dead_client, replacement_client))
+        self.trainer.replace_neighbor_of_trainer(dead_client, replacement_client)
+
+    def get_neighbours(self):
+        self._logger.info("Lipizzaner class received call to get neighbours")
+        return self.trainer.get_neighbours_of_trainer()

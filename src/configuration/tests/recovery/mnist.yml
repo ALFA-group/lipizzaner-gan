@@ -1,6 +1,6 @@
 trainer:
   name: lipizzaner_gan
-  n_iterations: 5
+  n_iterations: 4
   calculate_net_weights_dist: True
   # independent_probability, exact_proportion
   mixture_generator_samples_mode: exact_proportion
@@ -19,7 +19,7 @@ trainer:
       enabled: True
       type: fid
       score_sample_size: 1000
-      cuda: True
+      cuda: False
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
@@ -27,7 +27,7 @@ dataloader:
   dataset_name: mnist
   use_batch: True
   batch_size: 100
-  n_batches: 0
+  n_batches: 2
   shuffle: True
 network:
   name: four_layer_perceptron
@@ -35,5 +35,5 @@ network:
 master:
   calculate_score: True
   score_sample_size: 50000
-  cuda: True
+  cuda: False
 general: !include general.yml

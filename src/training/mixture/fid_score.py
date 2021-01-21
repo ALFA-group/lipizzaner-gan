@@ -75,7 +75,10 @@ class FIDCalculator(ScoreCalculator):
 
         if self.cuda:
             model.cuda()
+        # self._logger.info("for original")
+        # self._logger.info("original images {}".format(self.imgs_original[0]))
         m1, s1, freq1 = self._compute_statistics_of_path(self.imgs_original, model, compute_label_freqs)
+        # self._logger.info("for model")
         m2, s2, freq2 = self._compute_statistics_of_path(imgs, model, compute_label_freqs)
 
         tvd = 0.5 * sum(abs(f1 - f2) for f1, f2 in zip(freq1, freq2))
@@ -241,6 +244,7 @@ class FIDCalculator(ScoreCalculator):
         assert len(dataset) >= self.n_samples, 'Cannot draw enough samples from dataset'
 
         for i in range(self.n_samples):
+            # self._logger.info('dataset is in form {}'.format(type(dataset)))
             img = dataset[i]
             if self.cc.settings['dataloader']['dataset_name'] == 'mnist':
                 # Reshape to 2D images as required by MNISTCnn class

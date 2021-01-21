@@ -14,9 +14,9 @@ distribution:
     exit_clients_on_disconnect: False
   client_nodes:
     - address: 127.0.0.1 # Fill in IP address here
-      port: 5000-5008 #5000-5003
+      port: 5000-5008 # 
   backup_client_nodes: 
-    port: 5009-5012 #5004-5006
+    port: 5009-5012  # 5004-5006 # 
 seed: 1
 num_workers: 0    # how many subprocesses to use for data loading
 checkpoint_period: 1 # Number of iterations to be performed between the checkpoint (0 no check points are stored)

@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 import signal
@@ -9,6 +10,7 @@ import requests
 import torch
 import torch.utils.data
 from torch.autograd import Variable
+import yaml
 
 from distribution.node_client import NodeClient
 from helpers.configuration_container import ConfigurationContainer
@@ -17,6 +19,7 @@ from helpers.heartbeat import Heartbeat
 from helpers.math_helpers import is_square
 from helpers.network_helpers import get_network_devices
 from helpers.reproducible_helpers import set_random_seed
+from helpers.yaml_include_loader import YamlIncludeLoader
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
@@ -32,6 +35,9 @@ class LipizzanerMaster:
         self.heartbeat_event = None
         self.heartbeat_thread = None
         self.experiment_id = None
+        self.backup_ports_used = []
+        self.port_to_neighbours = {}
+        self.port_to_iteration = {}
 
     def run(self):
         if os.environ.get('DOCKER', False) == 'True':
@@ -49,6 +55,9 @@ class LipizzanerMaster:
             clients = self.cc.settings['general']['distribution']['client_nodes']
         accessible_clients = self._accessible_clients(clients)
 
+        self._logger.info('LIPIZZANER MASTER clients are {}'.format(clients))
+        self._logger.info('BACKUP NODES ARE {}'.format(self.cc.settings['general']['distribution']['backup_client_nodes']))
+        self._logger.info('MASTER OUTPUT DIR IS {}'.format(self.cc.output_dir))
         if len(accessible_clients) == 0 or not is_square(len(accessible_clients)):
             self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
                                   .format(len(accessible_clients)))
@@ -70,7 +79,9 @@ class LipizzanerMaster:
         self.heartbeat_event = Event()
         self.heartbeat_thread = Heartbeat(self.heartbeat_event,
                                           self.cc.settings['general']['distribution']['master_node'][
-                                              'exit_clients_on_disconnect'])
+                                              'exit_clients_on_disconnect'],
+                                          self) 
+                                              # if exit_clients_on_disconnect set to false then recovery will happen
 
         signal.signal(signal.SIGINT, self._sigint)
         self._start_experiments()
@@ -85,6 +96,8 @@ class LipizzanerMaster:
             self._terminate(stop_clients=False, return_code=0)
         else:
             self._terminate(stop_clients=False, return_code=-1)
+
+        return True 
 
     def _sigint(self, signal, frame):
         self._terminate()
@@ -157,11 +170,16 @@ class LipizzanerMaster:
             exit(return_code)
 
     def _gather_results(self):
-        self._logger.info('Collecting results from clients...')
+        self._logger.info('Collecting results from clients... where clients are {}'.format(self.cc.settings['general']['distribution']['client_nodes']))
 
         # Initialize node client
-        dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
+        dataloader = self.cc.create_instance(self.cc.settings["dataloader"]["dataset_name"])
+
+        network_factory = self.cc.create_instance(
+            self.cc.settings["network"]["name"],
+            dataloader.n_input_neurons,
+            num_classes=dataloader.num_classes,
+        )
         node_client = NodeClient(network_factory)
         db_logger = DbLogger()
 
@@ -258,3 +276,135 @@ class LipizzanerMaster:
                 for port in range(int(rng[0]), int(rng[1]) + 1):
                     clients.append({'address': client['address'], 'port': port})
             self.cc.settings['general']['distribution']['client_nodes'] = clients
+
+    def update_neighbours(self, neighbours_info):
+        self._logger.info("MASTER update neighbours func recieved {}".format(neighbours_info))
+        for item in neighbours_info:
+            port = str(item['port'])
+            neighbours = item['neighbours']
+            self.port_to_neighbours[port] = [str(n['port']) for n in neighbours]
+            self.port_to_iteration[port] = item['iteration']
+        self._logger.info('Updated neighbours to {} and iterations to {}'.format(self.port_to_neighbours, self.port_to_iteration))
+    
+    def restart_client(self, dead_port):
+        self._logger.info('able to call master function and failing one is {}'.format(dead_port))
+        address = self.cc.settings['general']['distribution']['client_nodes'][0]['address']
+        backup_ports = self.cc.settings['general']['distribution']['backup_client_nodes']
+        backup_range = backup_ports['port'].split('-')
+        backup_ports = []
+        for port in range(int(backup_range[0]), int(backup_range[1]) + 1):
+            backup_ports.append(str(port))
+        self._logger.info('address is {} backup ports are {} \n backup ports used are {} output directory is {}'.format(address, backup_ports, self.backup_ports_used, self.cc.output_dir))
+        
+        # read in checkpoint of dead port
+        # dataset_name = self.cc.settings["dataloader"]["dataset_name"]
+        # # timestamp = self.cc.settings["general"]["distribution"]["start_time"] # TODO see why this isn't working when i use it in the path
+
+        # path_to_find = os.path.join(self.cc.output_dir, 'distributed', dataset_name, '*/*/checkpoint-' + str(dead_port) + '.yml') 
+        
+        # self._logger.info("expecting name {}".format(path_to_find))
+
+        # checkpoints = glob.glob(path_to_find)
+        # checkpoints.sort()
+        # self._logger.info("all paths are {}".format(", ".join(checkpoints)))
+        # lastCheckpoint = checkpoints[len(checkpoints) - 1]
+        # self._logger.info('found path called {}'.format(lastCheckpoint))
+        # with open(lastCheckpoint, 'r') as config_file:
+        #     checkpoint = yaml.load(config_file, YamlIncludeLoader)
+            
+        #     # self._logger.info('CHECKPOINT IS {}'.format(checkpoint))
+
+        #     discriminators = checkpoint['discriminators']
+        #     generators = checkpoint['generators']
+        #     last_iteration = discriminators['iteration']
+            # get neighbors of dead port by checking the 'is_local' flag in the checkpoint 
+            # neighbors = []
+            # for d in discriminators['individuals']:
+            #     if not d['is_local']:
+            #         formatted = {'id' : d['source']}
+            #         formatted['address'] = address
+            #         formatted['port'] = formatted['id'].split(':')[1]
+            #         neighbors.append(formatted)
+            
+            # # update neighbors in case one client was replaced recently 
+            # neighbors_new = []
+            # for orig in neighbors:
+            #     if orig['port'] in self.original_port_to_backup.keys():
+            #         formatted = {'port' : orig['port']}
+            #         formatted['address'] = address 
+            #         formatted['id'] = address + ':' + formatted['port']
+            #         neighbors_new.append(formatted)
+            #     else:
+            #         neighbors_new.append(orig)
+            # neighbors_new = [orig if orig not in self.original_port_to_backup.keys() else self.original_port_to_backup[orig] for orig in neighbors]
+        last_iteration = self.port_to_iteration[str(dead_port)]
+        neighbors = []
+        for port in self.port_to_neighbours[str(dead_port)]:
+            formatted = {'port' : port}
+            formatted['address'] = address 
+            formatted['id'] = address + ':' + formatted['port']
+            neighbors.append(formatted)
+
+
+        self._logger.info('got the neighbors {} and last iteration {} with n_iterations being {}'.format(neighbors, last_iteration, self.cc.settings['trainer']['n_iterations']))
+        self.cc.settings['general']['distribution']['neighbors'] = neighbors # neighbors_new
+
+        # remove dead port from client nodes list
+        all_clients = self.cc.settings['general']['distribution']['client_nodes']
+        self.cc.settings['general']['distribution']['client_nodes'] = [c for c in all_clients if c['port'] != dead_port]
+        alive_clients = self.cc.settings['general']['distribution']['client_nodes']
+        self._logger.info('alive clients are {}'.format(alive_clients))
+        
+        # pass checkpoint info and neighbor info to client at backup port ~ experiments API call  
+        # loop through backup clients and break look if try works
+        backup_port_used = None
+        for backup_port in backup_ports:
+            # checking that the port hasn't been used before 
+            if backup_port not in self.backup_ports_used:
+                # add address of backup port into list
+                self.cc.settings['general']['distribution']['client_nodes'].append({'address': address, 'port': backup_port})
+
+                api_call_address = 'http://{}:{}/experiments'.format(address, backup_port)
+                self.cc.settings['general']['distribution']['client_id'] = backup_port
+                self.cc.settings['general']['distribution']['dead_client'] = dead_port
+                self.cc.settings['trainer']['iterations_left'] = self.cc.settings['trainer']['n_iterations'] - last_iteration
+                self._logger.info('backup api call to {} with json {}'.format(api_call_address, self.cc.settings))
+                try:
+                    resp = requests.post(api_call_address, json=self.cc.settings)
+                    assert resp.status_code == 200, resp.text
+                    self._logger.info('Successfully started backup experiment on {} with iteration {}'.format(api_call_address, self.cc.settings['trainer']['iterations_left']))
+                    backup_port_used = backup_port
+                    self.backup_ports_used.append(backup_port)
+                    # find and replace dead_port with back up in port_to_neighbours
+                    self.port_to_neighbours[str(backup_port)] = self.port_to_neighbours[str(dead_port)]
+                    del self.port_to_neighbours[str(dead_port)]
+                    for key in self.port_to_neighbours:
+                        if str(dead_port) in self.port_to_neighbours[key]:
+                            self.port_to_neighbours[key].remove(str(dead_port))
+                            self.port_to_neighbours[key].append(str(backup_port))
+
+                    self._logger.info("after replacing updated master list to {}".format(self.port_to_neighbours))
+                    break 
+                except AssertionError as err:
+                    self._logger.critical('Could not start experiment on {}: {}'.format(api_call_address, err))
+                    # change the ports back to contain only alive clients
+                    self.cc.settings['general']['distribution']['client_nodes'] = alive_clients
+                    del self.cc.settings['trainer']['iterations_left']
+        
+        self._logger.info('backup port is {}'.format(backup_port_used))
+
+        if backup_port_used != None: 
+            # tell each of the neighbors of dead port the new port number
+            # make API calls to neighbors with param being the dead port, new_port to replace it with 
+            self.cc.settings['general']['distribution']['dead_client'] = address + ':' + str(dead_port)
+            self.cc.settings['general']['distribution']['replacement_client'] = address + ':' + str(backup_port_used)
+
+            for neighbor in neighbors:
+                api_call_address = 'http://{}:{}/replaceNeighbor'.format(address, neighbor['port'])
+
+                try:
+                    resp = requests.post(api_call_address, json=self.cc.settings)
+                    assert resp.status_code == 200, resp.text
+                    self._logger.info('Successfully replaced dead port {} for neighbor {}'.format(dead_port, neighbor['port']))
+                except AssertionError as err:
+                    self._logger.critical('Could not replace deadport on {}: {}'.format(api_call_address, err))

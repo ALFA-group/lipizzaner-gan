@@ -61,6 +61,7 @@ class NodeClient:
     @staticmethod
     def _load_results(node, timeout_sec):
         address = 'http://{}:{}/experiments'.format(node['address'], node['port'])
+        NodeClient._logger.info('Attempting to load results from {}'.format(address))
         try:
             resp = requests.get(address, timeout=timeout_sec)
             return resp.json()
@@ -102,10 +103,13 @@ class NodeClient:
             try:
                 resp = requests.get(address)
                 assert resp.status_code == 200
-                result = resp.json()
+                result = resp.json() 
                 result['address'] = address
                 result['alive'] = True
+                result['port'] = client['port']
+
                 statuses.append(result)
+
             except Exception:
                 statuses.append({
                     'busy': None,
@@ -116,6 +120,27 @@ class NodeClient:
                 })
 
         return statuses
+
+    
+    def get_client_neighbours(self):
+        client_neighbours = []
+        for client in self.cc.settings['general']['distribution']['client_nodes']:
+            address = 'http://{}:{}/neighbours'.format(client['address'], client['port'])
+            try:
+                resp = requests.get(address, json=self.cc.settings)
+                assert resp.status_code == 200
+                result = resp.json()
+                # result stores neighbours dictionary in 'neighbours' 
+    
+                if 'neighbours' in result:
+                    result['port'] = client['port']
+                    client_neighbours.append(result)
+               
+            except Exception as ex:
+                NodeClient._logger.error('Error loading parameters from endpoint {}: {}.'.format(address, ex))
+    
+
+        return client_neighbours
 
     def stop_running_experiments(self, except_for_clients=None):
         if except_for_clients is None:

@@ -63,8 +63,12 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
             individual.genome.parameters = params
 
     def tournament_selection(self, population, population_type, is_logging=False):
-        assert 0 < self._tournament_size <= len(population.individuals), \
-            "Invalid tournament size: {}".format(self._tournament_size)
+        tournament_size = self._tournament_size 
+
+        if not (0 < self._tournament_size <= len(population.individuals)):
+            tournament_size = len(population.individuals)
+        # assert 0 < self._tournament_size <= len(population.individuals), \
+        #     "Invalid tournament size: {} because population size is {}".format(self._tournament_size, len(population.individuals))
 
         competition_population = Population(individuals=[], default_fitness=population.default_fitness)
         new_population = Population(individuals=[], default_fitness=population.default_fitness,
@@ -74,7 +78,7 @@ class EvolutionaryAlgorithmTrainer(NeuralNetworkTrainer, ABC):
         while len(new_population.individuals) < self._population_size:
             # Randomly select tournament size individual solutions
             # from the population.
-            competitors = random.sample(population.individuals, self._tournament_size)
+            competitors = random.sample(population.individuals, tournament_size) # self._tournament_size)
             competition_population.individuals = competitors
 
             # Rank the selected solutions

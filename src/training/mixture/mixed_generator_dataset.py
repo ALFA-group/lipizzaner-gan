@@ -7,8 +7,14 @@ from helpers.pytorch_helpers import noise
 
 
 class MixedGeneratorDataset(torch.utils.data.Dataset):
-
-    def __init__(self, generator_population, weights, n_samples, mixture_generator_samples_mode, z=None):
+    def __init__(
+        self,
+        generator_population,
+        weights,
+        n_samples,
+        mixture_generator_samples_mode,
+        z=None,
+    ):
         """
         Creates samples from a mixture of generators, with sample probability defined given a random noise vector
         sampled from the latent space by a weights vector
@@ -30,11 +36,11 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
         weights_np = np.asarray(list(weights.values()))
 
         if np.sum(weights_np) != 1:
-            weights_np = weights_np / np.sum(weights_np).astype(float)    # A bit of patching, but normalize it again
+            weights_np = weights_np / np.sum(weights_np).astype(float)  # A bit of patching, but normalize it again
 
-        if mixture_generator_samples_mode == 'independent_probability':
+        if mixture_generator_samples_mode == "independent_probability":
             self.gen_indices = np.random.choice(len(self.individuals), n_samples, p=weights_np.tolist())
-        elif mixture_generator_samples_mode == 'exact_proportion':
+        elif mixture_generator_samples_mode == "exact_proportion":
             # Does not perform checking here if weights_np.tolist() sum up to one
             # There will be some trivial error if prob*n_samples is not integer for prob in weights_np.tolist()
             self.gen_indices = [
@@ -47,16 +53,29 @@ class MixedGeneratorDataset(torch.utils.data.Dataset):
                 "Invalid argument for mixture_generator_samples_mode: {}".format(mixture_generator_samples_mode)
             )
         if z is None:
-            self.z = noise(n_samples, self.individuals[0].genome.data_size)
+            # num_classes = self.individuals[0].genome.num_classes if self.individuals[
+            #                                                             0].genome.num_classes is not None and \
+            #                                                         self.individuals[0].genome.num_classes != 0 else 0
+
+            num_classes = (
+                self.individuals[0].genome.num_classes
+                if hasattr(self.individuals[0].genome, "num_classes") and self.individuals[0].genome.num_classes != 0
+                else 0
+            )
+
+            self.z = noise(n_samples, self.individuals[0].genome.data_size + num_classes)
         else:
             self.z = z
 
-        #HACK: If it's a sequential model, add another dimension to the noise input
+        # HACK: If it's a sequential model, add another dimension to the noise input
         # Also we're currently just using a fixed sequence length for sequence generation; make this
         # able to be specified by the user.
-        if self.individuals[0].genome.name in ["DiscriminatorSequential", "GeneratorSequential"]:
+        if self.individuals[0].genome.name in [
+            "DiscriminatorSequential",
+            "GeneratorSequential",
+        ]:
             sequence_length = 100
-            self.z = self.z.unsqueeze(1).repeat(1,sequence_length,1)
+            self.z = self.z.unsqueeze(1).repeat(1, sequence_length, 1)
 
     def __len__(self):
         return self.n_samples

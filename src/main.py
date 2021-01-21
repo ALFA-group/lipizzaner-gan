@@ -131,6 +131,7 @@ def initialize_settings(args):
     if 'logging' in cc.settings['general'] and cc.settings['general']['logging']['enabled']:
         log_dir = os.path.join(cc.settings['general']['output_dir'], 'log')
         LogHelper.setup(cc.settings['general']['logging']['log_level'], log_dir)
+        _logger.info("set up log_dir to be {}".format(log_dir))
     if cc.is_losswise_enabled:
         losswise.set_api_key(cc.settings['general']['losswise']['api_key'])
 
@@ -141,7 +142,7 @@ def calc_score(args, cc):
     score_calc = ScoreCalculatorFactory.create()
     cc.settings['general']['distribution']['client_id'] = 0
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
-    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes,)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     generator = network_factory.create_generator()
@@ -169,7 +170,7 @@ def generate_samples(args, cc):
     sample_size = args.sample_size
 
     dataloader = cc.create_instance(cc.settings['dataloader']['dataset_name'])
-    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons)
+    network_factory = cc.create_instance(cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes,)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -253,7 +254,9 @@ if __name__ == '__main__':
         if args.distributed:
             if args.master:
                 initialize_settings(args)
-                LipizzanerMaster().run()
+                _logger.info("initializing settings")
+                result = LipizzanerMaster().run()
+                _logger.info("finished running master {}".format(result))
             elif args.client:
                 LipizzanerClient().run()
         else:
@@ -274,3 +277,5 @@ if __name__ == '__main__':
         ensemble_optimization(args, cc)
     else:
         parser.print_help()
+
+    _logger.info("end of main method of master")

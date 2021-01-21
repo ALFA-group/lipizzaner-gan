@@ -19,6 +19,16 @@ class ConfigurationContainer:
         'celeba': ('data.celeba_data_loader', 'CelebADataLoader'),
         'network_traffic': ('data.network_data_loader', 'NetworkDataLoader'),
         'gaussian': ('data.gaussian_data_loader', 'GaussianDataLoader'),
+        "gaussian": ("data.gaussian_data_loader", "GaussianDataLoader"),
+        "labeled_gaussian_circle": (
+            "data.gaussian_2d_data_loader",
+            "LabeledCircularToyDataLoader",
+        ),
+        "labeled_gaussian_grid": ("data.gaussian_2d_data_loader", "LabeledGridToyDataLoader"),
+        "unlabeled_gaussian_circle": (
+            "data.gaussian_2d_data_loader",
+            "UnlabeledCircularToyDataLoader",
+        ),
         'circular': ('data.circular_toy_data_loader', 'CircularToyDataLoader'),
         'grid': ('data.grid_toy_data_loader', 'GridToyDataLoader'),
         'mooc': ('data.mooc_data_loader', 'MOOCDataLoader'),
@@ -35,6 +45,27 @@ class ConfigurationContainer:
         'rnn': ('networks.network_factory', 'RNNFactory'),
         'lipizzaner_gan': ('training.ea.lipizzaner_gan_trainer', 'LipizzanerGANTrainer'),
         'lipizzaner_wgan': ('training.ea.lipizzaner_wgan_trainer', 'LipizzanerWGANTrainer'),
+        "three_layer_perceptron": (
+            "networks.network_factory",
+            "ThreeLayerPerceptronFactory",
+        ),
+        "conditional_gaussian_2d_perceptron": (
+            "networks.network_factory",
+            "Gaussian2DConditionalNetworkFactory",
+        ),
+        "gaussian_2d_perceptron": (
+            "networks.network_factory",
+            "Gaussian2DNetworkFactory",
+        ),
+        "rnn": ("networks.network_factory", "RNNFactory"),
+        "three_layer_perceptron": (
+            "networks.network_factory",
+            "ThreeLayerPerceptronFactory",
+        ),
+        "conditional_gaussian_2d_perceptron": (
+            "networks.network_factory",
+            "Gaussian2DConditionalNetworkFactory",
+        ),
     }
 
     _logger = logging.getLogger(__name__)
@@ -43,10 +74,10 @@ class ConfigurationContainer:
         self.settings = {}
         self._output_dir = None
 
-    def create_instance(self, name, *args):
+    def create_instance(self, name, *args, **kwargs):
         module_name, class_name = self.class_maps[name]
         cls = getattr(importlib.import_module(module_name), class_name)
-        return cls(*args)
+        return cls(*args, **kwargs)
 
     # Encapsulated properties for often used settings
     @property
@@ -54,9 +85,11 @@ class ConfigurationContainer:
         """
         :return: true if losswise sections exist and status is set to enabled
         """
-        return 'losswise' in self.settings['general'] \
-               and 'enabled' in self.settings['general']['losswise'] \
-               and self.settings['general']['losswise']['enabled']
+        return (
+                "losswise" in self.settings["general"]
+                and "enabled" in self.settings["general"]["losswise"]
+                and self.settings["general"]["losswise"]["enabled"]
+        )
 
     @property
     def output_dir(self):
@@ -74,9 +107,12 @@ class ConfigurationContainer:
         self._output_dir = value
 
     def _load_output_dir(self):
-        output = self.settings['general']['output_dir'] if 'output_dir' in self.settings['general'] else 'output'
-        subdir = self.settings['trainer']['method']['name'] if 'method' in self.settings['trainer'] else \
-            self.settings['trainer']['name']
+        output = self.settings["general"]["output_dir"] if "output_dir" in self.settings["general"] else "output"
+        subdir = (
+            self.settings["trainer"]["method"]["name"]
+            if "method" in self.settings["trainer"]
+            else self.settings["trainer"]["name"]
+        )
         directory = os.path.join(output, subdir)
 
         if not os.path.exists(directory):

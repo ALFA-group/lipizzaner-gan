@@ -1,6 +1,7 @@
 from math import sqrt
 from collections import OrderedDict
 
+import logging
 import numpy as np
 
 from distribution.client_environment import ClientEnvironment
@@ -12,21 +13,25 @@ from helpers.network_helpers import is_local_host
 from helpers.population import Population, TYPE_GENERATOR, TYPE_DISCRIMINATOR
 from helpers.singleton import Singleton
 
-
-@Singleton
+_logger = logging.getLogger(__name__)
+# @Singleton
 class Neighbourhood:
 
-    def __init__(self):
+    def __init__(self, neighbors=None):
         self.cc = ConfigurationContainer.instance()
         self.concurrent_populations = ConcurrentPopulations.instance()
 
         dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
-        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
+        network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons, num_classes=dataloader.num_classes)
         self.node_client = NodeClient(network_factory)
 
         self.grid_size, self.grid_position, self.local_node = self._load_topology_details()
         self.cell_number = self._load_cell_number()
-        self.neighbours = self._adjacent_cells()
+        if neighbors != None:
+            self.neighbours = neighbors
+            _logger.info('created Neighborhood with the neighbors {}'.format(neighbors))
+        else:
+            self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]
 
         self.mixture_weights_generators = self._init_mixture_weights()
@@ -49,6 +54,8 @@ class Neighbourhood:
     @property
     def all_generators(self):
         neighbour_individuals = self.node_client.get_all_generators(self.neighbours)
+        _logger.info('NEIGHBORHOOD: neighbors are {} \n individuals after get all are {}'.format(self.neighbours, [indiv.source for indiv in neighbour_individuals]))
+        local_population = self.local_generators
         local_population = self.local_generators
 
         return Population(individuals=neighbour_individuals + local_population.individuals,
@@ -94,11 +101,32 @@ class Neighbourhood:
     def best_discriminator_parameters(self):
         return self.node_client.load_best_discriminators_from_api(self.neighbours + [self.local_node])
 
+    def replace_neighbor(self, dead_client, replacement_client):
+        _logger.info('Neighborhood class: neighbors were {}'.format(self.neighbours)) 
+        for neighbor in self.neighbours:
+            if neighbor['id'] == dead_client:
+                neighbor['id'] = replacement_client
+                neighbor['port'] = replacement_client.split(':')[1]
+                break 
+        _logger.info('Neighborhood class: neighbors changed to {}'.format(self.neighbours)) 
+        
+        _logger.info('Neighborhood class: mixture weights generator were {} and \n discriminator were {}'.format(self.mixture_weights_generators, self.mixture_weights_discriminators))
+        # replace dead client in mixture weights of generators if necessary
+        if dead_client in self.mixture_weights_generators:
+            weight = self.mixture_weights_generators[dead_client]
+            self.mixture_weights_generators[replacement_client] = weight
+            del self.mixture_weights_generators[dead_client]
+        _logger.info('Neighborhood class: mixture weights generator changed to {}'.format(self.mixture_weights_generators))
+    
+    def get_neighbours(self):
+        _logger.info("Neighborhood class: get neighbours has {}".format(self.neighbours))
+        return self.neighbours
+
     def _load_topology_details(self):
         client_nodes = self._all_nodes_on_grid()
 
         if len(client_nodes) != 1 and not is_square(len(client_nodes)):
-            raise Exception('Provide either one client node, or a square number of cells (to create a square grid).')
+            raise Exception('Provide either one client node, or a square number of cells (to create a square grid). client nodes are {}'.format(client_nodes))
 
         local_port = ClientEnvironment.port
         matching_nodes = [node for node in client_nodes if
@@ -141,6 +169,7 @@ class Neighbourhood:
         mask = np.zeros((dim, dim))
         mask[tuple(neighbours(x, y).T)] = 1
 
+        # _logger.info('adjacent cell format {}'.format(nodes[mask == 1].tolist()))
         return nodes[mask == 1].tolist()
 
     def _all_nodes_on_grid(self):
