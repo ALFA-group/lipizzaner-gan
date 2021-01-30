@@ -230,6 +230,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 all_discriminators,
                 fitness_samples,
                 self.fitness_mode,
+                alpha=alpha,
+                beta=beta,
                 diverse_fitness=diverse_fitness
             )
             self.evaluate_fitness(
@@ -239,8 +241,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 self.fitness_mode,
                 labels=fitness_labels,
                 logger=self._logger,
-                alpha=alpha,
-                beta=beta,
                 iter=iteration,
                 log_class_distribution=True,
             )
@@ -327,6 +327,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     all_discriminators,
                     fitness_samples,
                     self.fitness_mode,
+                    alpha=alpha,
+                    beta=beta,
                     diverse_fitness=diverse_fitness
                 )
                 self.evaluate_fitness(
@@ -335,8 +337,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     fitness_samples,
                     self.fitness_mode,
                     labels=fitness_labels,
-                    alpha=alpha,
-                    beta=beta,
                     iter=iteration,
                 )
                 self.concurrent_populations.lock()
@@ -368,6 +368,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     all_discriminators,
                     fitness_samples,
                     self.fitness_mode,
+                    alpha=alpha,
+                    beta=beta,
                     diverse_fitness=diverse_fitness
                 )
                 self.evaluate_fitness(
@@ -376,8 +378,6 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     fitness_samples,
                     self.fitness_mode,
                     labels=fitness_labels,
-                    alpha=alpha,
-                    beta=beta,
                     iter=iteration,
                 )
 
@@ -747,7 +747,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             for individual_defender in population_defender.individuals:
                 if labels is None:
                     fitness_attacker = float(
-                        individual_attacker.genome.compute_loss_against(individual_defender.genome, input_var, diverse_fitness=diverse_fitness)[0]
+                        individual_attacker.genome.compute_loss_against(individual_defender.genome, input_var)[0]
                     )
                 else:
                     fitness_attacker = float(
