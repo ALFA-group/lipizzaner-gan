@@ -2,16 +2,32 @@ import logging
 
 import numpy as np
 import torch
+import torchvision.transforms as transforms
 from helpers.configuration_container import ConfigurationContainer
 from prdc import compute_prdc
+from torch import nn
+from torchvision.models import vgg16
 from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.score_calculator import ScoreCalculator
+
+transform = transforms.Compose([transforms.Resize(224), transforms.ToTensor])
 
 
 class PRDCCalculator(ScoreCalculator):
     _logger = logging.getLogger(__name__)
 
-    def __init__(self, imgs_original, batch_size=64, dims=10, n_samples=10000, cuda=True, verbose=False, nearest_k=5):
+    def __init__(
+        self,
+        imgs_original,
+        batch_size=64,
+        dims=64,
+        n_samples=10000,
+        cuda=True,
+        verbose=False,
+        nearest_k=5,
+        use_random_vgg=True,
+        **kwargs
+    ):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10
         :param batch_size: Batch size that will be used, 64 is recommended.
@@ -27,9 +43,9 @@ class PRDCCalculator(ScoreCalculator):
         self.cuda = cuda
         self.verbose = verbose
         self.dataset = self.cc.settings["dataloader"]["dataset_name"]
-        self.network = self.cc.settings["network"]["name"]
         self.nearest_k = nearest_k
         self.dims = dims  # For MNIST the dimension of feature map is 10
+        self.use_random_vgg = use_random_vgg
 
     def calculate(self, imgs, exact=True):
         """
@@ -39,13 +55,12 @@ class PRDCCalculator(ScoreCalculator):
         :return: Harmonic mean of Density and Coverage and dict(PRDC)
         """
         model = None
-        if self.dataset == "mnist":  # Gray dataset
+        if self.dataset == "mnist" and not self.use_random_vgg:  # Gray dataset
+            self.dim = 10
             model = MNISTCnn()
             model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
         elif self.dataset not in ["unlabeled_gaussian_grid", "unlabeled_gaussian_circle"]:  # Other RGB dataset
-            # TODO: Add Dynamic definition of ConvNet.
-            #       With matching input size to dataset and output size to self.dims.
-            raise Exception('Datset {} is not supported. Use "MNIST".'.format(self.dataset))
+            model = randomVGG16()
 
         if model and self.cuda:
             model.cuda()
@@ -115,6 +130,9 @@ class PRDCCalculator(ScoreCalculator):
                         # might be generated using CUDA and in torch.cuda.FloatTensor
                         batch = batch.cpu()
 
+                    if self.use_random_vgg:
+                        batch = transforms(batch)
+
                     pred = model(batch)[0]
 
                     pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
@@ -130,3 +148,11 @@ class PRDCCalculator(ScoreCalculator):
     @property
     def is_reversed(self):
         return False
+
+
+class randomVGG16(vgg16):
+    def __init__(self) -> None:
+        super(randomVGG16, self).__init__()
+        # Change the fc2 from (4096, 4096) to (4096, 64). Remove the last fc layer.
+        self.classifier = nn.Sequential(*list(self.classifier.children())[:-4], nn.Linear(4096, 64))
+        self._initialize_weights()
