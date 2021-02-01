@@ -3,9 +3,11 @@ import os
 from helpers.configuration_container import ConfigurationContainer
 from helpers.ignore_label_dataset import IgnoreLabelDataset
 from torchvision import transforms
+from training.mixture.combined_score import CombinedCalculator
 from training.mixture.constant_score import ConstantCalculator
 from training.mixture.fid_score import FIDCalculator
-from training.mixture.gaussian_score import GaussianToyDistancesCalculator1D, GaussianToyDistancesCalculator2D
+from training.mixture.gaussian_score import (GaussianToyDistancesCalculator1D,
+                                             GaussianToyDistancesCalculator2D)
 from training.mixture.inception_score import InceptionCalculator
 from training.mixture.prdc_score import PRDCCalculator
 
@@ -73,6 +75,32 @@ class ScoreCalculatorFactory:
             dataset = dataloader.dataset(**dataset_params)
 
             return PRDCCalculator(
+                IgnoreLabelDataset(dataset),
+                cuda=cc.settings["master"].get("cuda", False),
+                n_samples=settings["score"].get("score_sample_size", 10000),
+                nearest_k=settings["score"].get("nearest_k", 5),
+            )
+        elif score_type == "fid&prdc":
+            transforms_op = [
+                transforms.ToTensor(),
+                transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
+            ]
+            dataset_name = cc.settings["dataloader"]["dataset_name"]
+            if dataset_name == "mnist":
+                if cc.settings["network"]["name"] == "ssgan_convolutional_mnist":
+                    transforms_op = [transforms.Resize([64, 64])] + transforms_op
+            elif dataset_name != "mnist_fashion":
+                # Need to reshape for RGB dataset as required by pre-trained InceptionV3
+                transforms_op = [transforms.Resize([64, 64])] + transforms_op
+
+            dataset_params = {
+                "root": os.path.join(cc.settings["general"]["output_dir"], "data"),
+                "train": True,
+                "transform": transforms.Compose(transforms_op),
+            }
+            dataset = dataloader.dataset(**dataset_params)
+
+            return CombinedCalculator(
                 IgnoreLabelDataset(dataset),
                 cuda=cc.settings["master"].get("cuda", False),
                 n_samples=settings["score"].get("score_sample_size", 10000),
