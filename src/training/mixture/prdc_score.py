@@ -59,7 +59,10 @@ class PRDCCalculator(ScoreCalculator):
             model = MNISTCnn()
             model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
         elif self.dataset not in ["unlabeled_gaussian_grid", "unlabeled_gaussian_circle"]:  # Other RGB dataset
-            model = randomVGG16()
+            model = vgg16()
+            # Change the fc2 from (4096, 4096) to (4096, 64). Remove the last fc layer.
+            model.classifier = nn.Sequential(*list(model.classifier.children())[:-4], nn.Linear(4096, 64))
+            model._initialize_weights()
 
         if model and self.cuda:
             model.cuda()
@@ -147,11 +150,3 @@ class PRDCCalculator(ScoreCalculator):
     @property
     def is_reversed(self):
         return False
-
-
-class randomVGG16(vgg16):
-    def __init__(self) -> None:
-        super(randomVGG16, self).__init__()
-        # Change the fc2 from (4096, 4096) to (4096, 64). Remove the last fc layer.
-        self.classifier = nn.Sequential(*list(self.classifier.children())[:-4], nn.Linear(4096, 64))
-        self._initialize_weights()
