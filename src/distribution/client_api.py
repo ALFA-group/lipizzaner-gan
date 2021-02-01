@@ -2,22 +2,23 @@ import json
 import logging
 import os
 import traceback
-from threading import Thread, Lock, Event
+from threading import Event, Lock, Thread
 
-from flask import Flask, request, Response, jsonify
-
-from distribution.client_environment import ClientEnvironment
-from distribution.concurrent_populations import ConcurrentPopulations
-from distribution.neighbourhood import Neighbourhood
-from distribution.state_encoder import StateEncoder
+from flask import Flask, Response, jsonify, request
 from helpers.configuration_container import ConfigurationContainer
 from helpers.log_helper import LogHelper
 from helpers.or_event import or_event
 from lipizzaner import Lipizzaner
 
+from distribution.client_environment import ClientEnvironment
+from distribution.concurrent_populations import ConcurrentPopulations
+from distribution.neighbourhood import Neighbourhood
+from distribution.state_encoder import StateEncoder
+
 
 class ClientAPI:
     app = Flask(__name__)
+    app.config["JSONIFY_PRETTYPRINT_REGULAR"] = False
     is_busy = False
     is_finished = False
 

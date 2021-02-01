@@ -50,7 +50,7 @@ class CombinedCalculator(ScoreCalculator):
 
     def calculate(self, imgs, exact=True):
         fid, tvd = self.fid_calculator.calculate(imgs)
-        _, prdc_dict = self.fid_calculator.calculate(imgs)
+        _, prdc_dict = self.prdc_calculator.calculate(imgs)
         precision = prdc_dict["precision"]
         recall = prdc_dict["recall"]
         density = prdc_dict["density"]
