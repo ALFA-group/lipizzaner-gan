@@ -68,6 +68,34 @@ class NodeClient:
             NodeClient._logger.error('Error loading results from {}: {}.'.format(address, ex))
             return None
 
+    @staticmethod
+    def _load_scores(node, timeout_sec):
+        address = 'http://{}:{}/scores'.format(node['address'], node['port'])
+        try:
+            resp = requests.get(address, timeout=timeout_sec)
+            return resp.json()
+        except Exception as ex:
+            NodeClient._logger.error('Error loading results from {}: {}.'.format(address, ex))
+            return None
+
+    def gather_scores(self, nodes, timeout_sec=TIMEOUT_SEC_DEFAULT):
+        """
+        Gathers the final score from each client node, and therefore finishes their experiment runs.
+        :return: A list of result tuples: [(node, generator_population, discriminator_population)]
+        """
+
+        results = []
+        with ThreadPoolExecutor(max_workers=MAX_HTTP_CLIENT_THREADS) as executor:
+
+            futures = {executor.submit(self._load_scores, node, timeout_sec): node for node in nodes}
+            for future in as_completed(futures):
+                # Result has the form { 'score': .. }
+                node = futures[future]
+                result = future.result()
+                if result is not None:
+                    results.append((node, result['score']))
+        return results
+
     def gather_results(self, nodes, timeout_sec=TIMEOUT_SEC_DEFAULT):
         """
         Gathers the final results from each client node, and therefore finishes their experiment runs.

@@ -6,9 +6,8 @@
 #BSUB -R "span[ptile=4]"
 #BSUB -gpu "num=4"
 #BSUB -q "normal"
-#BSUB -x
 
-HOME2=/nobackup/users/ehemberg
+HOME2=/nobackup/users/floresd
 PYTHON_VIRTUAL_ENVIRONMENT=lipi
 CONDA_ROOT=$HOME2/anaconda3
 source ${CONDA_ROOT}/etc/profile.d/conda.sh

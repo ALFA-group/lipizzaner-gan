@@ -19,8 +19,15 @@ class Neighbourhood:
     def __init__(self):
         self.cc = ConfigurationContainer.instance()
         self.concurrent_populations = ConcurrentPopulations.instance()
-
-        dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
+        dataset_name = self.cc.settings['dataloader']['dataset_name']
+        if dataset_name == 'mnist_labels':
+            self.avail_labels = self.cc.settings['dataloader']['labels']
+            dataloader = self.cc.create_instance(dataset_name, self.avail_labels, self.cc.settings['dataloader']['labels_per_cell'])
+            self.chosen_labels = dataloader.labels
+        else:
+            dataloader = self.cc.create_instance(self.cc.settings['dataloader']['dataset_name'])
+            self.avail_labels = range(9)
+            self.chosen_labels = range(9)
         network_factory = self.cc.create_instance(self.cc.settings['network']['name'], dataloader.n_input_neurons)
         self.node_client = NodeClient(network_factory)
 
@@ -28,6 +35,7 @@ class Neighbourhood:
         self.cell_number = self._load_cell_number()
         self.neighbours = self._adjacent_cells()
         self.all_nodes = self.neighbours + [self.local_node]
+        self.score = float('-inf')
 
         self.mixture_weights_generators = self._init_mixture_weights()
         if self.cc.settings['trainer']['name'] == 'with_disc_mixture_wgan' \
@@ -97,8 +105,10 @@ class Neighbourhood:
     def _load_topology_details(self):
         client_nodes = self._all_nodes_on_grid()
 
+        """
         if len(client_nodes) != 1 and not is_square(len(client_nodes)):
             raise Exception('Provide either one client node, or a square number of cells (to create a square grid).')
+        """
 
         local_port = ClientEnvironment.port
         matching_nodes = [node for node in client_nodes if
@@ -126,19 +136,27 @@ class Neighbourhood:
         for node in nodes:
             node['id'] = '{}:{}'.format(node['address'], node['port'])
 
-        dim = int(round(sqrt(len(nodes))))
+        width = int(round(sqrt(len(nodes))))
+        height = len(nodes)//width
         x, y = self.grid_position
-        nodes = np.reshape(nodes, (-1, dim))
+        nodes = np.reshape(nodes, (-1, height))
 
         def neighbours(x, y):
             indices = np.array([(x - 1, y), (x, y - 1), (x + 1, y), (x, y + 1)])
             # Start at 0 when x or y is out of bounds
-            indices[indices >= dim] = 0
-            indices[indices == -1] = dim - 1
+            for idx in indices:
+                if idx[0] >= width:
+                    idx[0] = 0
+                elif idx[0] == -1:
+                    idx[0] = width - 1
+                if idx[1] >= height:
+                    idx[1] = 0
+                elif idx[1] == -1:
+                    idx[1] = height - 1
             # Remove duplicates (needed for smaller grids), and convert to (x,y) tuples
             return np.array([tuple(row) for row in np.unique(indices, axis=0)])
 
-        mask = np.zeros((dim, dim))
+        mask = np.zeros((width, height))
         mask[tuple(neighbours(x, y).T)] = 1
 
         return nodes[mask == 1].tolist()
