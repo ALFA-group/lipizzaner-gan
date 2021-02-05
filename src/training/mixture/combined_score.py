@@ -29,6 +29,7 @@ class CombinedCalculator(ScoreCalculator):
         :param n_samples: In the paper, min. 10k samples are suggested.
         :param verbose: Verbose logging
         """
+        dims = dims if not use_random_vgg else 10
         self.fid_calculator = FIDCalculator(
             imgs_original,
             batch_size=batch_size,
