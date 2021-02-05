@@ -21,14 +21,13 @@ import logging
 
 import numpy as np
 import torch
+from helpers.configuration_container import ConfigurationContainer
 from scipy import linalg
 from torch.autograd import Variable
 from torch.nn.functional import adaptive_avg_pool2d
-
-from helpers.configuration_container import ConfigurationContainer
+from training.mixture.fid_inception import InceptionV3
 from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.fid_mnist_conv import MNISTConvCnn
-from training.mixture.fid_inception import InceptionV3
 from training.mixture.score_calculator import ScoreCalculator
 
 
@@ -37,7 +36,13 @@ class FIDCalculator(ScoreCalculator):
     _logger = logging.getLogger(__name__)
 
     def __init__(
-        self, imgs_original, batch_size=64, dims=2048, n_samples=10000, cuda=True, verbose=False,
+        self,
+        imgs_original,
+        batch_size=64,
+        dims=2048,
+        n_samples=10000,
+        cuda=True,
+        verbose=False,
     ):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10
@@ -123,32 +128,35 @@ class FIDCalculator(ScoreCalculator):
         n_used_imgs = n_batches * self.batch_size
 
         pred_arr = np.empty((n_used_imgs, self.dims))
-        for i in range(n_batches):
-            if self.verbose:
-                print(
-                    "\rPropagating batch %d/%d" % (i + 1, n_batches), end="", flush=True,
-                )
-            start = i * self.batch_size
-            end = start + self.batch_size
+        with torch.no_grad():
+            for i in range(n_batches):
+                if self.verbose:
+                    print(
+                        "\rPropagating batch %d/%d" % (i + 1, n_batches),
+                        end="",
+                        flush=True,
+                    )
+                start = i * self.batch_size
+                end = start + self.batch_size
 
-            batch = torch.stack(images[start:end])
-            batch = Variable(batch, volatile=True)
-            if self.cuda:
-                batch = batch.cuda()
-            else:
-                # .cpu() is required to convert to torch.FloatTensor because image
-                # might be generated using CUDA and in torch.cuda.FloatTensor
-                batch = batch.cpu()
+                batch = torch.stack(images[start:end])
+                batch = torch.tensor(batch)
+                if self.cuda:
+                    batch = batch.cuda()
+                else:
+                    # .cpu() is required to convert to torch.FloatTensor because image
+                    # might be generated using CUDA and in torch.cuda.FloatTensor
+                    batch = batch.cpu()
 
-            pred = model(batch)[0]
+                pred = model(batch)[0]
 
-            if self.dataset != "mnist" and self.dataset != "mnist_fashion":
-                # If model output is not scalar, apply global spatial average pooling.
-                # This happens if you choose a dimensionality not equal 2048.
-                if pred.shape[2] != 1 or pred.shape[3] != 1:
-                    pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
+                if self.dataset != "mnist" and self.dataset != "mnist_fashion":
+                    # If model output is not scalar, apply global spatial average pooling.
+                    # This happens if you choose a dimensionality not equal 2048.
+                    if pred.shape[2] != 1 or pred.shape[3] != 1:
+                        pred = adaptive_avg_pool2d(pred, output_size=(1, 1))
 
-            pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
+                pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
         if self.verbose:
             print(" done")

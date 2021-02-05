@@ -141,7 +141,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
     def train(self, n_iterations, stop_event=None):
         loaded = self.dataloader.load()
-        
+
         alpha = self.neighbourhood.alpha
         beta = self.neighbourhood.beta
 
@@ -381,7 +381,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     iter=iteration,
                 )
 
-            self.compute_mixture_generative_score()
+            self.compute_mixture_generative_score(iteration)
 
             stop_time = time()
 
@@ -795,7 +795,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
             if discriminator.name == "SemiSupervisedDiscriminator" and accuracy is not None:
                 logger.info(f"Iteration {iter},  Label Prediction Accuracy: {100 * accuracy}% ")
 
-    def compute_mixture_generative_score(self):
+    def compute_mixture_generative_score(self, iteration):
         # Not necessary for single-cell grids, as mixture must always be [1]
         self._logger.info("Calculating score.")
         best_generators = self.neighbourhood.best_generators
@@ -808,7 +808,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                     self.score_sample_size,
                     self.cc.settings["trainer"]["mixture_generator_samples_mode"],
                 )
-                self.score = self.score_calc.calculate(dataset)[0]
+                self.score = self.score_calc.calculate(dataset)
+                self._logger.info(f"Score for iteration {iteration}: {self.score} ")
+
 
     def generate_random_fitness_samples(self, fitness_sample_size):
         """

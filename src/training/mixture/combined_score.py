@@ -19,7 +19,7 @@ class CombinedCalculator(ScoreCalculator):
         cuda=True,
         verbose=False,
         nearest_k=5,
-        use_random_vgg=True,
+        use_random_vgg=False,
     ):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10

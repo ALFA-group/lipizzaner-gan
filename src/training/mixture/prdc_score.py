@@ -10,7 +10,7 @@ from torchvision.models import vgg16
 from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.score_calculator import ScoreCalculator
 
-transform = transforms.Compose([transforms.Resize(224), transforms.ToTensor])
+transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize(224), transforms.ToTensor()])
 
 
 class PRDCCalculator(ScoreCalculator):
@@ -123,7 +123,13 @@ class PRDCCalculator(ScoreCalculator):
                     start = i * self.batch_size
                     end = start + self.batch_size
 
-                    batch = torch.stack(final_images[start:end])
+                    batch = final_images[start:end]
+                    if self.use_random_vgg:
+                        batch = []
+                        for img in final_images[start:end]:
+                            batch.append(transform(img))
+
+                    batch = torch.stack(batch)
                     batch = torch.tensor(batch)
                     if self.cuda:
                         batch = batch.cuda()
@@ -131,9 +137,6 @@ class PRDCCalculator(ScoreCalculator):
                         # .cpu() is required to convert to torch.FloatTensor because image
                         # might be generated using CUDA and in torch.cuda.FloatTensor
                         batch = batch.cpu()
-
-                    if self.use_random_vgg:
-                        batch = transform(batch)
 
                     pred = model(batch)[0]
 
