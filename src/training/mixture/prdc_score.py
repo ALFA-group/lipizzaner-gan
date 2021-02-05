@@ -133,7 +133,7 @@ class PRDCCalculator(ScoreCalculator):
                         batch = batch.cpu()
 
                     if self.use_random_vgg:
-                        batch = transforms(batch)
+                        batch = transform(batch)
 
                     pred = model(batch)[0]
 
