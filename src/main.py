@@ -62,6 +62,12 @@ def create_parser():
         action="store_true",
         help="Start as long-running client node. Waits for master " "to send experiment configuration, and runs them.",
     )
+    group_train.add_argument(
+        "--port",
+        type=int,
+        default=None,
+        help="Port to be used by worker.",
+    )
     group_distributed = group_train.add_mutually_exclusive_group(required="--distributed" in sys.argv)
     group_distributed.add_argument(
         "--master",
@@ -71,7 +77,7 @@ def create_parser():
     group_distributed.add_argument(
         "--client",
         action="store_true",
-        help="Start as long-running client node. Waits for master " "to send experiment configuration, and runs them.",
+        help="Start as long-running client node. Waits for master " "to send experiment configuration, and runs them."
     )
     add_config_file(group_train, "--master" in sys.argv or "--distributed" not in sys.argv)
 
@@ -396,7 +402,7 @@ if __name__ == "__main__":
                 initialize_settings(args)
                 LipizzanerMaster().run()
             elif args.client:
-                LipizzanerClient().run()
+                LipizzanerClient().run(args.port)
         else:
             cc = initialize_settings(args)
             lipizzaner = Lipizzaner()

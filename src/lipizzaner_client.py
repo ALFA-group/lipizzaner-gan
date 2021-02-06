@@ -7,11 +7,12 @@ MAX_CLIENT_PORT = 5500
 
 
 class LipizzanerClient:
-    def run(self):
-        port = DEFAULT_CLIENT_PORT
-        while not is_port_open(port):
-            port += 1
-            if port == MAX_CLIENT_PORT:
-                raise IOError("No free port between {} and {} available.".format(DEFAULT_CLIENT_PORT, MAX_CLIENT_PORT))
+    def run(self, port=None):
+        if port is None:
+            port = DEFAULT_CLIENT_PORT
+            while not is_port_open(port):
+                port += 1
+                if port == MAX_CLIENT_PORT:
+                    raise IOError("No free port between {} and {} available.".format(DEFAULT_CLIENT_PORT, MAX_CLIENT_PORT))
         ClientEnvironment.port = port
         ClientAPI().listen(port)
