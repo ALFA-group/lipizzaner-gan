@@ -18,15 +18,14 @@ trainer:
     score:
       enabled: True
       type: fid&prdc
-      score_sample_size: 1000
-      cuda: True
-      nearest_k: 5
+      score_sample_size: 10000
+      cuda: False
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average # worse, best, average
       alpha: 0.7
       beta: 0.3
-      diverse_fitness: egan
+      diverse_fitness: True
 dataloader:
   dataset_name: mnist
   use_batch: True
@@ -40,5 +39,5 @@ master:
   calculate_score: True
   # Same amount of data as original CIFAR contains
   score_sample_size: 50000
-  cuda: True
+  cuda: False
 general: !include ../general.yml

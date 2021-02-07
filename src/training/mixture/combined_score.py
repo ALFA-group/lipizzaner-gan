@@ -19,7 +19,7 @@ class CombinedCalculator(ScoreCalculator):
         cuda=True,
         verbose=False,
         nearest_k=5,
-        use_random_vgg=False,
+        use_random_vgg=True,
     ):
         """
         :param imgs_original: The original dataset, e.g. torcvision.datasets.CIFAR10
@@ -29,7 +29,7 @@ class CombinedCalculator(ScoreCalculator):
         :param n_samples: In the paper, min. 10k samples are suggested.
         :param verbose: Verbose logging
         """
-        dims = dims if not use_random_vgg else 10
+        dims = dims if use_random_vgg else 10
         self.fid_calculator = FIDCalculator(
             imgs_original,
             batch_size=batch_size,

@@ -1,5 +1,6 @@
 import logging
 
+import cv2
 import numpy as np
 import torch
 import torchvision.transforms as transforms
@@ -9,7 +10,6 @@ from torch import nn
 from torchvision.models import vgg16
 from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.score_calculator import ScoreCalculator
-
 transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize(224), transforms.ToTensor()])
 
 
@@ -55,7 +55,7 @@ class PRDCCalculator(ScoreCalculator):
         """
         model = None
         if self.dataset == "mnist" and not self.use_random_vgg:  # Gray dataset
-            self.dim = 10
+            self.dims = 10
             model = MNISTCnn()
             model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
         elif self.dataset not in ["unlabeled_gaussian_grid", "unlabeled_gaussian_circle"]:  # Other RGB dataset
@@ -125,9 +125,10 @@ class PRDCCalculator(ScoreCalculator):
 
                     batch = final_images[start:end]
                     if self.use_random_vgg:
-                        batch = []
-                        for img in final_images[start:end]:
-                            batch.append(transform(img))
+                       batch = []
+                       for img in final_images[start:end]:
+                           img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
+                           batch.append(transform(img))
 
                     batch = torch.stack(batch)
                     batch = torch.tensor(batch)
