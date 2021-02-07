@@ -6,8 +6,8 @@ logging:
   print_discriminator: False
 losswise:
   enabled: False
-  api_key: ZFQFFZEBV
-output_dir: ./output
+  api_key: 
+output_dir: !ENV ${OUTPUT_FOLDER}
 distribution:
   auto_discover: False
   master_node:

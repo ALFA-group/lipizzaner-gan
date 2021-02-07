@@ -16,7 +16,7 @@ from helpers.CustomArgumentParser import CustomArgumentParser
 from helpers.individual import Individual
 from helpers.log_helper import LogHelper
 from helpers.population import Population
-from helpers.yaml_include_loader import YamlIncludeLoader
+from helpers.yaml_include_loader import YamlIncludeEnvLoader
 from lipizzaner import Lipizzaner
 from lipizzaner_client import LipizzanerClient
 from lipizzaner_master import LipizzanerMaster, GENERATOR_PREFIX
@@ -28,7 +28,7 @@ _logger = logging.getLogger(__name__)
 
 def read_settings(config_filepath):
     with open(config_filepath, "r") as config_file:
-        return yaml.load(config_file, YamlIncludeLoader)
+        return yaml.load(config_file, YamlIncludeEnvLoader)
 
 
 def create_parser():
