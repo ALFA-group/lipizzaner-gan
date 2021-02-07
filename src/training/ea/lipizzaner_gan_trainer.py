@@ -162,8 +162,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 self.neighbourhood.scheduler is not None
                 and iteration in self.neighbourhood.scheduler
             ):
-                alpha = self.neighbourhood.scheduler[iteration]["alpha"]
-                beta = self.neighbourhood.scheduler[iteration]["beta"]
+                alpha = self.neighbourhood.scheduler[str(iteration)]["alpha"]
+                beta = self.neighbourhood.scheduler[str(iteration)]["beta"]
 
             all_generators = self.neighbourhood.all_generators
             all_discriminators = self.neighbourhood.all_discriminators

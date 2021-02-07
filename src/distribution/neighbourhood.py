@@ -32,8 +32,8 @@ class Neighbourhood:
 
         self.scheduler = self.cc.settings["trainer"]["params"]["fitness"].get("scheduler", None)
         if self.scheduler is not None:
-            self.alpha= self.scheduler[0]['alpha']
-            self.beta = self.scheduler[0]['beta']
+            self.alpha= self.scheduler['0']['alpha']
+            self.beta = self.scheduler['0']['beta']
         else:
             self.alpha = self.cc.settings["trainer"]["params"]["fitness"].get("alpha", None)
             self.beta = self.cc.settings["trainer"]["params"]["fitness"].get("beta", None)

@@ -175,7 +175,7 @@ class GeneratorNet(CompetetiveNet):
             output_loss = self.loss_function(real_outputs, real_labels) + self.loss_function(fake_outputs, fake_labels)
 
             gradients = torch.autograd.grad(outputs=output_loss, inputs=opponent.net.parameters(),
-                                        grad_outputs=torch.ones(output_loss.size()).to(torch.device("cpu")),
+                                        grad_outputs=to_pytorch_variable(torch.ones(output_loss.size())),
                                         create_graph=True, retain_graph=True, only_inputs=True)
             with torch.no_grad():
                 allgrad = gradients[0].view(-1)
