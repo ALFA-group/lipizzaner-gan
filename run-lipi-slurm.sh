@@ -20,8 +20,8 @@ CONFIG="configuration/lipizzaner-gan/mnist_diverse.yml"
 mkdir $OUTPUT_FOLDER
 cp -r ./output/data $OUTPUT_FOLDER
 cp -r ./output/networks $OUTPUT_FOLDER
-cp -r ./output/log $OUTPUT_FOLDER
-cp -r ./output/lipizzaner_gan $OUTPUT_FOLDER
+mkdir $OUTPUT_FOLDER/log
+mkdir $OUTPUT_FOLDER/lipizzaner_gan 
 cp $CONFIG $OUTPUT_FOLDER/config.yml
 
 nvidia-smi -l 60 2>&1 | tee $OUTPUT_FOLDER/nvidiasmi_output.txt &
@@ -32,3 +32,6 @@ python main.py train --distributed --client --port 5001 2>&1 | tee $OUTPUT_FOLDE
 python main.py train --distributed --client --port 5002 2>&1 | tee $OUTPUT_FOLDER/client3_output.txt & sleep 10;
 python main.py train --distributed --client --port 5003 2>&1 | tee $OUTPUT_FOLDER/client4_output.txt & sleep 20;
 python main.py train --distributed --master -f $CONFIG 2>&1 | tee $OUTPUT_FOLDER/master_output.txt
+
+rm -r $OUTPUT_FOLDER/data
+rm -r $OUTPUT_FOLDER/networks
