@@ -1,6 +1,6 @@
 import logging
 
-import cv2
+# import cv2
 import numpy as np
 import torch
 import torchvision.transforms as transforms
@@ -10,8 +10,13 @@ from torch import nn
 from torchvision.models import vgg16
 from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.score_calculator import ScoreCalculator
-transform = transforms.Compose([transforms.ToPILImage(), transforms.Resize(224), transforms.ToTensor()])
 
+
+class ToRGB(object):
+    def __call__(self, image):
+        return image.convert("RGB")
+
+transform = transforms.Compose([transforms.ToPILImage(), ToRGB(), transforms.Resize(224), transforms.ToTensor()])
 
 class PRDCCalculator(ScoreCalculator):
     _logger = logging.getLogger(__name__)
@@ -19,7 +24,7 @@ class PRDCCalculator(ScoreCalculator):
     def __init__(
         self,
         imgs_original,
-        batch_size=64,
+        batch_size=32,
         dims=64,
         n_samples=10000,
         cuda=True,
@@ -82,11 +87,6 @@ class PRDCCalculator(ScoreCalculator):
         -- images      : Numpy array of dimension (n_images, 3, hi, wi). The values
                          must lie between 0 and 1.
         -- model       : Instance of inception model
-        -- batch_size  : the images numpy array is split into batches with
-                         batch size batch_size. A reasonable batch size depends
-                         on the hardware.
-        -- dims        : Dimensionality of features returned by Inception
-
         Returns:
         -- A numpy array of dimension (num images, dims) that contains the
            activations of the given tensor when feeding inception with the
@@ -123,11 +123,10 @@ class PRDCCalculator(ScoreCalculator):
                     start = i * self.batch_size
                     end = start + self.batch_size
 
-                    batch = final_images[start:end]
+                    batch = final_images[start:end].cpu()
                     if self.use_random_vgg:
                        batch = []
                        for img in final_images[start:end]:
-                           img = cv2.cvtColor(img,cv2.COLOR_GRAY2RGB)
                            batch.append(transform(img))
 
                     batch = torch.stack(batch)
