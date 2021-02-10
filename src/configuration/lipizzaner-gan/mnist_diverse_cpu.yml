@@ -20,6 +20,7 @@ trainer:
       type: fid&prdc
       score_sample_size: 10000
       cuda: False
+      use_random_vgg: True
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average # worse, best, average

@@ -21,6 +21,7 @@ trainer:
       score_sample_size: 1000
       cuda: True
       nearest_k: 5
+      use_random_vgg: True
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average # worse, best, average

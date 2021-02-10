@@ -12,8 +12,9 @@ class CombinedCalculator(ScoreCalculator):
 
     def __init__(
         self,
-        imgs_original,
-        batch_size=64,
+        prdc_dataset=None,
+        fid_dataset=None,
+        batch_size=32,
         dims=2048,
         n_samples=10000,
         cuda=True,
@@ -31,7 +32,7 @@ class CombinedCalculator(ScoreCalculator):
         """
         dims = dims if use_random_vgg else 10
         self.fid_calculator = FIDCalculator(
-            imgs_original,
+            fid_dataset,
             batch_size=batch_size,
             dims=dims,
             n_samples=n_samples,
@@ -39,7 +40,7 @@ class CombinedCalculator(ScoreCalculator):
             verbose=verbose,
         )
         self.prdc_calculator = PRDCCalculator(
-            imgs_original,
+            prdc_dataset,
             batch_size=batch_size,
             dims=dims,
             n_samples=n_samples,

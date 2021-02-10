@@ -7,7 +7,7 @@ import torchvision.transforms as transforms
 from helpers.configuration_container import ConfigurationContainer
 from prdc import compute_prdc
 from torch import nn
-from torchvision.models import vgg16
+from torchvision.models import vgg11
 from training.mixture.fid_mnist import MNISTCnn
 from training.mixture.score_calculator import ScoreCalculator
 
@@ -15,8 +15,6 @@ from training.mixture.score_calculator import ScoreCalculator
 class ToRGB(object):
     def __call__(self, image):
         return image.convert("RGB")
-
-transform = transforms.Compose([transforms.ToPILImage(), ToRGB(), transforms.Resize(224), transforms.ToTensor()])
 
 class PRDCCalculator(ScoreCalculator):
     _logger = logging.getLogger(__name__)
@@ -64,7 +62,8 @@ class PRDCCalculator(ScoreCalculator):
             model = MNISTCnn()
             model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
         elif self.dataset not in ["unlabeled_gaussian_grid", "unlabeled_gaussian_circle"]:  # Other RGB dataset
-            model = vgg16()
+            self.dims = 64
+            model = vgg11()
             # Change the fc2 from (4096, 4096) to (4096, 64). Remove the last fc layer.
             model.classifier = nn.Sequential(*list(model.classifier.children())[:-4], nn.Linear(4096, 64))
             model._initialize_weights()
@@ -73,8 +72,8 @@ class PRDCCalculator(ScoreCalculator):
             model.cuda()
 
         real_act = self.get_activations(self.imgs_original, model)
+        self._logger.info(f"conseguimos las activations")
         fake_act = self.get_activations(imgs, model)
-
         metrics = compute_prdc(real_features=real_act, fake_features=fake_act, nearest_k=self.nearest_k)
         harmonic_mean = 2 * (metrics["density"] * metrics["coverage"]) / (metrics["density"] + metrics["coverage"])
 
@@ -100,7 +99,7 @@ class PRDCCalculator(ScoreCalculator):
 
             for i in range(self.n_samples):
                 # Reshape to 2D images as required by MNISTCnn class
-                img = images[i].view(-1, 28, 28)
+                img = images[i].view(-1, 224, 224) if self.use_random_vgg else images[i].view(-1, 28, 28)
                 final_images.append(img)
 
             d0 = len(final_images)
@@ -114,6 +113,7 @@ class PRDCCalculator(ScoreCalculator):
             pred_arr = np.empty((n_used_imgs, self.dims))
             with torch.no_grad():
                 for i in range(n_batches):
+                    self._logger.info(f'llegamos a {i}')
                     if self.verbose:
                         print(
                             "\rPropagating batch %d/%d" % (i + 1, n_batches),
@@ -123,12 +123,7 @@ class PRDCCalculator(ScoreCalculator):
                     start = i * self.batch_size
                     end = start + self.batch_size
 
-                    batch = final_images[start:end].cpu()
-                    if self.use_random_vgg:
-                       batch = []
-                       for img in final_images[start:end]:
-                           batch.append(transform(img))
-
+                    batch = final_images[start:end]
                     batch = torch.stack(batch)
                     batch = torch.tensor(batch)
                     if self.cuda:
@@ -138,7 +133,10 @@ class PRDCCalculator(ScoreCalculator):
                         # might be generated using CUDA and in torch.cuda.FloatTensor
                         batch = batch.cpu()
 
-                    pred = model(batch)[0]
+                    if self.use_random_vgg:
+                        pred = model(batch)
+                    else:
+                        pred = model(batch)[0]
 
                     pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 

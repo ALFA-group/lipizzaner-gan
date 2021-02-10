@@ -9,7 +9,7 @@ from training.mixture.fid_score import FIDCalculator
 from training.mixture.gaussian_score import (GaussianToyDistancesCalculator1D,
                                              GaussianToyDistancesCalculator2D)
 from training.mixture.inception_score import InceptionCalculator
-from training.mixture.prdc_score import PRDCCalculator
+from training.mixture.prdc_score import PRDCCalculator, ToRGB
 
 
 class ScoreCalculatorFactory:
@@ -81,30 +81,46 @@ class ScoreCalculatorFactory:
                 nearest_k=settings["score"].get("nearest_k", 5),
             )
         elif score_type == "fid&prdc":
-            transforms_op = [
+            use_random_vgg = settings["score"].get("use_random_vgg", False)
+            prdc_transforms_op = None
+            fid_transforms_op = [
                 transforms.ToTensor(),
                 transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
             ]
             dataset_name = cc.settings["dataloader"]["dataset_name"]
-            if dataset_name == "mnist":
+            if use_random_vgg:
+                prdc_transforms_op = [ToRGB(), transforms.Resize(224)] + fid_transforms_op
+            elif dataset_name == "mnist":
                 if cc.settings["network"]["name"] == "ssgan_convolutional_mnist":
-                    transforms_op = [transforms.Resize([64, 64])] + transforms_op
+                    fid_transforms_op = [transforms.Resize([64, 64])] + fid_transforms_op
             elif dataset_name != "mnist_fashion":
                 # Need to reshape for RGB dataset as required by pre-trained InceptionV3
-                transforms_op = [transforms.Resize([64, 64])] + transforms_op
+                fid_transforms_op = [transforms.Resize([64, 64])] + fid_transforms_op
 
-            dataset_params = {
+            fid_dataset_params = {
                 "root": os.path.join(cc.settings["general"]["output_dir"], "data"),
                 "train": True,
-                "transform": transforms.Compose(transforms_op),
+                "transform": transforms.Compose(fid_transforms_op),
             }
-            dataset = dataloader.dataset(**dataset_params)
+            fid_dataset = dataloader.dataset(**fid_dataset_params)
+
+            if prdc_transforms_op is None:
+                prdc_dataset = fid_dataset
+            else:
+                prdc_dataset_params = {
+                    "root": os.path.join(cc.settings["general"]["output_dir"], "data"),
+                    "train": True,
+                    "transform": transforms.Compose(prdc_transforms_op),
+                }
+                prdc_dataset = dataloader.dataset(**prdc_dataset_params)
 
             return CombinedCalculator(
-                IgnoreLabelDataset(dataset),
-                cuda=cc.settings["master"].get("cuda", False),
+                prdc_dataset=IgnoreLabelDataset(prdc_dataset),
+                fid_dataset=IgnoreLabelDataset(fid_dataset),
+                cuda=settings["score"].get("cuda", False),
                 n_samples=settings["score"].get("score_sample_size", 10000),
                 nearest_k=settings["score"].get("nearest_k", 5),
+                use_random_vgg=use_random_vgg,
             )
         else:
             raise Exception(
