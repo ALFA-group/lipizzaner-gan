@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=lipi7030
+#SBATCH --job-name=lipi_vgg
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=5
-#SBATCH --mem=8196
+#SBATCH --mem=16384
 #SBATCH --time=6:00:00
 #SBATCH --partition=normal
 #SBATCH --qos=gpu
@@ -21,16 +21,16 @@ mkdir $OUTPUT_FOLDER
 cp -r ./output/data $OUTPUT_FOLDER
 cp -r ./output/networks $OUTPUT_FOLDER
 mkdir $OUTPUT_FOLDER/log
-mkdir $OUTPUT_FOLDER/lipizzaner_gan 
+mkdir $OUTPUT_FOLDER/lipizzaner_gan
 cp $CONFIG $OUTPUT_FOLDER/config.yml
 
 nvidia-smi -l 60 2>&1 | tee $OUTPUT_FOLDER/nvidiasmi_output.txt &
 
+for i in {0..3}
+  do
+     python main.py train --distributed --client --port 500$i 2>&1 | tee $OUTPUT_FOLDER/client"$i"_output.txt & sleep 10;
+ done
 
-python main.py train --distributed --client --port 5000 2>&1 | tee $OUTPUT_FOLDER/client1_output.txt & sleep 10;
-python main.py train --distributed --client --port 5001 2>&1 | tee $OUTPUT_FOLDER/client2_output.txt & sleep 10;
-python main.py train --distributed --client --port 5002 2>&1 | tee $OUTPUT_FOLDER/client3_output.txt & sleep 10;
-python main.py train --distributed --client --port 5003 2>&1 | tee $OUTPUT_FOLDER/client4_output.txt & sleep 20;
 python main.py train --distributed --master -f $CONFIG 2>&1 | tee $OUTPUT_FOLDER/master_output.txt
 
 rm -r $OUTPUT_FOLDER/data
