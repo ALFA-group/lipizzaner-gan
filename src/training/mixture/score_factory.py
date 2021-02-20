@@ -63,10 +63,13 @@ class ScoreCalculatorFactory:
         elif score_type == "constant":
             return ConstantCalculator(cuda=cc.settings["master"].get("cuda", False), resize=True)
         elif score_type == "prdc":
+            use_random_vgg = settings["score"].get("use_random_vgg", False)
             transforms_op = [
                 transforms.ToTensor(),
                 transforms.Normalize(mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5)),
             ]
+            if use_random_vgg:
+                prdc_transforms_op = [ToRGB(), transforms.Resize(224)] + transforms_op
             dataset_params = {
                 "root": os.path.join(cc.settings["general"]["output_dir"], "data"),
                 "train": True,
@@ -79,6 +82,7 @@ class ScoreCalculatorFactory:
                 cuda=cc.settings["master"].get("cuda", False),
                 n_samples=settings["score"].get("score_sample_size", 10000),
                 nearest_k=settings["score"].get("nearest_k", 5),
+                use_random_vgg=use_random_vgg,
             )
         elif score_type == "fid&prdc":
             use_random_vgg = settings["score"].get("use_random_vgg", False)

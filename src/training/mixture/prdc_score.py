@@ -1,6 +1,5 @@
 import logging
 
-# import cv2
 import numpy as np
 import torch
 import torchvision.transforms as transforms
@@ -62,11 +61,11 @@ class PRDCCalculator(ScoreCalculator):
             model = MNISTCnn()
             model.load_state_dict(torch.load("./output/networks/mnist_cnn.pkl"))
         elif self.dataset not in ["unlabeled_gaussian_grid", "unlabeled_gaussian_circle"]:  # Other RGB dataset
-            self.dims = 64
+            self.dims = 32
             model = vgg16()
             # Change the fc2 from (4096, 4096) to (4096, 64). Remove the last fc layer.
-            model.classifier = nn.Sequential(*list(model.classifier.children())[:-4], nn.Linear(4096, 64))
-            model._initialize_weights()
+            model.classifier = nn.Sequential(*list(model.classifier.children())[:-4], nn.Linear(4096, self.dims))
+            model.load_state_dict(torch.load(f"./output/networks/random_vgg16_{self.dims}.pth"))
 
         if model and self.cuda:
             model.cuda()
@@ -146,7 +145,6 @@ class PRDCCalculator(ScoreCalculator):
                         pred = model(batch)
                     else:
                         pred = model(batch)[0]
-                    self._logger.info(pred.shape)
 
                     pred_arr[start:end] = pred.cpu().data.numpy().reshape(self.batch_size, -1)
 
