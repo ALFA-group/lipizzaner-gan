@@ -5,11 +5,13 @@ import copy
 import numpy as np
 import torch
 from torch.nn import Softmax
+import logging
 
 from distribution.state_encoder import StateEncoder
 from helpers.pytorch_helpers import to_pytorch_variable, is_cuda_enabled, size_splits, noise
 from helpers.configuration_container import ConfigurationContainer
 
+_logger = logging.getLogger(__name__)
 
 class CompetetiveNet(ABC):
     def __init__(self, loss_function, net, data_size, optimize_bias=True):
@@ -253,13 +255,17 @@ class GeneratorNetCovid(CompetetiveNet):
         return float('-inf')
 
     def compute_loss_against(self, opponent, input, training_epoch=None):
-        batch_size = input.size(0)
+        #_logger.info("Mem allocated (gen loss): {}".format(torch.cuda.memory_allocated()))
+        #_logger.info("Mem cached (gen loss): {}".format(torch.cuda.memory_cached()))
 
-        real_labels = to_pytorch_variable(torch.ones(batch_size))
+        with torch.no_grad():
+            batch_size = input.size(0)
 
-        z = noise(batch_size, self.data_size)
+            real_labels = to_pytorch_variable(torch.ones(batch_size))
 
-        fake_images = self.net(z)
+            z = noise(batch_size, self.data_size)
+
+            fake_images = self.net(z)
         outputs = opponent.net(fake_images).view(-1)
 
         return self.loss_function(outputs, real_labels), fake_images, None
@@ -299,6 +305,8 @@ class DiscriminatorNetCovid(CompetetiveNet):
         )
 
     def compute_loss_against(self, opponent, input, training_epoch=None):
+        #_logger.info("Mem allocated (disc loss): {}".format(torch.cuda.memory_allocated()))
+        #_logger.info("Mem cached (disc loss): {}".format(torch.cuda.memory_cached()))
 
         # If HeuristicLoss is applied in the Generator, the Discriminator applies BCELoss
         if self.loss_function.__class__.__name__ == 'MustangsLoss':
@@ -326,11 +334,12 @@ class DiscriminatorNetCovid(CompetetiveNet):
         outputs = self.net(input).view(-1)
         d_loss_real = self.loss_function(outputs, real_labels)
 
-        # Compute loss using fake images
-        # First term of the loss is always zero since fake_labels == 0
-        z = noise(batch_size, self.data_size)
-        fake_images = opponent.net(z)
-        outputs = self.net(fake_images).view(-1)
-        d_loss_fake = self.loss_function(outputs, fake_labels)
+        with torch.no_grad():
+            # Compute loss using fake images
+            # First term of the loss is always zero since fake_labels == 0
+            z = noise(batch_size, self.data_size)
+            fake_images = opponent.net(z)
+            outputs = self.net(fake_images).view(-1)
+            d_loss_fake = self.loss_function(outputs, fake_labels)
 
         return d_loss_real + d_loss_fake, None, None

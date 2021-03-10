@@ -10,6 +10,8 @@ from torchvision.models.inception import inception_v3
 from helpers.configuration_container import ConfigurationContainer
 from training.mixture.score_calculator import ScoreCalculator
 
+import logging
+
 
 class InceptionCalculator(ScoreCalculator):
     """
@@ -17,6 +19,9 @@ class InceptionCalculator(ScoreCalculator):
     simply duplicate the gray-scale data into three dimensions (RGB)
     TODO: Modify to similar implementation of FID on MNIST dataset
     """
+
+    _logger = logging.getLogger(__name__)
+
     def __init__(self, cuda=False, batch_size=32, resize=True):
         """
         :param cuda: Whether or not to run on GPU. WARNING: Requires enormous amounts of memory.
@@ -59,7 +64,11 @@ class InceptionCalculator(ScoreCalculator):
 
         for i, batch in enumerate(dataloader, 0):
             batch = batch.type(self.dtype)
-            if cc.settings['dataloader']['dataset_name'] == 'mnist':
+            if (
+                cc.settings["dataloader"]["dataset_name"] == "mnist"
+                or cc.settings["dataloader"]["dataset_name"] == "mnist_fashion"
+                or cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised"
+            ):
                 rgb_batch = self._convert_grey_to_square_rgb(batch)
             else:
                 rgb_batch = batch
@@ -69,7 +78,7 @@ class InceptionCalculator(ScoreCalculator):
 
             preds[i * self.batch_size:i * self.batch_size + batch_size_i] = get_pred(rgb_batchv)
             if i % 100 == 0:
-                print('Batch {}/{}'.format(i, len(dataloader)))
+                self._logger.info('Batch {}/{}'.format(i, len(dataloader)))
 
         # Now compute the mean kl-div
         split_scores = []
@@ -89,9 +98,17 @@ class InceptionCalculator(ScoreCalculator):
         # grey_img here is of shape(batch_size, 784)
         cc = ConfigurationContainer.instance()
         # This function is only available for mnist dataset
-        assert cc.settings['dataloader']['dataset_name'] == 'mnist'
+        assert (
+            cc.settings["dataloader"]["dataset_name"] == "mnist"
+            or cc.settings["dataloader"]["dataset_name"] == "mnist_fashion"
+            or cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised"
+        )
+        
         # Pad the same data in all 3 dimensions
-        return grey_img.reshape(-1, 28, 28).unsqueeze(1).repeat(1, 3, 1, 1)
+        if cc.settings["dataloader"]["dataset_name"] == "covid-unsupervised":
+            return grey_img.reshape(-1, 128, 128).unsqueeze(1).repeat(1, 3, 1, 1)
+        else:  # MNIST-like data
+            return grey_img.reshape(-1, 28, 28).unsqueeze(1).repeat(1, 3, 1, 1)
 
     @property
     def is_reversed(self):
