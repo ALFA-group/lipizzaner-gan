@@ -50,7 +50,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
         self._enable_selection = self.settings.get('enable_selection', enable_selection)
         self.mixture_sigma = self.settings.get('mixture_sigma', mixture_sigma)
 
-        self.neighbourhood = Neighbourhood.instance()
+        #self.neighbourhood = Neighbourhood.instance()
 
         for i, individual in enumerate(self.population_gen.individuals):
             individual.learning_rate = self._default_adam_learning_rate
@@ -112,12 +112,13 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
     def train(self, n_iterations, stop_event=None):
         loaded = self.dataloader.load()
+        self._logger.info("Start iter: {}".format(self.start_iter))
 
-
-        for iteration in range(n_iterations):
+        for iteration in range(self.start_iter, n_iterations):
             self._logger.debug('Iteration {} started'.format(iteration + 1))
             start_time = time()
 
+            # wait and retry if can't reach all neighbors
             all_generators = self.neighbourhood.all_generators
             all_discriminators = self.neighbourhood.all_discriminators
             local_generators = self.neighbourhood.local_generators
@@ -261,7 +262,9 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                                            path_real_images, path_fake_images)
 
             if self.checkpoint_period>0 and (iteration+1)%self.checkpoint_period==0:
-                self.save_checkpoint(all_generators.individuals, all_discriminators.individuals,
+                # TODO: only pass in local generators, don't need to save neighbors
+                self.save_checkpoint(local_generators.individuals, local_generators.default_fitness, 
+                                     local_discriminators.individuals, local_discriminators.default_fitness,
                                      self.neighbourhood.cell_number, self.neighbourhood.grid_position)
 
 

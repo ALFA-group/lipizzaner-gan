@@ -68,7 +68,7 @@ class ClientAPI:
         if ClientAPI.is_busy or ClientAPI.is_finished:
             ClientAPI._logger.info('Sending neighbourhood results to master')
             response = jsonify(ClientAPI._gather_results())
-            ClientAPI._finish_event.set()
+            #ClientAPI._finish_event.set()
         else:
             ClientAPI._logger.warning('Master requested results, but no experiment is running.')
             response = Response()
