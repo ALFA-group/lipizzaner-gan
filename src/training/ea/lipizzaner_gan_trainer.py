@@ -265,7 +265,8 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
                 # TODO: only pass in local generators, don't need to save neighbors
                 self.save_checkpoint(local_generators.individuals, local_generators.default_fitness, 
                                      local_discriminators.individuals, local_discriminators.default_fitness,
-                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position)
+                                     self.neighbourhood.cell_number, self.neighbourhood.grid_position,
+                                     iteration+1)
 
 
         if self.optimize_weights_at_the_end:

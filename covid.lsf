@@ -1,8 +1,8 @@
 #!/bin/bash
 # Begin BSUB Options
 #BSUB -P csc387
-#BSUB -W 01:00
-#BSUB -nnodes 1
+#BSUB -W 02:00
+#BSUB -nnodes 2
 #BSUB -alloc_flags "gpumps"
 #BSUB -J ganwork
 #BSUB -o ganwork.%J
@@ -17,7 +17,7 @@ export PYTHONUSERBASE=$PWD/.local/
 
 # Experiment Paths/Parameters
 RUNID=ganrun_000
-NODES=1
+NODES=2
 export PYTHON_EGG_CACHE=$PWD/.cache
 export NUM_CLIENTS_PER_NODE=6
 export PORT_UPPER_LIMIT=5005

@@ -10,7 +10,7 @@ losswise:
 output_dir: ./output
 seed: 1
 num_workers: 0    # how many subprocesses to use for data loading
-checkpoint_period: 40
+checkpoint_period: 30
 distribution:
   auto_discover: False
   master_node:

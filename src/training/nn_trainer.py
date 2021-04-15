@@ -38,6 +38,7 @@ class NeuralNetworkTrainer(ABC):
             with gzip.open(this_checkpoint_path, 'rt', encoding='UTF-8') as checkpoint_file:
                 checkpoint = yaml.load(checkpoint_file, YamlIncludeLoader)
                 self._logger.info("Finished reading checkpoint")
+                self._logger.info("Generator iter: {}".format(checkpoint['iteration']))
                 self.population_gen, self.population_dis = self.parse_populations(checkpoint)
         else:
             self.start_iter = 0
@@ -50,11 +51,11 @@ class NeuralNetworkTrainer(ABC):
         pops = ()
         l = [('generators', TYPE_GENERATOR, self.network_factory.create_generator),
              ('discriminators', TYPE_DISCRIMINATOR, self.network_factory.create_discriminator)]
+        iteration = checkpoint['iteration']
         for pop,pop_type,create_genome in l:
             self._logger.info("Began parsing {}".format(pop))
             default_fitness = checkpoint[pop]['default_fitness']
             learning_rate = checkpoint[pop]['learning_rate']
-            iteration = checkpoint[pop]['iteration']
             self.start_iter = iteration
             individuals = []
             for indiv in checkpoint[pop]['individuals']:
@@ -160,7 +161,7 @@ class NeuralNetworkTrainer(ABC):
         match['id'] = source
         return client_nodes.index(match)
 
-    def save_checkpoint(self, generators, gen_fitness, discriminators, disc_fitness, cell_number, grid_position):
+    def save_checkpoint(self, generators, gen_fitness, discriminators, disc_fitness, cell_number, grid_position, iteration):
 
         self._logger.info("Saving checkpoint")
 
@@ -169,7 +170,6 @@ class NeuralNetworkTrainer(ABC):
             self._logger.info("Individuals length: {}".format(len(individuals)))
 
             if len(individuals) > 0:
-                individuals_info['iteration'] = individuals[0].iteration
                 individuals_info['learning_rate'] = '{}'.format(individuals[0].learning_rate)
                 individuals_info['default_fitness'] = fitness
                 individuals_info['individuals'] = []
@@ -197,8 +197,10 @@ class NeuralNetworkTrainer(ABC):
         checkpoint['position'] = dict()
         checkpoint['position']['x'] = grid_position[0]
         checkpoint['position']['y'] = grid_position[1]
+        checkpoint['iteration'] = iteration
         checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number, gen_fitness)
         checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number, disc_fitness)
+        self._logger.info("Recording iter: {}".format(iteration))
 
         
         checkpoint_dir = self.get_checkpoint_dir()

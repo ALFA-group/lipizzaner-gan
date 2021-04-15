@@ -10,12 +10,46 @@ losswise:
 output_dir: ./output
 seed: 1
 num_workers: 0    # how many subprocesses to use for data loading
-checkpoint_period: 2
+checkpoint_period: 100
 distribution:
   auto_discover: False
   master_node:
     exit_clients_on_disconnect: True
   client_nodes:
-    - address: h35n03
+    - address: g34n05
+      port: 5000-5005
+    - address: h34n03
+      port: 5000-5005
+    - address: b27n04
+      port: 5000-5005
+    - address: g34n08
+      port: 5000-5005
+    - address: h50n03
+      port: 5000-5005
+    - address: g34n11
+      port: 5000-5005
+    - address: h37n09
+      port: 5000-5005
+    - address: h37n05
+      port: 5000-5005
+    - address: h37n08
+      port: 5000-5005
+    - address: g34n04
+      port: 5000-5005
+    - address: g34n06
+      port: 5000-5005
+    - address: h37n04
+      port: 5000-5005
+    - address: g34n07
+      port: 5000-5005
+    - address: h35n15
+      port: 5000-5005
+    - address: h12n10
+      port: 5000-5005
+    - address: h50n01
+      port: 5000-5005
+    - address: h34n10
+      port: 5000-5005
+    - address: h50n08
       port: 5000-5005
 

@@ -10,10 +10,14 @@ losswise:
 output_dir: ./output
 seed: 1
 num_workers: 0    # how many subprocesses to use for data loading
+checkpoint_period: 30
 distribution:
   auto_discover: False
   master_node:
     exit_clients_on_disconnect: True
   client_nodes:
-    - address: 127.0.0.1 # Fill in IP address here 
-      port: 5000
+    - address: f06n11
+      port: 5000-5005
+    - address: f06n10
+      port: 5000-5005
+
