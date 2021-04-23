@@ -35,11 +35,16 @@ class NeuralNetworkTrainer(ABC):
         if os.path.isdir(checkpoint_dir):
             self._logger.info("Reading checkpoint")
             this_checkpoint_path = os.path.join(checkpoint_dir, 'checkpoint-{}.yml'.format(self.neighbourhood.cell_number))
-            with gzip.open(this_checkpoint_path, 'rt', encoding='UTF-8') as checkpoint_file:
-                checkpoint = yaml.load(checkpoint_file, YamlIncludeLoader)
-                self._logger.info("Finished reading checkpoint")
-                self._logger.info("Generator iter: {}".format(checkpoint['iteration']))
-                self.population_gen, self.population_dis = self.parse_populations(checkpoint)
+            try:
+                with gzip.open(this_checkpoint_path, 'rt', encoding='UTF-8') as checkpoint_file:
+                    checkpoint = yaml.load(checkpoint_file, YamlIncludeLoader)
+                    self._logger.info("Finished reading checkpoint")
+                    self._logger.info("Generator iter: {}".format(checkpoint['iteration']))
+                    self.population_gen, self.population_dis = self.parse_populations(checkpoint)
+            except:
+                self.start_iter = 0
+                self.population_gen, self.population_dis = self.initialize_populations()
+                self._logger.info("Failed to read checkpoint, starting over")
         else:
             self.start_iter = 0
             self.population_gen, self.population_dis = self.initialize_populations()

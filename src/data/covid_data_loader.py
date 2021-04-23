@@ -107,7 +107,7 @@ class COVIDDataSet(Dataset):
         if self.smote_augmentation_times is not None:
             tensor_list, labels_list = smote_augmentation(tensor_list, labels_list, self.smote_augmentation_times)
 
-        self._logger.debug('Dataset size after SMOTE data augmentation: {}'.format(len(tensor_list)))
+        self._logger.info('Dataset size after SMOTE data augmentation: {}'.format(len(tensor_list)))
 
         # 3) Remove incomplete batch
         if self.use_batch:
@@ -118,7 +118,7 @@ class COVIDDataSet(Dataset):
         # 4) Merging all the data
         stacked_tensor = torch.stack(tensor_list)
 
-        self._logger.debug('Final dataset shape: {}'.format(stacked_tensor.shape))
+        self._logger.info('Final dataset shape: {}'.format(stacked_tensor.shape))
 
         self.data = stacked_tensor
         self.labels = labels_list

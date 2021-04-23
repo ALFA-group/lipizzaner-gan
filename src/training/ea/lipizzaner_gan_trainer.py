@@ -112,6 +112,7 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
     def train(self, n_iterations, stop_event=None):
         loaded = self.dataloader.load()
+        self.start_iter = self.cc.settings['trainer']['start']
         self._logger.info("Start iter: {}".format(self.start_iter))
 
         for iteration in range(self.start_iter, n_iterations):

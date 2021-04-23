@@ -51,20 +51,39 @@ class LipizzanerMaster:
         accessible_clients = self._accessible_clients(clients)
 
         num_clients = len(accessible_clients)
+
+        # max clients never going to be more than 1000, so this is fine for now
+        max_clients = self.cc.settings['trainer'].get('max_clients', 1000)
+        min_clients = self.cc.settings['trainer'].get('min_clients', 1)
+
+        node_client = NodeClient(None)
+
+        if num_clients > max_clients:
+            num_clients = max_clients
+            accessible_clients = accessible_clients[:num_clients]
+            self.cc.settings['general']['distribution']['client_nodes'] = accessible_clients
+            self._logger.info("Got too many clients, stopping some...")
+            # stop clients except for accessible_clients
+            node_client.stop_running_experiments(accessible_clients)
+
         if not is_square(num_clients):
             width = int(round(sqrt(num_clients)))
             height = num_clients//width
             accessible_clients = accessible_clients[:width*height]
             self.cc.settings['general']['distribution']['client_nodes'] = accessible_clients
-            self._logger.info('Stopping some clients...')
-            node_client = NodeClient(None)
+            self._logger.info('Handling non-square grid...')
+            # stop clients except for accessible_clients
             node_client.stop_running_experiments(accessible_clients)
-            self._logger.info("Number of remaining clients:" + str(len(accessible_clients)))
-            self._logger.info("Grid size:" + str(width) + "x" + str(height))
+        else:
+            width = int(sqrt(num_clients))
+            height = width
 
-        if len(accessible_clients) == 0:
-            self._logger.critical('{} clients found, but Lipizzaner currently only supports square grids.'
-                                  .format(len(accessible_clients)))
+        self._logger.info("Number of remaining clients: {}".format(len(accessible_clients)))
+        self._logger.info("Grid size: {}x{}".format(width, height))
+
+        if len(accessible_clients) < min_clients:
+            self._logger.critical('{} clients found, but Lipizzaner desired at least {}.'
+                                  .format(len(accessible_clients), min_clients))
             self._terminate(stop_clients=False)
         
 

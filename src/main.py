@@ -20,8 +20,8 @@ from lipizzaner_master import LipizzanerMaster, GENERATOR_PREFIX
 from training.mixture.score_factory import ScoreCalculatorFactory
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 
-from enesmble_optimization.ga_for_ensemble_generator import GAEnsembleGenerator
-from enesmble_optimization.greedy_for_ensemble_generator import GreedyEnsembleGenerator
+#from enesmble_optimization.ga_for_ensemble_generator import GAEnsembleGenerator
+#from enesmble_optimization.greedy_for_ensemble_generator import GreedyEnsembleGenerator
 
 _logger = logging.getLogger(__name__)
 
