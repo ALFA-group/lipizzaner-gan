@@ -23,6 +23,9 @@ trainer:
     fitness:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
+  max_clients: # insert max clients desired
+  min_clients: # insert min_clients desired
+  start: # insert desired start iter
 dataloader:
   dataset_name: mnist
   use_batch: True

@@ -26,6 +26,9 @@ trainer:
       fitness_sample_size: 1000
       fitness_mode: average    # worse, best, average
       fitness_batch_size: 50
+  max_clients: # insert max clients desired
+  min_clients: # insert min_clients desired
+  start: # insert desired start iter
 dataloader:
   dataset_name: covid-unsupervised
   use_batch: True
