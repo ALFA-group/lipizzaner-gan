@@ -40,11 +40,11 @@ class NeuralNetworkTrainer(ABC):
                     checkpoint = yaml.load(checkpoint_file, YamlIncludeLoader)
                     self._logger.info("Finished reading checkpoint")
                     self._logger.info("Generator iter: {}".format(checkpoint['iteration']))
-                    self.population_gen, self.population_dis = self.parse_populations(checkpoint)
+                    self.population_gen, self.population_dis = self.parse_populations(checkpoint, checkpoint_dir)
             except:
+                self._logger.info("Failed to read checkpoint")
                 self.start_iter = 0
                 self.population_gen, self.population_dis = self.initialize_populations()
-                self._logger.info("Failed to read checkpoint, starting over")
         else:
             self.start_iter = 0
             self.population_gen, self.population_dis = self.initialize_populations()
@@ -52,27 +52,30 @@ class NeuralNetworkTrainer(ABC):
     """
     helper function to parse the checkpoint file and create generator and disc populations
     """
-    def parse_populations(self, checkpoint):
+    def parse_populations(self, checkpoint, checkpoint_dir):
         pops = ()
-        l = [('generators', TYPE_GENERATOR, self.network_factory.create_generator),
-             ('discriminators', TYPE_DISCRIMINATOR, self.network_factory.create_discriminator)]
+        l = [('generators', TYPE_GENERATOR, GENERATOR_PREFIX, self.network_factory.create_generator),
+             ('discriminators', TYPE_DISCRIMINATOR, DISCRIMINATOR_PREFIX, self.network_factory.create_discriminator)]
         iteration = checkpoint['iteration']
-        for pop,pop_type,create_genome in l:
+        for pop,pop_type,pop_prefix,create_genome in l:
             self._logger.info("Began parsing {}".format(pop))
             default_fitness = checkpoint[pop]['default_fitness']
             learning_rate = checkpoint[pop]['learning_rate']
             self.start_iter = iteration
             individuals = []
             for indiv in checkpoint[pop]['individuals']:
-                new_indiv = Individual.decode(create_genome,
-                                              indiv['parameters'],
-                                              is_local=True,
+                path = os.path.join(checkpoint_dir, '{}{}.pkl'.format(pop_prefix, self.neighbourhood.cell_number))
+                populator = create_genome()
+                populator.net.load_state_dict(torch.load(path))
+                populator.net.eval()
+                individuals.append(Individual(genome=populator,
+                                              fitness=indiv['fitness'], 
+                                              is_local=True, 
                                               learning_rate=learning_rate,
                                               optimizer_state=StateEncoder.decode(indiv['state_encoder']),
                                               source=indiv['source'],
                                               id=indiv['id'],
-                                              iteration=iteration)
-                individuals.append(new_indiv)
+                                              iteration=iteration))
             new_pop = Population(individuals, default_fitness, pop_type)
             pops += (new_pop,)
             self._logger.info("Finished parsing {}".format(pop))
@@ -170,7 +173,7 @@ class NeuralNetworkTrainer(ABC):
 
         self._logger.info("Saving checkpoint")
 
-        def get_individuals_information(individuals, prefix, cell_number, fitness):
+        def get_individuals_information(individuals, prefix, cell_number, fitness, checkpoint_dir):
             individuals_info = dict()
             self._logger.info("Individuals length: {}".format(len(individuals)))
 
@@ -184,7 +187,7 @@ class NeuralNetworkTrainer(ABC):
                     indiv['id'] = individual.id
                     indiv['is_local'] = individual.is_local
                     indiv['fitness'] = individual.fitness
-                    indiv['parameters'] = individual.genome.encoded_parameters
+                    # indiv['parameters'] = individual.genome.encoded_parameters
                     indiv['state_encoder'] = StateEncoder.encode(individual.optimizer_state)
                     # The individual.source parameter stores the network source of that individual represented by
                     # <ip addres>:<port>
@@ -194,8 +197,11 @@ class NeuralNetworkTrainer(ABC):
                     if indiv['is_local']:
                         filename = '{}{}.pkl'.format(prefix, cell_number)
                         torch.save(individual.genome.net.state_dict(),
-                                   os.path.join(self.cc.output_dir, filename))
+                                   os.path.join(checkpoint_dir, filename))
             return individuals_info
+
+        checkpoint_dir = self.get_checkpoint_dir()
+        os.makedirs(checkpoint_dir, exist_ok=True)
 
         checkpoint = dict()
         checkpoint['time'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -203,13 +209,11 @@ class NeuralNetworkTrainer(ABC):
         checkpoint['position']['x'] = grid_position[0]
         checkpoint['position']['y'] = grid_position[1]
         checkpoint['iteration'] = iteration
-        checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number, gen_fitness)
-        checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number, disc_fitness)
+        checkpoint['generators'] = get_individuals_information(generators, GENERATOR_PREFIX, cell_number, gen_fitness, checkpoint_dir)
+        checkpoint['discriminators'] = get_individuals_information(discriminators, DISCRIMINATOR_PREFIX, cell_number, disc_fitness, checkpoint_dir)
         self._logger.info("Recording iter: {}".format(iteration))
 
         
-        checkpoint_dir = self.get_checkpoint_dir()
-        os.makedirs(checkpoint_dir, exist_ok=True)
         path_checkpoint = os.path.join(checkpoint_dir, 'checkpoint-{}.yml'.format(cell_number))
         with gzip.open(path_checkpoint, 'wt', encoding='UTF-8') as zipfile:
             yaml.dump(checkpoint, zipfile)
