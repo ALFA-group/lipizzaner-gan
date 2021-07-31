@@ -70,6 +70,21 @@ class Neighbourhood:
         else:
             self.mixture_weights_discriminators = None
 
+
+        self.neighbour_generators = {}
+        self.neighbour_discriminators = {}
+
+
+    def update_networks(self):
+        while comm.Iprobe():
+            status = MPI.Status()
+            data = comm.Recv()
+            source = status.source
+
+            self.neighbour_generators[source] = data.generators
+            self.neighbour_discriminators[source] = data.discriminators
+
+
     @property
     def local_generators(self):
         # Return local individuals for now, possibility to split up gens and discs later
@@ -82,11 +97,11 @@ class Neighbourhood:
 
     @property
     def all_generators(self):
-        neighbour_individuals = self.node_client.get_all_generators(self.neighbours)
+        self.update_networks()
         local_population = self.local_generators
 
         return Population(
-            individuals=neighbour_individuals + local_population.individuals,
+            individuals=self.neighbour_generators + local_population.individuals,
             default_fitness=local_population.default_fitness,
             population_type=TYPE_GENERATOR,
         )
@@ -105,11 +120,11 @@ class Neighbourhood:
 
     @property
     def all_discriminators(self):
-        neighbour_individuals = self.node_client.get_all_discriminators(self.neighbours)
+        self.update_networks()
         local_population = self.local_discriminators
 
         return Population(
-            individuals=neighbour_individuals + local_population.individuals,
+            individuals=self.neighbour_discriminators + local_population.individuals,
             default_fitness=local_population.default_fitness,
             population_type=TYPE_DISCRIMINATOR,
         )

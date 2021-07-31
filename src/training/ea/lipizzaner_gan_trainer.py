@@ -15,6 +15,8 @@ from training.ea.ea_trainer import EvolutionaryAlgorithmTrainer
 from training.mixture.mixed_generator_dataset import MixedGeneratorDataset
 from training.mixture.score_factory import ScoreCalculatorFactory
 
+from copy import deepcopy
+
 
 class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
     """
@@ -277,6 +279,10 @@ class LipizzanerGANTrainer(EvolutionaryAlgorithmTrainer):
 
                 attackers = new_populations[TYPE_GENERATOR] if self._enable_selection else local_generators
                 defenders = new_populations[TYPE_DISCRIMINATOR] if self._enable_selection else all_discriminators
+                
+                attackers = [deepcopy(network) for network in attackers]
+                defenders = [deepcopy(network) for network in defenders]
+                
                 input_data = self.step(
                     local_generators,
                     attackers,
