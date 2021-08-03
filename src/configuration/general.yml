@@ -6,7 +6,7 @@ logging:
   print_discriminator: False
 losswise:
   enabled: False
-  api_key: 
+  api_key:
 output_dir: !ENV ${OUTPUT_FOLDER}
 distribution:
   auto_discover: False
@@ -16,4 +16,5 @@ distribution:
     - address: 127.0.0.1
       port: 5000-5003
 seed: 1
-num_workers: 0    # how many subprocesses to use for data loading
+num_workers: 0 # how many subprocesses to use for data loading
+name: job1
