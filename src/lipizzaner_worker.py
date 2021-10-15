@@ -43,6 +43,7 @@ class LipizzanerWorker:
             )
             self.trainer = self.cc.create_instance(
                 self.cc.settings["trainer"]["name"],
+                self.cell,
                 dataloader,
                 network_factory,
             )

@@ -1,9 +1,13 @@
+import itertools
+
 from math import sqrt
 from mpi4py import MPI
 
-from distribution.codec import Codec
-
 from constants import MASTER_RANK
+
+from distribution.codec import Codec
+from helpers.pytorch_helpers import calculate_net_weights_dist
+
 
 world = MPI.COMM_WORLD
 world_rank = world.Get_rank()
@@ -33,16 +37,32 @@ class Population(dict):
         super(Population, self).__init__(*args, **kwargs)
         self.neighbourhood = neighbourhood
 
-    @property
-    def center(self):
-        return self[self.neighbourhood.rank]
-
     def sorted(self, key):
         return sorted(self.values(), key, reverse=True)
 
     @property
+    def center(self):
+        return self[self.neighbourhood.rank]
+
+    @property
     def best(self, key):
         return self.sorted(key)[0]
+
+    @property
+    def net_weight_dist(self):
+        net_weights_dist = []
+        for ind1, ind2 in itertools.combinations(self.individuals, 2):
+            # Each tuple is of format (ind1, ind2, value)
+
+            net_weights_dist.append(
+                (
+                    ind1.name,
+                    ind2.name,
+                    calculate_net_weights_dist(ind1.genome.net, ind2.genome.net),
+                )
+            )
+
+        return net_weights_dist
 
 
 class Cell:
