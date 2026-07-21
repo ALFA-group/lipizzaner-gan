@@ -1,5 +1,5 @@
 """
-Helper to wait for two events simultanously.
+Helper to wait for two events simultaneously.
 Taken from https://stackoverflow.com/a/12320352
 """
 import threading
